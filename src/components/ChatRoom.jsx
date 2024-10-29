@@ -300,7 +300,7 @@ const ChatRoom = () => {
 return (
   <div className="fixed inset-0 flex flex-col bg-[#F8F9FE] pt-2">
     {/* Header */}
-    <div className="px-4 py-2 bg-white shadow-sm">
+    <div className="px-4 py-2 bg-white">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {userProfile?.profilePhotoURL ? (
@@ -339,8 +339,8 @@ return (
     <div className="flex-1 overflow-hidden">
       <div 
         ref={scrollContainerRef}
-        className="h-full overflow-y-auto px-4 py-3 pb-[76px]"
-      >
+        className="h-full overflow-y-auto px-4 py-3 pb-[90px]" // Adjusted padding
+        >
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
