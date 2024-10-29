@@ -1,0 +1,78 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.react-datepicker {
+  @apply bg-white rounded-lg shadow-lg border-none;
+}
+
+.react-datepicker__header {
+  @apply bg-blue-50 border-none rounded-t-lg;
+}
+
+.react-datepicker__current-month {
+  @apply text-blue-600 font-semibold;
+}
+
+.react-datepicker__day {
+  @apply hover:bg-blue-100 rounded;
+}
+
+.react-datepicker__day--selected {
+  @apply bg-blue-500 text-white hover:bg-blue-600;
+}
+
+.react-datepicker__day--disabled {
+  @apply text-gray-300 hover:bg-transparent cursor-not-allowed;
+}
+
+.react-datepicker__time-container {
+  @apply border-l border-gray-100;
+}
+
+.react-datepicker__time-list-item--selected {
+  @apply bg-blue-500 !important;
+}
+
+.react-datepicker-popper {
+  @apply z-50;
+}
