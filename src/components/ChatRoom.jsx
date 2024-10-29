@@ -298,7 +298,7 @@ const ChatRoom = () => {
   };
 
 return (
-  <div className="fixed inset-0 flex flex-col bg-[#F8F9FE] pt-2">
+  <div className="fixed inset-0 flex flex-col bg-[#F8F9FE]"> 
     {/* Header */}
     <div className="px-4 py-2 bg-white">
       <div className="flex items-center justify-between">
@@ -339,7 +339,7 @@ return (
     <div className="flex-1 overflow-hidden">
       <div 
         ref={scrollContainerRef}
-        className="h-full overflow-y-auto px-4 py-3 pb-[90px]" // Adjusted padding
+        className="h-full overflow-y-auto px-4 pt-3 pb-20" // adjusted padding
         >
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
@@ -487,7 +487,7 @@ return (
     </div>
 
     {/* Message Input */}
-    <div className="fixed bottom-[56px] left-0 right-0 bg-white border-t border-gray-100">
+    <div className="fixed bottom-[48px] left-0 right-0 bg-white border-t border-gray-100">
       <div className="max-w-2xl mx-auto px-4 py-2">
         <div className="flex items-center gap-2">
           <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
