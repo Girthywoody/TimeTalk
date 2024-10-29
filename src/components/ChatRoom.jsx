@@ -297,57 +297,61 @@ const ChatRoom = () => {
     }
   };
 
-return (
-  <div className="fixed inset-0 flex flex-col bg-[#F8F9FE]"> 
-    {/* Header */}
-    <div className="px-4 py-2 bg-white">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {userProfile?.profilePhotoURL ? (
-            <img 
-              src={userProfile.profilePhotoURL} 
-              alt="Profile" 
-              className="w-10 h-10 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-              <span className="text-blue-500 font-medium">
-                {userProfile?.username?.[0] || userProfile?.displayName?.[0] || '?'}
-              </span>
+  return (
+    <div className="fixed inset-0 flex flex-col bg-[#F8F9FE]">
+      {/* Header */}
+      <div className="px-4 py-2 bg-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {userProfile?.profilePhotoURL ? (
+              <img 
+                src={userProfile.profilePhotoURL} 
+                alt="Profile" 
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <span className="text-blue-500 font-medium">
+                  {userProfile?.username?.[0] || userProfile?.displayName?.[0] || '?'}
+                </span>
+              </div>
+            )}
+            <div>
+              <h1 className="text-gray-900 font-semibold">
+                {userProfile?.username || userProfile?.displayName}
+              </h1>
+              <p className="text-sm text-green-500">Online</p>
             </div>
-          )}
-          <div>
-            <h1 className="text-gray-900 font-semibold">
-              {userProfile?.username || userProfile?.displayName}
-            </h1>
-            <p className="text-sm text-green-500">Online</p>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <Phone size={20} className="text-blue-500" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <Video size={20} className="text-blue-500" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <Phone size={20} className="text-blue-500" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <Video size={20} className="text-blue-500" />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* Messages Container */}
-    <div className="flex-1 overflow-hidden">
-      <div 
-        ref={scrollContainerRef}
-        className="h-full overflow-y-auto px-4 pt-3 pb-20" // adjusted padding
+      {/* Messages Container */}
+      <div className="flex-1 overflow-hidden">
+        <div 
+          ref={scrollContainerRef}
+          className="h-full overflow-y-auto px-4 py-3 pb-32" // Increased bottom padding
+          style={{
+            scrollBehavior: 'smooth',
+            overscrollBehavior: 'contain'
+          }}
         >
-        {loading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          </div>
-        ) : (
-          <>
-            {messages.map((message) => (
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <>
+              {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2`}
@@ -480,77 +484,77 @@ return (
                 </div>
               </div>
             ))}
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
-    </div>
-
-    {/* Message Input */}
-    <div className="fixed bottom-[48px] left-0 right-0 bg-white border-t border-gray-100">
-      <div className="max-w-2xl mx-auto px-4 py-2">
-        <div className="flex items-center gap-2">
-          <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder="Message"
-              className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              <Paperclip size={20} />
-            </button>
-          </div>
-          
-          <button
-            onClick={handleSend}
-            disabled={!newMessage.trim() || !userProfile || uploading}
-            className={`p-3 rounded-full flex items-center justify-center transition-all duration-200 
-              ${newMessage.trim() && userProfile && !uploading
-                ? "bg-[#4E82EA] text-white hover:bg-blue-600"
-                : "bg-gray-100 text-gray-400"}`}
-          >
-            <Send size={20} />
-          </button>
+              <div ref={messagesEndRef} />
+            </>
+          )}
         </div>
       </div>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileUpload}
-        accept="image/*,.pdf,.doc,.docx"
-        className="hidden"
+
+      {/* Message Input - Positioned above navigation */}
+      <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 z-10">
+        <div className="max-w-2xl mx-auto px-4 py-2">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder="Message"
+                className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <Paperclip size={20} />
+              </button>
+            </div>
+            
+            <button
+              onClick={handleSend}
+              disabled={!newMessage.trim() || !userProfile || uploading}
+              className={`p-3 rounded-full flex items-center justify-center transition-all duration-200 
+                ${newMessage.trim() && userProfile && !uploading
+                  ? "bg-[#4E82EA] text-white hover:bg-blue-600"
+                  : "bg-gray-100 text-gray-400"}`}
+            >
+              <Send size={20} />
+            </button>
+          </div>
+        </div>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept="image/*,.pdf,.doc,.docx"
+          className="hidden"
+        />
+      </div>
+
+      {/* Message Actions Menu */}
+      <MessageActions
+        isOpen={!!selectedMessage}
+        onClose={() => {
+          setSelectedMessage(null);
+          setPressedMessageId(null);
+        }}
+        onEdit={() => setEditingMessage(selectedMessage)}
+        onDelete={() => handleDeleteMessage(selectedMessage?.id)}
+        onReact={(reaction) => handleReaction(selectedMessage?.id, reaction)}
+        onSave={() => handleSaveMessage(selectedMessage?.id)}
+        isSaved={selectedMessage?.saved}
+        position={actionPosition}
+        isOwnMessage={selectedMessage?.senderId === user?.uid}
       />
     </div>
-
-    {/* Message Actions Menu */}
-    <MessageActions
-      isOpen={!!selectedMessage}
-      onClose={() => {
-        setSelectedMessage(null);
-        setPressedMessageId(null);
-      }}
-      onEdit={() => setEditingMessage(selectedMessage)}
-      onDelete={() => handleDeleteMessage(selectedMessage?.id)}
-      onReact={(reaction) => handleReaction(selectedMessage?.id, reaction)}
-      onSave={() => handleSaveMessage(selectedMessage?.id)}
-      isSaved={selectedMessage?.saved}
-      position={actionPosition}
-      isOwnMessage={selectedMessage?.senderId === user?.uid}
-    />
-  </div>
-);
+  );
 };
 
 export default ChatRoom;
