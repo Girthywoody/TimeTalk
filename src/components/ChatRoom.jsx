@@ -491,7 +491,7 @@ const ChatRoom = () => {
       </div>
 
       {/* Message Input - Positioned above navigation */}
-      <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 z-10">
+      <div className="sticky bottom-0 left-0 right-0 pb-16 bg-white border-t border-gray-100">
         <div className="max-w-2xl mx-auto px-4 py-2">
           <div className="flex items-center gap-2">
             <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
