@@ -298,10 +298,11 @@ const ChatRoom = () => {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#F8F9FE] pt-14"> {/* added pt-14 */}
+  <div className="fixed inset-0 flex flex-col bg-[#F8F9FE] pt-14">
       {/* Header */}
       <div className="px-4 py-3 bg-white shadow-sm">
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
           <button 
             onClick={() => setCurrentPage('home')}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -341,6 +342,7 @@ const ChatRoom = () => {
           </div>
         </div>
       </div>
+    </div>
   
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto px-4 pb-[88px]"> {/* adjusted padding */}
@@ -500,7 +502,7 @@ const ChatRoom = () => {
   
       {/* Message Input */}
       <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 z-40"> {/* adjusted to bottom-16 */}
-        <div className="max-w-2xl mx-auto px-4 py-2">
+       <div className="flex-1 overflow-y-auto px-4 pb-[120px]"> {/* increased padding */}
           <div className="flex items-center gap-2 pb-2">
             <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
               <textarea
