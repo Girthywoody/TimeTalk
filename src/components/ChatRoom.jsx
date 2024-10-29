@@ -298,7 +298,7 @@ const ChatRoom = () => {
   };
 
 return (
-  <div className="fixed inset-0 flex flex-col bg-[#F8F9FE] pt-6">
+  <div className="fixed inset-0 flex flex-col bg-[#F8F9FE] pt-2">
     {/* Header */}
     <div className="px-4 py-2 bg-white shadow-sm">
       <div className="flex items-center justify-between">
