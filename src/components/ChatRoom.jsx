@@ -298,18 +298,10 @@ const ChatRoom = () => {
   };
 
   return (
-  <div className="fixed inset-0 flex flex-col bg-[#F8F9FE] pt-14">
+    <div className="fixed inset-0 flex flex-col bg-[#F8F9FE] pt-10">
       {/* Header */}
-      <div className="px-4 py-3 bg-white shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setCurrentPage('home')}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <ChevronLeft size={20} className="text-gray-600" />
-          </button>
-          
+      <div className="px-4 py-2 bg-white shadow-sm">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {userProfile?.profilePhotoURL ? (
               <img 
@@ -332,7 +324,7 @@ const ChatRoom = () => {
             </div>
           </div>
   
-          <div className="ml-auto flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
               <Phone size={20} className="text-blue-500" />
             </button>
@@ -342,170 +334,165 @@ const ChatRoom = () => {
           </div>
         </div>
       </div>
-    </div>
   
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto px-4 pb-[88px]"> {/* adjusted padding */}
-        <div className="h-full">
-          <div 
-            ref={scrollContainerRef}
-            className="h-full overflow-y-auto py-4 space-y-4 scroll-smooth"
-          >
-            {loading ? (
-              <div className="flex-1 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-              </div>
-            ) : (
-              <>
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2`}
-                  >
-                    {message.senderId !== user?.uid && (
-                      <div className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0">
-                        {message.senderProfile?.profilePhotoURL ? (
-                          <img 
-                            src={message.senderProfile.profilePhotoURL} 
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-blue-100 flex items-center justify-center">
-                            <span className="text-blue-500 text-sm font-medium">
-                              {message.senderProfile?.username?.[0] || '?'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div
-                      className={`message-bubble relative max-w-[75%] rounded-2xl px-4 py-2 
-                        ${message.senderId === user?.uid 
-                          ? "bg-[#4E82EA] text-white rounded-br-none" 
-                          : "bg-white text-gray-800 rounded-bl-none shadow-sm"}
-                        ${message.saved ? "border border-yellow-400" : ""}
-                        ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
-                        transition-all duration-200`}
-                      onContextMenu={(e) => handleMessageLongPress(message, e)}
-                      onTouchStart={(e) => {
-                        setPressedMessageId(message.id);
-                        let timer = setTimeout(() => handleMessageLongPress(message, e), 500);
-                        e.target.addEventListener('touchend', () => {
-                          clearTimeout(timer);
-                          setPressedMessageId(null);
-                        }, { once: true });
-                      }}
-                    >
-                      {message.deleted ? (
-                        <div className="italic text-opacity-70">This message was deleted</div>
+      <div className="flex-1 overflow-hidden">
+        <div 
+          ref={scrollContainerRef}
+          className="h-full overflow-y-auto px-4 py-3 pb-[76px]"
+        >
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <>
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2`}
+                >
+                  {message.senderId !== user?.uid && (
+                    <div className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0">
+                      {message.senderProfile?.profilePhotoURL ? (
+                        <img 
+                          src={message.senderProfile.profilePhotoURL} 
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        <>
-                          {/* Text Messages */}
-                          {(message.type === 'text' || !message.type) && (
-                            <div className="break-words">
-                              {editingMessage?.id === message.id ? (
-                                <input
-                                  type="text"
-                                  value={editingMessage.text}
-                                  onChange={(e) => setEditingMessage({ ...editingMessage, text: e.target.value })}
-                                  onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleEditMessage(message.id, editingMessage.text);
-                                    }
-                                  }}
-                                  className={`w-full bg-transparent border-b ${
-                                    message.senderId === user?.uid 
-                                      ? "border-white/50 text-white placeholder-white/50" 
-                                      : "border-gray-300 text-gray-800 placeholder-gray-400"
-                                  } focus:outline-none`}
-                                  autoFocus
-                                />
-                              ) : (
-                                <span className="text-[15px] leading-relaxed">{message.text}</span>
-                              )}
-                            </div>
-                          )}
-  
-                          {/* Image Messages */}
-                          {message.type === 'image' && (
-                            <div className="rounded-lg overflow-hidden mt-1">
-                              <img 
-                                src={message.fileURL} 
-                                alt="Shared image"
-                                className="max-w-full rounded-lg"
-                                loading="lazy"
-                              />
-                            </div>
-                          )}
-  
-                          {/* File Messages */}
-                          {message.type === 'file' && (
-                            <a 
-                              href={message.fileURL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`flex items-center gap-2 text-sm hover:underline mt-1 ${
-                                message.senderId === user?.uid 
-                                  ? "text-white/90 hover:text-white" 
-                                  : "text-gray-600 hover:text-gray-800"
-                              }`}
-                            >
-                              <Paperclip size={16} />
-                              {message.fileName}
-                            </a>
-                          )}
-  
-                          {message.edited && (
-                            <div className={`text-xs mt-1 ${
-                              message.senderId === user?.uid 
-                                ? "text-white/60" 
-                                : "text-gray-500"
-                            }`}>
-                              (edited)
-                            </div>
-                          )}
-  
-                          {message.saved && (
-                            <div className="absolute -top-2 -right-2">
-                              <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
-                            </div>
-                          )}
-                        </>
-                      )}
-  
-                      {message.reaction && (
-                        <div className="absolute -bottom-3 right-2 bg-white rounded-full shadow-md p-1 text-sm">
-                          {message.reaction.emoji}
+                        <div className="w-full h-full bg-blue-100 flex items-center justify-center">
+                          <span className="text-blue-500 text-sm font-medium">
+                            {message.senderProfile?.username?.[0] || '?'}
+                          </span>
                         </div>
                       )}
+                    </div>
+                  )}
+                  <div
+                    className={`message-bubble relative max-w-[75%] rounded-2xl px-4 py-2 
+                      ${message.senderId === user?.uid 
+                        ? "bg-[#4E82EA] text-white rounded-br-none" 
+                        : "bg-white text-gray-800 rounded-bl-none shadow-sm"}
+                      ${message.saved ? "border border-yellow-400" : ""}
+                      ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
+                      transition-all duration-200`}
+                    onContextMenu={(e) => handleMessageLongPress(message, e)}
+                    onTouchStart={(e) => {
+                      setPressedMessageId(message.id);
+                      let timer = setTimeout(() => handleMessageLongPress(message, e), 500);
+                      e.target.addEventListener('touchend', () => {
+                        clearTimeout(timer);
+                        setPressedMessageId(null);
+                      }, { once: true });
+                    }}
+                  >
+                    {message.deleted ? (
+                      <div className="italic text-opacity-70">This message was deleted</div>
+                    ) : (
+                      <>
+                        {(message.type === 'text' || !message.type) && (
+                          <div className="break-words">
+                            {editingMessage?.id === message.id ? (
+                              <input
+                                type="text"
+                                value={editingMessage.text}
+                                onChange={(e) => setEditingMessage({ ...editingMessage, text: e.target.value })}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleEditMessage(message.id, editingMessage.text);
+                                  }
+                                }}
+                                className={`w-full bg-transparent border-b ${
+                                  message.senderId === user?.uid 
+                                    ? "border-white/50 text-white placeholder-white/50" 
+                                    : "border-gray-300 text-gray-800 placeholder-gray-400"
+                                } focus:outline-none`}
+                                autoFocus
+                              />
+                            ) : (
+                              <span className="text-[15px] leading-relaxed">{message.text}</span>
+                            )}
+                          </div>
+                        )}
   
-                      <div className={`text-[11px] mt-1 ${
-                        message.senderId === user?.uid 
-                          ? "text-white/60" 
-                          : "text-gray-500"
-                      }`}>
-                        {message.timestamp?.toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </div>
+                        {message.type === 'image' && (
+                          <div className="rounded-lg overflow-hidden mt-1">
+                            <img 
+                              src={message.fileURL} 
+                              alt="Shared image"
+                              className="max-w-full rounded-lg"
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
+  
+                        {message.type === 'file' && (
+                          <a 
+                            href={message.fileURL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center gap-2 text-sm hover:underline mt-1 ${
+                              message.senderId === user?.uid 
+                                ? "text-white/90 hover:text-white" 
+                                : "text-gray-600 hover:text-gray-800"
+                            }`}
+                          >
+                            <Paperclip size={16} />
+                            {message.fileName}
+                          </a>
+                        )}
+  
+                        {message.edited && (
+                          <div className={`text-xs mt-1 ${
+                            message.senderId === user?.uid 
+                              ? "text-white/60" 
+                              : "text-gray-500"
+                          }`}>
+                            (edited)
+                          </div>
+                        )}
+  
+                        {message.saved && (
+                          <div className="absolute -top-2 -right-2">
+                            <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
+                          </div>
+                        )}
+  
+                        {message.reaction && (
+                          <div className="absolute -bottom-3 right-2 bg-white rounded-full shadow-md p-1 text-sm">
+                            {message.reaction.emoji}
+                          </div>
+                        )}
+                      </>
+                    )}
+  
+                    <div className={`text-[11px] mt-1 ${
+                      message.senderId === user?.uid 
+                        ? "text-white/60" 
+                        : "text-gray-500"
+                    }`}>
+                      {message.timestamp?.toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
                     </div>
                   </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </>
-            )}
-          </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </>
+          )}
         </div>
       </div>
   
       {/* Message Input */}
-      <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 z-40"> {/* adjusted to bottom-16 */}
-       <div className="flex-1 overflow-y-auto px-4 pb-[120px]"> {/* increased padding */}
-          <div className="flex items-center gap-2 pb-2">
+      <div className="fixed bottom-[56px] left-0 right-0 bg-white border-t border-gray-100">
+        <div className="max-w-2xl mx-auto px-4 py-2">
+          <div className="flex items-center gap-2">
             <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
-              <textarea
+              <input
+                type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => {
@@ -515,8 +502,7 @@ const ChatRoom = () => {
                   }
                 }}
                 placeholder="Message"
-                className="flex-1 bg-transparent resize-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none min-h-[40px] max-h-[80px]"
-                rows="1"
+                className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -537,16 +523,15 @@ const ChatRoom = () => {
             >
               <Send size={20} />
             </button>
-            
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept="image/*,.pdf,.doc,.docx"
-              className="hidden"
-            />
           </div>
         </div>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept="image/*,.pdf,.doc,.docx"
+          className="hidden"
+        />
       </div>
   
       {/* Message Actions Menu */}
