@@ -308,218 +308,311 @@ const handleFileUpload = async (e) => {
     const senderProfile = message.senderProfile || chatProfiles[message.senderId];
   
     return (
-      <div className="fixed inset-0 flex flex-col bg-white">
-        {/* Header */}
-        <div className="px-4 py-3 bg-white border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            {userProfile && (
-              <>
-                {userProfile.profilePhotoURL ? (
-                  <img 
-                    src={userProfile.profilePhotoURL} 
-                    alt="Profile" 
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <span className="text-blue-500 font-medium text-lg">
-                      {userProfile.username?.[0] || userProfile.displayName?.[0] || '?'}
-                    </span>
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <h1 className="font-semibold text-gray-900">
-                    {userProfile.username || userProfile.displayName}
-                  </h1>
-                  <span className="text-sm text-blue-500">Online</span>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-    
-        {/* Messages Container */}
-        <div className="flex-1 overflow-hidden">
-          <div 
-            ref={scrollContainerRef}
-            className="h-full overflow-y-auto px-4 py-3"
-          >
-            {loading ? (
-              <div className="flex-1 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-              </div>
-            ) : (
-              <>
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-3`}
-                  >
-                    <div
-                      className={`relative max-w-[80%] rounded-2xl px-4 py-2.5 
-                        ${message.senderId === user?.uid 
-                          ? "bg-blue-500 text-white rounded-br-sm" 
-                          : "bg-gray-100 text-gray-900 rounded-bl-sm"}
-                        ${message.saved ? "ring-2 ring-yellow-400" : ""}
-                        ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
-                        transition-all duration-200`}
-                      onContextMenu={(e) => handleMessageLongPress(message, e)}
-                      onTouchStart={(e) => {
-                        setPressedMessageId(message.id);
-                        let timer = setTimeout(() => handleMessageLongPress(message, e), 500);
-                        e.target.addEventListener('touchend', () => {
-                          clearTimeout(timer);
-                          setPressedMessageId(null);
-                        }, { once: true });
-                      }}
-                    >
-                      {message.deleted ? (
-                        <div className="italic text-opacity-70">This message was deleted</div>
-                      ) : (
-                        <>
-                          {(message.type === 'text' || !message.type) && (
-                            <div className="break-words">
-                              {editingMessage?.id === message.id ? (
-                                <input
-                                  type="text"
-                                  value={editingMessage.text}
-                                  onChange={(e) => setEditingMessage({ ...editingMessage, text: e.target.value })}
-                                  onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleEditMessage(message.id, editingMessage.text);
-                                    }
-                                  }}
-                                  className="w-full bg-transparent border-b border-white focus:outline-none"
-                                  autoFocus
-                                />
-                              ) : (
-                                message.text
-                              )}
-                            </div>
-                          )}
-    
-                          {message.type === 'image' && (
-                            <img 
-                              src={message.fileURL} 
-                              alt="Shared image"
-                              className="max-w-full rounded-lg"
-                              loading="lazy"
-                            />
-                          )}
-    
-                          {message.type === 'file' && (
-                            <a 
-                              href={message.fileURL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-sm hover:underline"
-                            >
-                              <Paperclip size={16} />
-                              {message.fileName}
-                            </a>
-                          )}
-    
-                          {message.edited && (
-                            <div className="text-xs opacity-50 mt-1">(edited)</div>
-                          )}
-    
-                          {message.saved && (
-                            <div className="absolute -top-2 -right-2">
-                              <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
-                            </div>
-                          )}
-    
-                          {message.reaction && (
-                            <div className="absolute -top-3 -right-2 bg-white rounded-full shadow-md p-1 text-sm">
-                              {message.reaction.emoji}
-                            </div>
-                          )}
-                        </>
-                      )}
-    
-                      <div className="text-xs opacity-75 mt-1">
-                        {message.timestamp?.toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </>
-            )}
-          </div>
-        </div>
-    
-        {/* Message Input */}
-        <div className="px-4 py-2 border-t border-gray-100">
-          <div className="flex items-center gap-2 bg-gray-50 rounded-full px-4 py-2">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              <Paperclip size={20} />
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              <Image size={20} />
-            </button>
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder="Message"
-              className="flex-1 bg-transparent border-none focus:ring-0 py-2 px-2"
-            />
-            <button
-              onClick={handleSend}
-              disabled={!newMessage.trim() || !userProfile || uploading}
-              className={`p-2 rounded-full transition-all duration-200 ${
-                newMessage.trim() && userProfile && !uploading
-                  ? "text-blue-500 hover:text-blue-600"
-                  : "text-gray-300"
-              }`}
-            >
-              <Send size={20} />
-            </button>
-          </div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept="image/*,.pdf,.doc,.docx"
-            className="hidden"
-          />
-        </div>
-    
-        {/* Message Actions Menu */}
-        <MessageActions
-          isOpen={!!selectedMessage}
-          onClose={() => {
-            setSelectedMessage(null);
-            setPressedMessageId(null);
+      <div
+        key={message.id}
+        className={`flex ${isOwnMessage ? "justify-end" : "justify-start"} mb-2`}
+      >
+        <div
+          className={`message-bubble relative max-w-[80%] rounded-lg px-4 py-2 
+            ${isOwnMessage ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-800"}
+            ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
+            transition-all duration-200 active:scale-95`}
+          onContextMenu={(e) => handleMessageLongPress(message, e)}
+          onTouchStart={(e) => {
+            setPressedMessageId(message.id);
+            let timer = setTimeout(() => handleMessageLongPress(message, e), 500);
+            e.target.addEventListener('touchend', () => {
+              clearTimeout(timer);
+              setPressedMessageId(null);
+            }, { once: true });
           }}
-          onEdit={() => setEditingMessage(selectedMessage)}
-          onDelete={() => handleDeleteMessage(selectedMessage?.id)}
-          onReact={(reaction) => handleReaction(selectedMessage?.id, reaction)}
-          onSave={() => handleSaveMessage(selectedMessage?.id)}
-          isSaved={selectedMessage?.saved}
-          position={actionPosition}
-          isOwnMessage={selectedMessage?.senderId === user?.uid}
-        />
+        >
+          {message.deleted ? (
+            <div className="italic text-opacity-70">This message was deleted</div>
+          ) : (
+            <>
+              {/* Text Messages */}
+              {(message.type === 'text' || !message.type) && (
+                <div className="break-words">
+                  {editingMessage?.id === message.id ? (
+                    <input
+                      type="text"
+                      value={editingMessage.text}
+                      onChange={(e) => setEditingMessage({ ...editingMessage, text: e.target.value })}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleEditMessage(message.id, editingMessage.text);
+                        }
+                      }}
+                      className="w-full bg-transparent border-b border-white focus:outline-none"
+                      autoFocus
+                    />
+                  ) : (
+                    message.text
+                  )}
+                </div>
+              )}
+  
+              {/* Image Messages */}
+              {message.type === 'image' && (
+                <img 
+                  src={message.fileURL} 
+                  alt="Shared image"
+                  className="max-w-full rounded-lg mt-1"
+                  loading="lazy"
+                />
+              )}
+  
+              {/* File Messages */}
+              {message.type === 'file' && (
+                <a 
+                  href={message.fileURL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm hover:underline mt-1"
+                >
+                  <Paperclip size={16} />
+                  {message.fileName}
+                </a>
+              )}
+  
+              {message.edited && (
+                <div className="text-xs opacity-50 mt-1">(edited)</div>
+              )}
+            </>
+          )}
+          
+          {message.reaction && (
+            <div className="absolute -top-3 -right-2 bg-white rounded-full shadow-md p-1 text-sm">
+              {message.reaction.emoji}
+            </div>
+          )}
+          
+          <div className="text-xs opacity-75 mt-1">
+            {message.timestamp?.toLocaleTimeString([], { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })}
+          </div>
+        </div>
       </div>
     );
+  };
+
+  return (
+    <div className="fixed inset-0 flex flex-col bg-white">
+      {/* Header */}
+      <div className="px-4 py-3 bg-white border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          {userProfile && (
+            <>
+              {userProfile.profilePhotoURL ? (
+                <img 
+                  src={userProfile.profilePhotoURL} 
+                  alt="Profile" 
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                  <span className="text-blue-500 font-medium text-lg">
+                    {userProfile.username?.[0] || userProfile.displayName?.[0] || '?'}
+                  </span>
+                </div>
+              )}
+              <div className="flex flex-col">
+                <h1 className="font-semibold text-gray-900">
+                  {userProfile.username || userProfile.displayName}
+                </h1>
+                <span className="text-sm text-blue-500">Online</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+  
+      {/* Messages Container */}
+      <div className="flex-1 overflow-hidden">
+        <div 
+          ref={scrollContainerRef}
+          className="h-full overflow-y-auto px-4 py-3"
+        >
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <>
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-3`}
+                >
+                  <div
+                    className={`relative max-w-[80%] rounded-2xl px-4 py-2.5 
+                      ${message.senderId === user?.uid 
+                        ? "bg-blue-500 text-white rounded-br-sm" 
+                        : "bg-gray-100 text-gray-900 rounded-bl-sm"}
+                      ${message.saved ? "ring-2 ring-yellow-400" : ""}
+                      ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
+                      transition-all duration-200`}
+                    onContextMenu={(e) => handleMessageLongPress(message, e)}
+                    onTouchStart={(e) => {
+                      setPressedMessageId(message.id);
+                      let timer = setTimeout(() => handleMessageLongPress(message, e), 500);
+                      e.target.addEventListener('touchend', () => {
+                        clearTimeout(timer);
+                        setPressedMessageId(null);
+                      }, { once: true });
+                    }}
+                  >
+                    {message.deleted ? (
+                      <div className="italic text-opacity-70">This message was deleted</div>
+                    ) : (
+                      <>
+                        {(message.type === 'text' || !message.type) && (
+                          <div className="break-words">
+                            {editingMessage?.id === message.id ? (
+                              <input
+                                type="text"
+                                value={editingMessage.text}
+                                onChange={(e) => setEditingMessage({ ...editingMessage, text: e.target.value })}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleEditMessage(message.id, editingMessage.text);
+                                  }
+                                }}
+                                className="w-full bg-transparent border-b border-white focus:outline-none"
+                                autoFocus
+                              />
+                            ) : (
+                              message.text
+                            )}
+                          </div>
+                        )}
+  
+                        {message.type === 'image' && (
+                          <img 
+                            src={message.fileURL} 
+                            alt="Shared image"
+                            className="max-w-full rounded-lg"
+                            loading="lazy"
+                          />
+                        )}
+  
+                        {message.type === 'file' && (
+                          <a 
+                            href={message.fileURL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm hover:underline"
+                          >
+                            <Paperclip size={16} />
+                            {message.fileName}
+                          </a>
+                        )}
+  
+                        {message.edited && (
+                          <div className="text-xs opacity-50 mt-1">(edited)</div>
+                        )}
+  
+                        {message.saved && (
+                          <div className="absolute -top-2 -right-2">
+                            <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
+                          </div>
+                        )}
+  
+                        {message.reaction && (
+                          <div className="absolute -top-3 -right-2 bg-white rounded-full shadow-md p-1 text-sm">
+                            {message.reaction.emoji}
+                          </div>
+                        )}
+                      </>
+                    )}
+  
+                    <div className="text-xs opacity-75 mt-1">
+                      {message.timestamp?.toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
+      </div>
+  
+      {/* Message Input */}
+      <div className="px-4 py-2 border-t border-gray-100">
+        <div className="flex items-center gap-2 bg-gray-50 rounded-full px-4 py-2">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            <Paperclip size={20} />
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            <Image size={20} />
+          </button>
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Message"
+            className="flex-1 bg-transparent border-none focus:ring-0 py-2 px-2"
+          />
+          <button
+            onClick={handleSend}
+            disabled={!newMessage.trim() || !userProfile || uploading}
+            className={`p-2 rounded-full transition-all duration-200 ${
+              newMessage.trim() && userProfile && !uploading
+                ? "text-blue-500 hover:text-blue-600"
+                : "text-gray-300"
+            }`}
+          >
+            <Send size={20} />
+          </button>
+        </div>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept="image/*,.pdf,.doc,.docx"
+          className="hidden"
+        />
+      </div>
+  
+      {/* Message Actions Menu */}
+      <MessageActions
+        isOpen={!!selectedMessage}
+        onClose={() => {
+          setSelectedMessage(null);
+          setPressedMessageId(null);
+        }}
+        onEdit={() => setEditingMessage(selectedMessage)}
+        onDelete={() => handleDeleteMessage(selectedMessage?.id)}
+        onReact={(reaction) => handleReaction(selectedMessage?.id, reaction)}
+        onSave={() => handleSaveMessage(selectedMessage?.id)}
+        isSaved={selectedMessage?.saved}
+        position={actionPosition}
+        isOwnMessage={selectedMessage?.senderId === user?.uid}
+      />
+    </div>
+  );
+};
 
 export default ChatRoom;
 
