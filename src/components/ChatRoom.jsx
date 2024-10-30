@@ -152,6 +152,14 @@ const ChatRoom = () => {
     setIsDropdownOpen(false);
   };
 
+  const scrollToNewestMessage = () => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const inputHeight = 80; // Approximate height of input area
+      container.scrollTop = container.scrollHeight - container.clientHeight + inputHeight;
+    }
+  };
+
   const scrollToBottom = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
@@ -397,9 +405,14 @@ const ChatRoom = () => {
     fetchUserProfile();
   }, [user]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+// Replace your existing useEffect for scrolling
+useEffect(() => {
+  if (!loading && messages.length > 0) {
+    scrollToNewestMessage();
+  }
+}, [loading, messages]);
+
+
 
   const handleSearch = () => {
     const searchTerm = searchQuery.toLowerCase();
@@ -684,7 +697,7 @@ const ChatRoom = () => {
             style={{
               scrollBehavior: 'smooth',
               overscrollBehavior: 'contain',
-              paddingBottom: 'calc(2rem + 56px)'
+              height: 'calc(100vh - 140px)' // Adjust based on your header and input heights
             }}
           >
             {loading ? (
