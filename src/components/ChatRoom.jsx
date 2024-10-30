@@ -198,11 +198,6 @@ useEffect(() => {
     setIsDropdownOpen(false);
   };
 
-  useEffect(() => {
-    if (!loading && messages.length > 0) {
-      scrollToNewestMessage();
-    }
-  }, [loading, messages]);
 
   const scrollToMessage = (messageId) => {
     const element = document.getElementById(`message-${messageId}`);
