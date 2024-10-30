@@ -124,25 +124,6 @@ const handleReaction = async (messageId, reaction) => {
   }
 };
 
-// Update the reaction display in the message rendering code
-{message.reaction && (
-  <div 
-    onClick={(e) => {
-      e.stopPropagation();
-      handleReaction(message.id, message.reaction.emoji);
-    }}
-    className={`
-      absolute -top-3 left-1 
-      bg-white rounded-full shadow-md p-1 text-sm
-      cursor-pointer
-      hover:scale-110 
-      transition-transform
-      ${message.reaction.userId === user.uid ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
-    `}
-  >
-    {message.reaction.emoji}
-  </div>
-)}
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
