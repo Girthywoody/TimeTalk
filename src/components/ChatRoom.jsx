@@ -697,7 +697,7 @@ useEffect(() => {
             style={{
               scrollBehavior: 'smooth',
               overscrollBehavior: 'contain',
-              height: 'calc(100vh - 140px)' // Adjust based on your header and input heights
+              paddingBottom: '120px' // Increased padding to ensure messages stay above input
             }}
           >
             {loading ? (
@@ -869,8 +869,8 @@ useEffect(() => {
         </div>
 
         {/* Message Input */}
-        <div className={`sticky bottom-0 left-0 right-0 pb-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
-          <div className="max-w-2xl mx-auto px-4 py-2">
+        <div className={`fixed bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
+         <div className="max-w-2xl mx-auto px-4 py-4">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
                 <div className="relative inline-block">
