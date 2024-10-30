@@ -102,21 +102,25 @@ const ChatRoom = () => {
     const style = document.createElement('style');
     style.textContent = `
       .search-highlight-sender {
-        background-color: rgba(99, 102, 241, 0.8) !important; /* Indigo with opacity */
-        transition: background-color 0.3s ease;
+        background-color: rgba(79, 70, 229, 1) !important; /* Brighter indigo */
+        box-shadow: 0 0 10px rgba(79, 70, 229, 0.5);
+        transition: all 0.3s ease;
       }
       
       .dark .search-highlight-sender {
-        background-color: rgba(79, 70, 229, 0.8) !important; /* Darker indigo with opacity */
+        background-color: rgba(99, 102, 241, 1) !important; /* Brighter indigo for dark mode */
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
       }
       
       .search-highlight-receiver {
-        background-color: rgba(229, 231, 235, 0.8) !important; /* Light gray with opacity */
-        transition: background-color 0.3s ease;
+        background-color: rgba(209, 213, 219, 1) !important; /* Brighter gray */
+        box-shadow: 0 0 10px rgba(209, 213, 219, 0.5);
+        transition: all 0.3s ease;
       }
       
       .dark .search-highlight-receiver {
-        background-color: rgba(75, 85, 99, 0.8) !important; /* Dark gray with opacity */
+        background-color: rgba(107, 114, 128, 1) !important; /* Brighter gray for dark mode */
+        box-shadow: 0 0 10px rgba(107, 114, 128, 0.5);
       }
   
       .animate-highlight {
@@ -160,7 +164,7 @@ const ChatRoom = () => {
       message.text?.toLowerCase().includes(searchTerm)
     );
     setSearchResults(filtered);
-    
+
     // Clear previous highlights
     const allMessageBubbles = document.querySelectorAll('.message-bubble');
     allMessageBubbles.forEach(bubble => {
@@ -268,8 +272,7 @@ const ChatRoom = () => {
     allMessageBubbles.forEach(bubble => {
       bubble.classList.remove(
         'search-highlight-sender',
-        'search-highlight-receiver',
-        'animate-highlight'
+        'search-highlight-receiver'
       );
     });
   
@@ -293,17 +296,19 @@ const ChatRoom = () => {
           block: 'center' 
         });
         
-        // Close search dropdown
+        // Close search dropdown and clear query
         setIsSearchOpen(false);
         setSearchQuery('');
-        
-        // Remove highlight after 5 seconds
+  
+        // Remove the highlight after 2 seconds
         setTimeout(() => {
-          messageBubble.classList.remove(
-            'search-highlight-sender',
-            'search-highlight-receiver'
-          );
-        }, 5000);
+          if (messageBubble) {
+            messageBubble.classList.remove(
+              'search-highlight-sender',
+              'search-highlight-receiver'
+            );
+          }
+        }, 2000); // Changed from 5000 to 2000 for 2 seconds
       }
     }
   };
@@ -816,7 +821,7 @@ const ChatRoom = () => {
               overscrollBehavior: 'contain',
               height: 'calc(100vh - 140px)', // Adjusted height
               paddingTop: '16px',
-              paddingBottom: '100px',  // Increased bottom padding to ensure messages appear above input
+              paddingBottom: '90px',  // Increased bottom padding to ensure messages appear above input
               WebkitOverflowScrolling: 'touch'
             }}
           >
