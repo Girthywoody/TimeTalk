@@ -155,14 +155,11 @@ const ChatRoom = () => {
   const scrollToNewestMessage = () => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
-      const inputHeight = 80; // Approximate height of input area
-      container.scrollTop = container.scrollHeight - container.clientHeight + inputHeight;
-    }
-  };
-
-  const scrollToBottom = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      const inputHeight = 80; // Height of input area
+      const spacing = 16; // Desired spacing between last message and input
+      
+      // Set scroll position to place last message nicely above input
+      container.scrollTop = container.scrollHeight - container.clientHeight + inputHeight + spacing;
     }
   };
 
@@ -374,9 +371,11 @@ const ChatRoom = () => {
     setSelectedMessage(message);
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, []);
+useEffect(() => {
+  if (!loading && messages.length > 0) {
+    scrollToNewestMessage();
+  }
+}, [loading, messages]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
