@@ -99,25 +99,24 @@ const ChatRoom = () => {
       document.documentElement.classList.remove('dark');
     }
   
-    // Add dynamic styles for search highlighting
     const style = document.createElement('style');
     style.textContent = `
       .search-highlight-sender {
-        background-color: #6366f1 !important; /* Indigo-500 */
+        background-color: rgba(99, 102, 241, 0.8) !important; /* Indigo with opacity */
         transition: background-color 0.3s ease;
       }
       
       .dark .search-highlight-sender {
-        background-color: #4f46e5 !important; /* Indigo-600 */
+        background-color: rgba(79, 70, 229, 0.8) !important; /* Darker indigo with opacity */
       }
       
       .search-highlight-receiver {
-        background-color: #e5e7eb !important; /* Gray-200 */
+        background-color: rgba(229, 231, 235, 0.8) !important; /* Light gray with opacity */
         transition: background-color 0.3s ease;
       }
       
       .dark .search-highlight-receiver {
-        background-color: #4b5563 !important; /* Gray-600 */
+        background-color: rgba(75, 85, 99, 0.8) !important; /* Dark gray with opacity */
       }
   
       .animate-highlight {
@@ -161,7 +160,7 @@ const ChatRoom = () => {
       message.text?.toLowerCase().includes(searchTerm)
     );
     setSearchResults(filtered);
-  
+    
     // Clear previous highlights
     const allMessageBubbles = document.querySelectorAll('.message-bubble');
     allMessageBubbles.forEach(bubble => {
@@ -206,7 +205,12 @@ const ChatRoom = () => {
         // For initial load or when new messages arrive
         const scrollToBottom = () => {
           requestAnimationFrame(() => {
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            const lastMessage = scrollContainer.lastElementChild?.lastElementChild;
+            if (lastMessage) {
+              const inputHeight = 80; // Approximate height of input area
+              const targetScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+              scrollContainer.scrollTop = targetScroll - inputHeight;
+            }
           });
         };
   
@@ -220,7 +224,7 @@ const ChatRoom = () => {
         const isNearBottom = 
           scrollContainer.scrollHeight - 
           scrollContainer.scrollTop - 
-          scrollContainer.clientHeight < 100;
+          scrollContainer.clientHeight < 150;
   
         if (isNearBottom) {
           scrollToBottom();
@@ -259,23 +263,50 @@ const ChatRoom = () => {
 
 
   const scrollToMessage = (messageId) => {
+    // Clear any existing highlights first
+    const allMessageBubbles = document.querySelectorAll('.message-bubble');
+    allMessageBubbles.forEach(bubble => {
+      bubble.classList.remove(
+        'search-highlight-sender',
+        'search-highlight-receiver',
+        'animate-highlight'
+      );
+    });
+  
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
-      element.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'center' 
-      });
+      // Find the message in our messages array
+      const message = messages.find(m => m.id === messageId);
+      const messageBubble = element.querySelector('.message-bubble');
       
-      // Set the highlighted message
-      setHighlightedMessageId(messageId);
-      
-      // Clear the highlight after 5 seconds
-      setTimeout(() => {
-        setHighlightedMessageId(null);
-      }, 5000);
+      if (messageBubble && message) {
+        // Add appropriate highlight class
+        messageBubble.classList.add(
+          message.senderId === user?.uid 
+            ? 'search-highlight-sender' 
+            : 'search-highlight-receiver'
+        );
+        
+        // Scroll to message
+        element.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        
+        // Close search dropdown
+        setIsSearchOpen(false);
+        setSearchQuery('');
+        
+        // Remove highlight after 5 seconds
+        setTimeout(() => {
+          messageBubble.classList.remove(
+            'search-highlight-sender',
+            'search-highlight-receiver'
+          );
+        }, 5000);
+      }
     }
   };
-
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -748,8 +779,6 @@ const ChatRoom = () => {
                       key={message.id}
                       onClick={() => {
                         scrollToMessage(message.id);
-                        setIsSearchOpen(false);
-                        setSearchQuery('');
                       }}
                       className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
                                 border-b border-gray-100 dark:border-gray-700 last:border-0"
@@ -785,9 +814,10 @@ const ChatRoom = () => {
             style={{
               scrollBehavior: 'smooth',
               overscrollBehavior: 'contain',
-              height: 'calc(100vh - 130px)', // Adjusted for iPhone
-              paddingBottom: '16px',
-              WebkitOverflowScrolling: 'touch' // For smooth iOS scrolling
+              height: 'calc(100vh - 140px)', // Adjusted height
+              paddingTop: '16px',
+              paddingBottom: '100px',  // Increased bottom padding to ensure messages appear above input
+              WebkitOverflowScrolling: 'touch'
             }}
           >
             {loading ? (
