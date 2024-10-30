@@ -486,7 +486,7 @@ const ChatRoom = () => {
     <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
         {/* Header */}
-        <div className="px-4 py-2 bg-white border-b border-gray-100">
+        <div className={`px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {userProfile?.profilePhotoURL ? (
@@ -503,7 +503,7 @@ const ChatRoom = () => {
                 </div>
               )}
               <div>
-                <h1 className="text-gray-900 dark:text-white font-semibold">
+              <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
                   {userProfile?.username || userProfile?.displayName}
                 </h1>
                 <p className="text-sm text-green-500">Online</p>
@@ -847,7 +847,7 @@ const ChatRoom = () => {
         </div>
 
         {/* Message Input */}
-        <div className="sticky bottom-0 left-0 right-0 pb-2 bg-white border-t border-gray-100">
+        <div className={`sticky bottom-0 left-0 right-0 pb-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
           <div className="max-w-2xl mx-auto px-4 py-2">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
@@ -867,7 +867,7 @@ const ChatRoom = () => {
               )}
               
               <div className="flex items-center gap-2">
-              <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
+              <div className={`flex-1 ${darkMode ? 'bg-gray-700' : 'bg-[#F8F9FE]'} rounded-full flex items-center pl-4 pr-2`}>
                 <input
                   type="text"
                   value={newMessage}
@@ -879,8 +879,8 @@ const ChatRoom = () => {
                     }
                   }}
                   placeholder="Message"
-                  className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
-                />
+                  className={`flex-1 bg-transparent border-none py-2 ${darkMode ? 'text-white placeholder-gray-400' : 'text-gray-800 placeholder-gray-500'} focus:outline-none`}
+                  />
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
