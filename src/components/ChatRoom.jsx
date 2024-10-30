@@ -202,40 +202,44 @@ const ChatRoom = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    if (!loading && messages.length > 0) {
-      const scrollContainer = scrollContainerRef.current;
-      if (scrollContainer) {
-        // For initial load or when new messages arrive
-        const scrollToBottom = () => {
-          requestAnimationFrame(() => {
-            const lastMessage = scrollContainer.lastElementChild?.lastElementChild;
-            if (lastMessage) {
-              const inputHeight = 80; // Approximate height of input area
-              const targetScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-              scrollContainer.scrollTop = targetScroll - inputHeight;
-            }
-          });
-        };
-  
-        if (isInitialLoad) {
-          scrollToBottom();
-          setIsInitialLoad(false);
-          return;
-        }
-  
-        // For new messages, check if we're near bottom
-        const isNearBottom = 
-          scrollContainer.scrollHeight - 
-          scrollContainer.scrollTop - 
-          scrollContainer.clientHeight < 150;
-  
-        if (isNearBottom) {
-          scrollToBottom();
-        }
+useEffect(() => {
+  if (!loading && messages.length > 0) {
+    const scrollContainer = scrollContainerRef.current;
+    if (scrollContainer) {
+      const scrollToBottom = () => {
+        requestAnimationFrame(() => {
+          // Calculate the scroll position that places the newest message above the navigation
+          const navigationHeight = 80; // Height of the navigation bar plus some padding
+          const lastMessageElement = scrollContainer.lastElementChild?.lastElementChild;
+          
+          if (lastMessageElement) {
+            const containerHeight = scrollContainer.clientHeight;
+            const messageBottom = lastMessageElement.offsetHeight;
+            const targetScroll = scrollContainer.scrollHeight - containerHeight + navigationHeight;
+            
+            scrollContainer.scrollTop = targetScroll;
+          }
+        });
+      };
+
+      if (isInitialLoad) {
+        scrollToBottom();
+        setIsInitialLoad(false);
+        return;
+      }
+
+      // For new messages, only auto-scroll if user is already near bottom
+      const isNearBottom = 
+        scrollContainer.scrollHeight - 
+        scrollContainer.scrollTop - 
+        scrollContainer.clientHeight < 150;
+
+      if (isNearBottom) {
+        scrollToBottom();
       }
     }
-  }, [loading, messages, isInitialLoad]);
+  }
+}, [loading, messages, isInitialLoad]);
 
   const handleMuteNotifications = (duration) => {
     const now = new Date();
