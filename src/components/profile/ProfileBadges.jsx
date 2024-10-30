@@ -9,25 +9,33 @@ const ProfileBadges = ({ achievements }) => {
       icon: Heart,
       label: 'Perfect Match',
       description: 'Completed relationship profile',
-      color: 'rose'
+      bgColor: 'bg-rose-50',
+      iconBg: 'bg-rose-100',
+      iconColor: 'text-rose-500'
     },
     {
       icon: Calendar,
       label: 'Dedicated Planner',
       description: 'Scheduled 10+ dates',
-      color: 'blue'
+      bgColor: 'bg-blue-50',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-500'
     },
     {
       icon: Star,
       label: 'Memory Maker',
       description: 'Created 50+ memories',
-      color: 'amber'
+      bgColor: 'bg-amber-50',
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-500'
     },
     {
       icon: Award,
       label: 'Anniversary Pro',
       description: 'Never missed an important date',
-      color: 'purple'
+      bgColor: 'bg-purple-50',
+      iconBg: 'bg-purple-100',
+      iconColor: 'text-purple-500'
     }
   ];
 
@@ -41,10 +49,10 @@ const ProfileBadges = ({ achievements }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className={`flex items-center gap-3 p-3 rounded-lg bg-${badge.color}-50`}
+            className={`flex items-center gap-3 p-3 rounded-lg ${badge.bgColor}`}
           >
-            <div className={`w-10 h-10 rounded-full bg-${badge.color}-100 flex items-center justify-center`}>
-              <badge.icon className={`w-5 h-5 text-${badge.color}-500`} />
+            <div className={`w-10 h-10 rounded-full ${badge.iconBg} flex items-center justify-center`}>
+              <badge.icon className={`w-5 h-5 ${badge.iconColor}`} />
             </div>
             <div>
               <p className="font-medium text-gray-800">{badge.label}</p>
