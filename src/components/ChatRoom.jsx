@@ -620,7 +620,7 @@ const ChatRoom = () => {
 
       {/* Message Input */}
       <div className="sticky bottom-0 left-0 right-0 pb-2 bg-white border-t border-gray-100">
-        <form onSubmit={handleSend} className="max-w-2xl mx-auto px-4 py-2">         
+        <form className="max-w-2xl mx-auto px-4 py-2">         
           <div className="flex items-center gap-2">
             <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
               <input
@@ -647,7 +647,8 @@ const ChatRoom = () => {
             </div>
             
             <button
-              type="submit"
+              type="button"  // Changed from "submit" to "button"
+              onClick={handleSend}  // Added direct onClick handler
               disabled={!newMessage.trim() || !userProfile || uploading}
               className={`p-3 rounded-full flex items-center justify-center transition-all duration-200 
                 ${newMessage.trim() && userProfile && !uploading
@@ -658,13 +659,6 @@ const ChatRoom = () => {
             </button>
           </div>
         </form>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileUpload}
-          accept="image/*,.pdf,.doc,.docx"
-          className="hidden"
-        />
       </div>
 
       {/* Message Actions Menu */}
