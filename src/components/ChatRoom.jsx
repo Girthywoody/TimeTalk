@@ -30,6 +30,15 @@ import { db, storage } from '../firebase';
 
 const MESSAGES_LIMIT = 100;
 const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000;
+const ALLOWED_FILE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const ChatRoom = () => {
   const [messages, setMessages] = useState([]);
@@ -60,20 +69,58 @@ const ChatRoom = () => {
     }
   };
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type.startsWith('image/')) {
+    // Validate file type
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      alert('Unsupported file type. Please upload an image, PDF, or Word document.');
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      alert('File is too large. Maximum size is 5MB.');
+      return;
+    }
+
+    try {
       setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedFilePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setSelectedFile(file);
-      setSelectedFilePreview(null);
+      
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setSelectedFilePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // For non-image files, just show the file name
+        setSelectedFilePreview(null);
+      }
+    } catch (error) {
+      console.error('Error handling file:', error);
+      alert('Error handling file. Please try again.');
+      removeSelectedFile();
+    }
+  };
+
+  const uploadFile = async (file) => {
+    if (!file || !user) throw new Error('No file or user');
+
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExtension}`;
+    const filePath = `uploads/${user.uid}/${fileName}`;
+    
+    const storageRef = ref(storage, filePath);
+    
+    try {
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw new Error('Failed to upload file');
     }
   };
 
@@ -91,15 +138,23 @@ const ChatRoom = () => {
     try {
       setUploading(true);
       let fileURL = null;
+      let fileType = null;
       
       if (selectedFile) {
-        const storageRef = ref(storage, `chat/${user.uid}/${Date.now()}_${selectedFile.name}`);
-        await uploadBytes(storageRef, selectedFile);
-        fileURL = await getDownloadURL(storageRef);
+        try {
+          fileURL = await uploadFile(selectedFile);
+          fileType = selectedFile.type.startsWith('image/') ? 'image' : 'file';
+        } catch (error) {
+          console.error('Error uploading file:', error);
+          alert('Failed to upload file. Please try again.');
+          setUploading(false);
+          return;
+        }
       }
 
       const messagesRef = collection(db, 'messages');
       const messageData = {
+        text: newMessage.trim() || null,
         senderId: user.uid,
         timestamp: serverTimestamp(),
         edited: false,
@@ -108,29 +163,33 @@ const ChatRoom = () => {
       };
 
       if (fileURL) {
-        messageData.type = selectedFile.type.startsWith('image/') ? 'image' : 'file';
+        messageData.type = newMessage.trim() ? 'mixed' : fileType;
         messageData.fileURL = fileURL;
         messageData.fileName = selectedFile.name;
         messageData.fileType = selectedFile.type;
-      }
-
-      if (newMessage.trim()) {
-        messageData.text = newMessage.trim();
-        messageData.type = fileURL ? 'mixed' : 'text';
+      } else {
+        messageData.type = 'text';
       }
 
       const docRef = await addDoc(messagesRef, messageData);
       setLastMessageId(docRef.id);
-      sendSound.current.play().catch(err => console.log('Audio play failed:', err));
+      
+      try {
+        await sendSound.current.play();
+      } catch (err) {
+        console.log('Audio play failed:', err);
+      }
       
       setNewMessage('');
       removeSelectedFile();
     } catch (error) {
       console.error("Error sending message:", error);
+      alert('Failed to send message. Please try again.');
     } finally {
       setUploading(false);
     }
   };
+
 
   const handleEditMessage = async (messageId, newText) => {
     try {
@@ -550,7 +609,14 @@ const ChatRoom = () => {
                 >
                   <X size={14} />
                 </button>
-              </div>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept="image/*,.pdf,.doc,.docx"
+                    className="hidden"
+                  />
+                </div>            
             )}
             
             <div className="flex items-center gap-2">
