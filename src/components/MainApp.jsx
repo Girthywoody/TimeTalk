@@ -14,6 +14,7 @@ import ChatRoom from './ChatRoom';
 import SharedCalendar from './SharedCalendar';
 import SecretPostModal from './SecretPostModal';
 
+
 const MainApp = () => {
   const { logout } = useAuth();
   const [message, setMessage] = useState('');

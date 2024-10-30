@@ -1,10 +1,11 @@
-// ProfilePage.jsx
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { motion } from 'framer-motion';
 import { db } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import ProfileHeader from './ProfileHeader';
 import QuickActions from './QuickActions';
+import ProfileBadges from './ProfileBadges';
 import RelationshipMilestones from './RelationshipMilestones';
 import { Loader2 } from 'lucide-react';
 
@@ -75,25 +76,48 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-4 space-y-6">
-      <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none"
+      >
         <div className="p-6">
           <ProfileHeader 
             profileData={profileData} 
             onProfileUpdate={handleProfileUpdate}
           />
         </div>
-      </div>
+      </motion.div>
 
-      <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
-        <QuickActions profileData={profileData} />
-      </div>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none"
+      >
+        <QuickActions />
+      </motion.div>
 
-      <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none"
+      >
+        <ProfileBadges achievements={profileData.achievements} />
+      </motion.div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none"
+      >
         <RelationshipMilestones 
           anniversary={profileData.relationship?.anniversary}
           milestones={profileData.relationship?.milestones || []}
         />
-      </div>
+      </motion.div>
     </div>
   );
 };
