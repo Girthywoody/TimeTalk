@@ -1,23 +1,7 @@
 import React from 'react';
 import { Calendar, Map, Home, MessageSquare, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 export default function Navigation({ currentPage, setCurrentPage }) {
-  const navigate = useNavigate();
-
-  const handleNavigation = (page) => {
-    setCurrentPage(page);
-    // Map pages to routes
-    const routes = {
-      home: '/',
-      profile: '/profile',
-      chat: '/chat',
-      calendar: '/calendar',
-      map: '/map'
-    };
-    navigate(routes[page]);
-  };
-
   const buttonClasses = (page) => `
     relative flex-1 h-16 flex items-center justify-center
     transition-all duration-300 ease-out
@@ -37,7 +21,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
         >
           <button 
             data-page="calendar"
-            onClick={() => handleNavigation('calendar')}
+            onClick={() => setCurrentPage('calendar')}
             className={buttonClasses('calendar')}
           >
             <Calendar className={iconClasses('calendar')} size={24} />
@@ -45,7 +29,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
 
           <button 
             data-page="map"
-            onClick={() => handleNavigation('map')}
+            onClick={() => setCurrentPage('map')}
             className={buttonClasses('map')}
           >
             <Map className={iconClasses('map')} size={24} />
@@ -53,7 +37,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
 
           <button 
             data-page="home"
-            onClick={() => handleNavigation('home')}
+            onClick={() => setCurrentPage('home')}
             className={buttonClasses('home')}
           >
             <Home className={iconClasses('home')} size={28} />
@@ -61,7 +45,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
 
           <button 
             data-page="chat"
-            onClick={() => handleNavigation('chat')}
+            onClick={() => setCurrentPage('chat')}
             className={buttonClasses('chat')}
           >
             <MessageSquare className={iconClasses('chat')} size={24} />
@@ -69,7 +53,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
 
           <button 
             data-page="profile"
-            onClick={() => handleNavigation('profile')}
+            onClick={() => setCurrentPage('profile')}
             className={buttonClasses('profile')}
           >
             <User className={iconClasses('profile')} size={24} />
