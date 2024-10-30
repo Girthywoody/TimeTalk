@@ -533,9 +533,9 @@ const handleSearch = () => {
 
   return (
     <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
-      <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
+     <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
         {/* Header */}
-        <div className={`px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b`}>
+        <div className={`sticky top-0 z-10 px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {userProfile?.profilePhotoURL ? (
@@ -713,17 +713,17 @@ const handleSearch = () => {
         </div>
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden relative">
           <div 
-              ref={scrollContainerRef}
-              className="absolute inset-0 overflow-y-auto px-4"
-              style={{
-                paddingBottom: '100px', // Increased padding to prevent messages from hiding behind input
-                paddingTop: '16px',
-                overscrollBehavior: 'contain',
-                WebkitOverflowScrolling: 'touch'
-              }}
-            >
+            ref={scrollContainerRef}
+            className="absolute inset-0 overflow-y-auto px-4"
+            style={{
+              paddingBottom: '100px',
+              paddingTop: '16px',
+              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch'
+            }}
+          >
             {loading ? (
               <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -893,7 +893,7 @@ const handleSearch = () => {
         </div>
 
         {/* Message Input */}
-        <div className={`relative bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
+        <div className={`relative bottom-0 left-0 right-0 z-10 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
          <div className="max-w-2xl mx-auto px-4 py-3">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
