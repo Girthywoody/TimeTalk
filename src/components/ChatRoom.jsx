@@ -33,6 +33,9 @@ import {
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
+import { ExternalLink, Maximize2 } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+
 
 const MESSAGES_LIMIT = 100;
 const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
@@ -55,6 +58,8 @@ const ChatRoom = () => {
   const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
   const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
   const [lastMessageId, setLastMessageId] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [linkPreviews, setLinkPreviews] = useState({});
 
   const scrollToBottom = () => {
     if (scrollContainerRef.current) {
@@ -180,6 +185,23 @@ const handleReaction = async (messageId, reaction) => {
     }
   };
 
+  const fetchLinkPreview = async (url) => {
+    try {
+      const response = await fetch(`/component/link-preview?url=${encodeURIComponent(url)}`);
+      const data = await response.json();
+      setLinkPreviews(prev => ({
+        ...prev,
+        [url]: data
+      }));
+    } catch (error) {
+      console.error('Error fetching link preview:', error);
+    }
+  };
+  const extractLinks = (text) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.match(urlRegex) || [];
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, []);
@@ -291,25 +313,69 @@ const handleReaction = async (messageId, reaction) => {
 
   const handleSend = async () => {
     if (!newMessage.trim() || !user || !userProfile) return;
-
+  
     try {
-      const messagesRef = collection(db, 'messages');
-      const docRef = await addDoc(messagesRef, {
+      const links = extractLinks(newMessage);
+      const messageData = {
         text: newMessage.trim(),
         senderId: user.uid,
         timestamp: serverTimestamp(),
         type: 'text',
         edited: false,
         deleted: false,
-        saved: false
+        saved: false,
+        links: links // Add this field
+      };
+  
+      const messagesRef = collection(db, 'messages');
+      const docRef = await addDoc(messagesRef, messageData);
+  
+      // Fetch previews for any links
+      links.forEach(link => {
+        if (!linkPreviews[link]) {
+          fetchLinkPreview(link);
+        }
       });
-
+  
       setLastMessageId(docRef.id);
       sendSound.current.play().catch(err => console.log('Audio play failed:', err));
       setNewMessage('');
     } catch (error) {
       console.error("Error sending message:", error);
     }
+  };
+
+  const LinkPreview = ({ url, preview }) => {
+    if (!preview) return null;
+  
+    return (
+      <a 
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block mt-2 rounded-lg overflow-hidden border border-gray-200 hover:bg-gray-50 transition-colors"
+      >
+        {preview.image && (
+          <img 
+            src={preview.image} 
+            alt={preview.title || 'Link preview'} 
+            className="w-full h-32 object-cover"
+          />
+        )}
+        <div className="p-3">
+          <div className="font-medium text-sm line-clamp-1">{preview.title}</div>
+          {preview.description && (
+            <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+              {preview.description}
+            </div>
+          )}
+          <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
+            <ExternalLink size={12} />
+            <span className="truncate">{url}</span>
+          </div>
+        </div>
+      </a>
+    );
   };
 
   const handleSaveMessage = async (messageId) => {
@@ -387,140 +453,174 @@ const handleReaction = async (messageId, reaction) => {
             </div>
           ) : (
             <>
-              {messages.map((message, index) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2`}
-                >
-                  {message.senderId !== user?.uid && (
-                    <div className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0">
-                      {message.senderProfile?.profilePhotoURL ? (
-                        <img 
-                          src={message.senderProfile.profilePhotoURL} 
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-blue-500 text-sm font-medium">
-                            {message.senderProfile?.username?.[0] || '?'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div
-                    className={`message-bubble relative max-w-[75%] rounded-2xl px-4 py-2 
-                      ${message.senderId === user?.uid 
-                        ? "bg-[#4E82EA] text-white rounded-br-none" 
-                        : "bg-white text-gray-800 rounded-bl-none shadow-sm"}
-                      ${message.saved ? "border border-yellow-400" : ""}
-                      ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
-                      ${index === messages.length - 1 ? 'mb-4' : 'mb-2'}
-                      transition-all duration-200`}
-                    onContextMenu={(e) => handleMessageLongPress(message, e)}
-                    onTouchStart={(e) => {
-                      setPressedMessageId(message.id);
-                      let timer = setTimeout(() => handleMessageLongPress(message, e), 500);
-                      e.target.addEventListener('touchend', () => {
-                        clearTimeout(timer);
-                        setPressedMessageId(null);
-                      }, { once: true });
-                    }}
-                  >
-                    {message.deleted ? (
-                      <div className="italic text-opacity-70">This message was deleted</div>
-                    ) : (
-                      <>
-                      {message.reaction && (
-                        <div className="absolute -top-3 left-1 bg-white rounded-full shadow-md p-1 text-sm">
-                          {message.reaction.emoji}
-                        </div>
-                      )}
-  
-                        {(message.type === 'text' || !message.type) && (
-                          <div className="break-words">
-                            {editingMessage?.id === message.id ? (
-                              <input
-                                type="text"
-                                value={editingMessage.text}
-                                onChange={(e) => setEditingMessage({ ...editingMessage, text: e.target.value })}
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleEditMessage(message.id, editingMessage.text);
-                                  }
-                                }}
-                                className={`w-full bg-transparent border-b ${
-                                  message.senderId === user?.uid 
-                                    ? "border-white/50 text-white placeholder-white/50" 
-                                    : "border-gray-300 text-gray-800 placeholder-gray-400"
-                                } focus:outline-none`}
-                                autoFocus
-                              />
-                            ) : (
-                              <span className="text-[15px] leading-relaxed">{message.text}</span>
-                            )}
-                          </div>
-                        )}
-  
-                        {message.type === 'image' && (
-                          <div className="rounded-lg overflow-hidden mt-1">
-                            <img 
-                              src={message.fileURL} 
-                              alt="Shared image"
-                              className="max-w-full rounded-lg"
-                              loading="lazy"
-                            />
-                          </div>
-                        )}
-  
-                        {message.type === 'file' && (
-                          <a 
-                            href={message.fileURL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`flex items-center gap-2 text-sm hover:underline mt-1 ${
-                              message.senderId === user?.uid 
-                                ? "text-white/90 hover:text-white" 
-                                : "text-gray-600 hover:text-gray-800"
-                            }`}
-                          >
-                            <Paperclip size={16} />
-                            {message.fileName}
-                          </a>
-                        )}
-  
-                        {message.edited && (
-                          <div className={`text-xs mt-1 ${
-                            message.senderId === user?.uid 
-                              ? "text-white/60" 
-                              : "text-gray-500"
-                          }`}>
-                            (edited)
-                          </div>
-                        )}
-  
-                        {message.saved && (
-                          <div className="absolute -top-2 -right-2">
-                            <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
-                          </div>
-                        )}
-                      </>
-                    )}
-  
-                    <div className={`text-[11px] mt-1 ${
-                      message.senderId === user?.uid 
-                        ? "text-white/60" 
-                        : "text-gray-500"
-                    }`}>
-                      {message.timestamp?.toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ))}
+{messages.map((message, index) => (
+  <div
+    key={message.id}
+    className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2`}
+  >
+    {message.senderId !== user?.uid && (
+      <div className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0">
+        {message.senderProfile?.profilePhotoURL ? (
+          <img 
+            src={message.senderProfile.profilePhotoURL} 
+            alt="Profile"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-blue-100 flex items-center justify-center">
+            <span className="text-blue-500 text-sm font-medium">
+              {message.senderProfile?.username?.[0] || '?'}
+            </span>
+          </div>
+        )}
+      </div>
+    )}
+    <div
+      className={`message-bubble relative max-w-[75%] rounded-2xl px-4 py-2 
+        ${message.senderId === user?.uid 
+          ? "bg-[#4E82EA] text-white rounded-br-none" 
+          : "bg-white text-gray-800 rounded-bl-none shadow-sm"}
+        ${message.saved ? "border border-yellow-400" : ""}
+        ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
+        ${index === messages.length - 1 ? 'mb-4' : 'mb-2'}
+        transition-all duration-200`}
+      onContextMenu={(e) => handleMessageLongPress(message, e)}
+      onTouchStart={(e) => {
+        setPressedMessageId(message.id);
+        let timer = setTimeout(() => handleMessageLongPress(message, e), 500);
+        e.target.addEventListener('touchend', () => {
+          clearTimeout(timer);
+          setPressedMessageId(null);
+        }, { once: true });
+      }}
+    >
+      {message.deleted ? (
+        <div className="italic text-opacity-70">This message was deleted</div>
+      ) : (
+        <>
+          {/* Reaction */}
+          {message.reaction && (
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReaction(message.id, message.reaction.emoji);
+              }}
+              className={`
+                absolute -top-3 left-1 
+                bg-white rounded-full shadow-md p-1 text-sm
+                cursor-pointer
+                hover:scale-110 
+                transition-transform
+                ${message.reaction.userId === user.uid ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+              `}
+            >
+              {message.reaction.emoji}
+            </div>
+          )}
+
+          {/* Text Message */}
+          {(message.type === 'text' || !message.type) && (
+            <div className="break-words">
+              {editingMessage?.id === message.id ? (
+                <input
+                  type="text"
+                  value={editingMessage.text}
+                  onChange={(e) => setEditingMessage({ ...editingMessage, text: e.target.value })}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleEditMessage(message.id, editingMessage.text);
+                    }
+                  }}
+                  className={`w-full bg-transparent border-b ${
+                    message.senderId === user?.uid 
+                      ? "border-white/50 text-white placeholder-white/50" 
+                      : "border-gray-300 text-gray-800 placeholder-gray-400"
+                  } focus:outline-none`}
+                  autoFocus
+                />
+              ) : (
+                <span className="text-[15px] leading-relaxed">{message.text}</span>
+              )}
+            </div>
+          )}
+
+          {/* Image Message */}
+          {message.type === 'image' && (
+            <div className="rounded-lg overflow-hidden mt-1 relative group">
+              <img 
+                src={message.fileURL} 
+                alt="Shared image"
+                className="max-w-full rounded-lg cursor-pointer"
+                loading="lazy"
+                onClick={() => setImagePreview(message.fileURL)}
+              />
+              <button
+                className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => setImagePreview(message.fileURL)}
+              >
+                <Maximize2 size={16} />
+              </button>
+            </div>
+          )}
+
+          {/* File Message */}
+          {message.type === 'file' && (
+            <a 
+              href={message.fileURL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-2 text-sm hover:underline mt-1 ${
+                message.senderId === user?.uid 
+                  ? "text-white/90 hover:text-white" 
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              <Paperclip size={16} />
+              {message.fileName}
+            </a>
+          )}
+
+          {/* Link Previews */}
+          {message.links?.map((url) => (
+            <LinkPreview 
+              key={url} 
+              url={url} 
+              preview={linkPreviews[url]}
+            />
+          ))}
+
+          {/* Message Metadata */}
+          {message.edited && (
+            <div className={`text-xs mt-1 ${
+              message.senderId === user?.uid 
+                ? "text-white/60" 
+                : "text-gray-500"
+            }`}>
+              (edited)
+            </div>
+          )}
+
+          {message.saved && (
+            <div className="absolute -top-2 -right-2">
+              <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
+            </div>
+          )}
+        </>
+      )}
+
+      <div className={`text-[11px] mt-1 ${
+        message.senderId === user?.uid 
+          ? "text-white/60" 
+          : "text-gray-500"
+      }`}>
+        {message.timestamp?.toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })}
+      </div>
+    </div>
+  </div>
+))}
               <div ref={messagesEndRef} />
             </>
           )}
@@ -577,21 +677,40 @@ const handleReaction = async (messageId, reaction) => {
   
       {/* Message Actions Menu */}
       <MessageActions
-        isOpen={!!selectedMessage}
-        onClose={() => {
-          setSelectedMessage(null);
-          setPressedMessageId(null);
-        }}
-        onEdit={() => setEditingMessage(selectedMessage)}
-        onDelete={() => handleDeleteMessage(selectedMessage?.id)}
-        onReact={(reaction) => handleReaction(selectedMessage?.id, reaction)}
-        onSave={() => handleSaveMessage(selectedMessage?.id)}
-        isSaved={selectedMessage?.saved}
-        position={actionPosition}
-        isOwnMessage={selectedMessage?.senderId === user?.uid}
-      />
-    </div>
-  );
+      isOpen={!!selectedMessage}
+      onClose={() => {
+        setSelectedMessage(null);
+        setPressedMessageId(null);
+      }}
+      onEdit={() => setEditingMessage(selectedMessage)}
+      onDelete={() => handleDeleteMessage(selectedMessage?.id)}
+      onReact={(reaction) => handleReaction(selectedMessage?.id, reaction)}
+      onSave={() => handleSaveMessage(selectedMessage?.id)}
+      isSaved={selectedMessage?.saved}
+      position={actionPosition}
+      isOwnMessage={selectedMessage?.senderId === user?.uid}
+    />
+
+    {/* Image Preview Dialog */}
+    <Dialog open={!!imagePreview} onOpenChange={() => setImagePreview(null)}>
+      <DialogContent className="max-w-4xl w-full bg-black/90 border-none p-0">
+        <button 
+          onClick={() => setImagePreview(null)}
+          className="absolute right-4 top-4 text-white/80 hover:text-white z-10"
+        >
+          <X size={24} />
+        </button>
+        {imagePreview && (
+          <img 
+            src={imagePreview} 
+            alt="Preview" 
+            className="w-full h-full object-contain"
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  </div>
+);
 };
 
 export default ChatRoom;
