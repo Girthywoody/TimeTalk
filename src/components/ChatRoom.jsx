@@ -437,7 +437,7 @@ const ChatRoom = () => {
               }}
               className={`
                 absolute -top-3 
-                ${isOwnMessage ? '-left-3' : '-right-3'}
+                ${message.senderId === user?.uid ? '-left-3' : '-right-3'}
                 bg-white rounded-full shadow-md p-1 text-sm
                 cursor-pointer
                 hover:scale-110 
