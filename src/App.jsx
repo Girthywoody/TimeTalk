@@ -11,6 +11,7 @@ import WelcomePage from './components/WelcomePage';
 const App = () => {
   const { user, loading } = useAuth();
 
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { motion } from 'framer-motion';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import ProfileHeader from './ProfileHeader';
 import QuickActions from './QuickActions';
-import ProfileBadges from './ProfileBadges';
 import RelationshipMilestones from './RelationshipMilestones';
 import { Loader2 } from 'lucide-react';
 
@@ -18,23 +16,32 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       if (!user) {
+        console.log('No user found, stopping fetch');
         setLoading(false);
         return;
       }
 
+      console.log('Fetching profile for user:', user.uid);
+      
       try {
         const userRef = doc(db, 'users', user.uid);
+        console.log('Fetching document from:', userRef.path);
+        
         const profileDoc = await getDoc(userRef);
+        console.log('Profile doc exists:', profileDoc.exists(), 'Data:', profileDoc.data());
 
         if (profileDoc.exists()) {
-          setProfileData(profileDoc.data());
+          const data = profileDoc.data();
+          setProfileData(data);
         } else {
+          console.log('No profile document found');
           setError('Profile not found');
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
         setError('Failed to load profile');
       } finally {
+        console.log('Setting loading to false');
         setLoading(false);
       }
     };
@@ -42,7 +49,7 @@ const ProfilePage = () => {
     fetchProfileData();
   }, [user]);
 
-  const handleProfileUpdate = async (updatedData) => {
+  const handleProfileUpdate = (updatedData) => {
     setProfileData(updatedData);
   };
 
@@ -76,48 +83,28 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-4 space-y-6">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none"
-      >
+      {/* Profile Header */}
+      <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
         <div className="p-6">
           <ProfileHeader 
             profileData={profileData} 
             onProfileUpdate={handleProfileUpdate}
           />
         </div>
-      </motion.div>
+      </div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none"
-      >
-        <QuickActions />
-      </motion.div>
+      {/* Quick Actions */}
+      <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
+        <QuickActions profileData={profileData} />
+      </div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none"
-      >
-        <ProfileBadges achievements={profileData.achievements} />
-      </motion.div>
-
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none"
-      >
+      {/* Relationship Milestones */}
+      <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
         <RelationshipMilestones 
           anniversary={profileData.relationship?.anniversary}
           milestones={profileData.relationship?.milestones || []}
         />
-      </motion.div>
+      </div>
     </div>
   );
 };
