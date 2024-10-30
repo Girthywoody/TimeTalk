@@ -96,6 +96,44 @@ const ChatRoom = () => {
     } else {
       document.documentElement.classList.remove('dark');
     }
+  
+    // Add dynamic styles for search highlighting
+    const style = document.createElement('style');
+    style.textContent = `
+      .search-highlight-sender {
+        background-color: #6366f1 !important; /* Indigo-500 */
+        transition: background-color 0.3s ease;
+      }
+      
+      .dark .search-highlight-sender {
+        background-color: #4f46e5 !important; /* Indigo-600 */
+      }
+      
+      .search-highlight-receiver {
+        background-color: #e5e7eb !important; /* Gray-200 */
+        transition: background-color 0.3s ease;
+      }
+      
+      .dark .search-highlight-receiver {
+        background-color: #4b5563 !important; /* Gray-600 */
+      }
+  
+      .animate-highlight {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+  
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.8;
+        }
+      }
+    `;
+  
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
   }, [darkMode]);
 
   useEffect(() => {
@@ -103,12 +141,14 @@ const ChatRoom = () => {
       handleSearch();
     } else {
       setSearchResults([]);
-      // Reset any highlighting when search is cleared
-      const messageElements = document.querySelectorAll('.message-text');
-      messageElements.forEach(element => {
-        if (element.textContent) {
-          element.innerHTML = element.textContent;
-        }
+      // Remove all search highlights when search is cleared
+      const allMessageBubbles = document.querySelectorAll('.message-bubble');
+      allMessageBubbles.forEach(bubble => {
+        bubble.classList.remove(
+          'search-highlight-sender',
+          'search-highlight-receiver',
+          'animate-highlight'
+        );
       });
     }
   }, [searchQuery]);
@@ -158,11 +198,22 @@ const ChatRoom = () => {
     setIsDropdownOpen(false);
   };
 
-  const scrollToNewestMessage = () => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const inputHeight = 80; // Approximate height of input area
-      container.scrollTop = container.scrollHeight - container.clientHeight + inputHeight;
+  const scrollToMessage = (messageId) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+      element.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+      
+      // Flash animation for the scrolled message
+      const messageBubble = element.querySelector('.message-bubble');
+      if (messageBubble) {
+        messageBubble.classList.add('animate-highlight');
+        setTimeout(() => {
+          messageBubble.classList.remove('animate-highlight');
+        }, 2000);
+      }
     }
   };
 
@@ -420,6 +471,7 @@ useEffect(() => {
 
 
 
+
 const handleSearch = () => {
   const searchTerm = searchQuery.toLowerCase();
   const filtered = messages.filter(message => 
@@ -427,26 +479,32 @@ const handleSearch = () => {
   );
   setSearchResults(filtered);
 
-  // Add visual text highlighting
+  // Remove previous search highlights
+  const allMessageBubbles = document.querySelectorAll('.message-bubble');
+  allMessageBubbles.forEach(bubble => {
+    bubble.classList.remove(
+      'search-highlight-sender',
+      'search-highlight-receiver',
+      'animate-highlight'
+    );
+  });
+
   if (searchTerm) {
-    const messageElements = document.querySelectorAll('.message-text');
-    messageElements.forEach(element => {
-      if (!element.textContent) return;
+    filtered.forEach(message => {
+      const messageBubble = document.getElementById(`message-${message.id}`)
+        ?.querySelector('.message-bubble');
       
-      const text = element.textContent;
-      const isSenderMessage = element.closest('.message-bubble').classList.contains('bg-[#4E82EA]');
-      
-      // Create a temporary div to safely handle HTML content
-      const tempDiv = document.createElement('div');
-      tempDiv.textContent = text;
-      const safeText = tempDiv.innerHTML;
-      
-      const regex = new RegExp(`(${searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
-      const highlightClass = isSenderMessage
-        ? 'bg-white/30 rounded px-1'
-        : 'bg-blue-100 dark:bg-blue-900 rounded px-1';
-      
-      element.innerHTML = safeText.replace(regex, `<span class="${highlightClass}">$1</span>`);
+      if (messageBubble) {
+        // Add appropriate highlight class based on message sender
+        if (message.senderId === user?.uid) {
+          messageBubble.classList.add('search-highlight-sender');
+        } else {
+          messageBubble.classList.add('search-highlight-receiver');
+        }
+        
+        // Add animation class
+        messageBubble.classList.add('animate-highlight');
+      }
     });
   }
 };
@@ -687,15 +745,24 @@ const handleSearch = () => {
                         setIsSearchOpen(false);
                         setSearchQuery('');
                       }}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col"
+                      className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
+                                border-b border-gray-100 dark:border-gray-700 last:border-0"
                     >
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        {message.text?.substring(0, 100)}
-                        {message.text?.length > 100 ? '...' : ''}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {message.timestamp?.toLocaleString()}
-                      </span>
+                      <div className="flex items-start space-x-2">
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2">
+                            {message.text}
+                          </p>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {message.timestamp?.toLocaleString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                      </div>
                     </button>
                   ))}
                 </div>
