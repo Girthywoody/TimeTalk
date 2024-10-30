@@ -746,7 +746,8 @@ const ChatRoom = () => {
                                   }}
                                   className={`w-full bg-transparent border-b ${
                                     message.senderId === user?.uid 
-                                    : "border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white placeholder-gray-400"
+                                      ? "border-white/50 text-white placeholder-white/50"
+                                      : "border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white placeholder-gray-400"
                                   } focus:outline-none`}
                                   autoFocus
                                 />
