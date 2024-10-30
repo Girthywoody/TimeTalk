@@ -790,7 +790,172 @@ const handleSearch = () => {
             ) : (
               <div className="py-4 space-y-2"> {/* Add consistent padding */}
                 {messages.map((message, index) => (
-                  // ... existing message rendering code ...
+                  <div
+                    id={`message-${message.id}`}
+                    key={message.id}
+                    className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2`}
+                  >
+                    {message.senderId !== user?.uid && (
+                      <div className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0">
+                        {message.senderProfile?.profilePhotoURL ? (
+                          <img 
+                            src={message.senderProfile.profilePhotoURL} 
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-blue-500 text-sm font-medium">
+                              {message.senderProfile?.username?.[0] || '?'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div
+                      className={`message-bubble relative max-w-[75%] rounded-2xl px-4 py-2 
+                        ${message.senderId === user?.uid 
+                          ? "bg-[#4E82EA] text-white rounded-br-none" 
+                          : "bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none shadow-sm"}
+                        ${message.saved ? "border border-yellow-400" : ""}
+                        ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
+                        ${index === messages.length - 1 ? 'mb-4' : 'mb-2'}
+                        transition-all duration-200`}
+                      onContextMenu={(e) => handleMessageLongPress(message, e)}
+                      onTouchStart={(e) => {
+                        setPressedMessageId(message.id);
+                        let timer = setTimeout(() => handleMessageLongPress(message, e), 500);
+                        e.target.addEventListener('touchend', () => {
+                          clearTimeout(timer);
+                          setPressedMessageId(null);
+                        }, { once: true });
+                      }}
+                    >
+                      {/* Message content */}
+                      {message.deleted ? (
+                        <div className="italic text-opacity-70">This message was deleted</div>
+                      ) : (
+                        <>
+                          {/* Reaction */}
+                          {message.reaction && (
+                            <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReaction(message.id, message.reaction.emoji);
+                              }}
+                              className={`
+                                absolute -top-3 
+                                ${message.senderId === user?.uid ? '-left-3' : '-right-3'}
+                                bg-white dark:bg-gray-700 rounded-full shadow-md p-1 text-sm cursor-pointer
+                                hover:scale-110 
+                                transition-transform`}
+                            >
+                              {message.reaction.emoji}
+                            </div>
+                          )}
+
+                          {/* Text message */}
+                          {message.type === 'text' && (
+                            <div className="break-words">
+                              {editingMessage?.id === message.id ? (
+                                <input
+                                  type="text"
+                                  value={editingMessage.text}
+                                  onChange={(e) => setEditingMessage({ ...editingMessage, text: e.target.value })}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleEditMessage(message.id, editingMessage.text);
+                                    }
+                                  }}
+                                  className={`w-full bg-transparent border-b ${
+                                    message.senderId === user?.uid 
+                                      ? "border-white/50 text-white placeholder-white/50"
+                                      : "border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white placeholder-gray-400"
+                                  } focus:outline-none`}
+                                  autoFocus
+                                />
+                              ) : (
+                                <span className="message-text text-[15px] leading-relaxed">{message.text}</span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Image message */}
+                          {(message.type === 'image' || message.type === 'mixed') && (
+                            <>
+                              <div className="rounded-lg overflow-hidden mt-1 relative group">
+                                <img 
+                                  src={message.fileURL} 
+                                  alt="Shared image"
+                                  className="max-w-full rounded-lg cursor-pointer"
+                                  loading="lazy"
+                                  onClick={() => setImagePreview(message.fileURL)}
+                                />
+                                <button
+                                  className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => setImagePreview(message.fileURL)}
+                                >
+                                  <Maximize2 size={16} />
+                                </button>
+                              </div>
+                              {message.text && (
+                                <div className="mt-2 text-[15px] leading-relaxed">
+                                  {message.text}
+                                </div>
+                              )}
+                            </>
+                          )}
+
+                          {/* File message */}
+                          {message.type === 'file' && (
+                            <a 
+                              href={message.fileURL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`flex items-center gap-2 text-sm hover:underline mt-1 ${
+                                message.senderId === user?.uid 
+                                  ? "text-white/90 hover:text-white" 
+                                  : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+                              }`}
+                            >
+                              <Paperclip size={16} />
+                              {message.fileName}
+                            </a>
+                          )}
+
+                          {/* Edited indicator */}
+                          {message.edited && (
+                            <div className={`text-xs mt-1 ${
+                              message.senderId === user?.uid 
+                                ? "text-white/60" 
+                                : "text-gray-500 dark:text-gray-400"
+                            }`}>
+                              (edited)
+                            </div>
+                          )}
+
+                          {/* Saved indicator */}
+                          {message.saved && (
+                            <div className="absolute -top-2 -right-2">
+                              <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Timestamp */}
+                      <div className={`text-[11px] mt-1 ${
+                        message.senderId === user?.uid 
+                          ? "text-white/60" 
+                          : "text-gray-500 dark:text-gray-400"
+                      }`}>
+                        {message.timestamp?.toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
