@@ -155,11 +155,11 @@ const ChatRoom = () => {
   const scrollToNewestMessage = () => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
-      const inputHeight = 80; // Height of input area
+      const inputHeight = 76; // Height of input area
       const spacing = 16; // Desired spacing between last message and input
       
-      // Set scroll position to place last message nicely above input
-      container.scrollTop = container.scrollHeight - container.clientHeight + inputHeight + spacing;
+      // Adjusted scroll position to account for bottom padding
+      container.scrollTop = container.scrollHeight - container.clientHeight - spacing;
     }
   };
 
@@ -711,17 +711,17 @@ const handleSearch = () => {
         {/* Messages Container */}
         <div className="flex-1 overflow-hidden">
          <div 
-            ref={scrollContainerRef}
-            className="h-full overflow-y-auto px-4"
-            style={{
-              scrollBehavior: 'smooth',
-              overscrollBehavior: 'contain',
-              height: 'calc(100vh - 180px)',
-              paddingTop: '16px',
-              paddingBottom: '16px',
-              WebkitOverflowScrolling: 'touch'
-            }}
-          >
+          ref={scrollContainerRef}
+          className="h-full overflow-y-auto px-4"
+          style={{
+            scrollBehavior: 'smooth',
+            overscrollBehavior: 'contain',
+            height: 'calc(100vh - 140px)', // Adjusted to account for header (64px) and input area (76px)
+            paddingTop: '16px',
+            paddingBottom: '76px', // Increased padding to match input area height
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
             {loading ? (
               <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
