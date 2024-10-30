@@ -36,7 +36,6 @@ import { db, storage } from '../firebase';
 import { ExternalLink, Maximize2 } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
-
 const MESSAGES_LIMIT = 100;
 const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
@@ -692,23 +691,26 @@ const handleReaction = async (messageId, reaction) => {
     />
 
     {/* Image Preview Dialog */}
-    <Dialog open={!!imagePreview} onOpenChange={() => setImagePreview(null)}>
-      <DialogContent className="max-w-4xl w-full bg-black/90 border-none p-0">
-        <button 
+{/* Image Preview Modal */}
+      {imagePreview && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
           onClick={() => setImagePreview(null)}
-          className="absolute right-4 top-4 text-white/80 hover:text-white z-10"
         >
-          <X size={24} />
-        </button>
-        {imagePreview && (
+          <button 
+            onClick={() => setImagePreview(null)}
+            className="absolute right-4 top-4 text-white/80 hover:text-white z-10"
+          >
+            <X size={24} />
+          </button>
           <img 
             src={imagePreview} 
             alt="Preview" 
-            className="w-full h-full object-contain"
+            className="max-w-[90%] max-h-[90vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
           />
-        )}
-      </DialogContent>
-    </Dialog>
+        </div>
+      )}
   </div>
 );
 };
