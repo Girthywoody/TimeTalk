@@ -821,7 +821,7 @@ const ChatRoom = () => {
               overscrollBehavior: 'contain',
               height: 'calc(100vh - 140px)', // Adjusted height
               paddingTop: '16px',
-              paddingBottom: '100px',  // Increased bottom padding to ensure messages appear above input
+              paddingBottom: '110px',  // Increased bottom padding to ensure messages appear above input
               WebkitOverflowScrolling: 'touch'
             }}
           >
