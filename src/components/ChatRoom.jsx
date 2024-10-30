@@ -298,7 +298,16 @@ const handleReaction = async (messageId, reaction) => {
   };
   
   const handleSend = async () => {
-    if (!newMessage.trim() || !user || !userProfile) return;
+    console.log('Send button clicked', { newMessage, user, userProfile }); // Debug log
+    
+    if (!newMessage.trim() || !user || !userProfile) {
+      console.log('Send conditions not met:', { 
+        hasMessage: !!newMessage.trim(), 
+        hasUser: !!user, 
+        hasProfile: !!userProfile 
+      }); // Debug what's missing
+      return;
+    }
   
     try {
       const links = extractLinks(newMessage);
@@ -315,8 +324,8 @@ const handleReaction = async (messageId, reaction) => {
   
       const messagesRef = collection(db, 'messages');
       const docRef = await addDoc(messagesRef, messageData);
+      console.log('Message added successfully', docRef.id); // Debug successful send
   
-      // Fetch previews for any links
       links.forEach(link => {
         if (!linkPreviews[link]) {
           fetchLinkPreview(link);
@@ -614,19 +623,19 @@ const handleReaction = async (messageId, reaction) => {
         <div className="max-w-2xl mx-auto px-4 py-2">
           <div className="flex items-center gap-2">
             <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder="Message"
-                className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
-              />
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => { // Change from onKeyPress to onKeyDown
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Message"
+              className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
+            />
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
