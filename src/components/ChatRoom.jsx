@@ -423,19 +423,37 @@ const handleSearch = () => {
   
   setSearchResults(results);
 
-  const messageElements = document.querySelectorAll('.message-text');
-  messageElements.forEach(element => {
-    const text = element.textContent;
-    if (text && searchTerm) {
-      const regex = new RegExp(`(${searchTerm})`, 'gi');
-      const highlightClass = element.closest('.message-bubble').classList.contains('bg-[#4E82EA]')
-        ? 'bg-white/30 rounded px-1' // For blue message bubbles
-        : 'bg-blue-100 dark:bg-blue-900 rounded px-1'; // For white/dark message bubbles
-      element.innerHTML = text.replace(regex, `<span class="${highlightClass}">$1</span>`);
-    } else {
-      element.innerHTML = text || '';
-    }
-  });
+  // Only highlight if there's a search term
+  if (searchTerm) {
+    const messageElements = document.querySelectorAll('.message-text');
+    messageElements.forEach(element => {
+      if (!element.textContent) return;
+      
+      const text = element.textContent;
+      const isSenderMessage = element.closest('.message-bubble').classList.contains('bg-[#4E82EA]');
+      
+      // Create a temporary div to safely handle HTML content
+      const tempDiv = document.createElement('div');
+      tempDiv.textContent = text;
+      const safeText = tempDiv.innerHTML;
+      
+      // Use capture groups to preserve case when highlighting
+      const regex = new RegExp(`(${searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+      const highlightClass = isSenderMessage
+        ? 'bg-white/30 rounded px-1' // For sender's messages (blue bubbles)
+        : 'bg-blue-100 dark:bg-blue-900 rounded px-1'; // For received messages
+      
+      element.innerHTML = safeText.replace(regex, `<span class="${highlightClass}">$1</span>`);
+    });
+  } else {
+    // Reset highlights when search is cleared
+    const messageElements = document.querySelectorAll('.message-text');
+    messageElements.forEach(element => {
+      if (element.textContent) {
+        element.innerHTML = element.textContent;
+      }
+    });
+  }
 };
 
   useEffect(() => {
@@ -699,8 +717,8 @@ const handleSearch = () => {
             style={{
               scrollBehavior: 'smooth',
               overscrollBehavior: 'contain',
-              height: 'calc(100vh - 180px)',
-              marginBottom: '16px'        
+              height: 'calc(100vh - 240px)', // Adjusted to account for header and input
+              paddingBottom: '16px'
             }}
           >
             {loading ? (
@@ -872,7 +890,7 @@ const handleSearch = () => {
         </div>
 
         {/* Message Input */}
-        <div className={`fixed bottom-16 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
+        <div className={`sticky bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
          <div className="max-w-2xl mx-auto px-4 py-3">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
