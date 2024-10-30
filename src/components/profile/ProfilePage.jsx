@@ -1,5 +1,6 @@
+// ProfilePage.jsx
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import ProfileHeader from './ProfileHeader';
@@ -16,32 +17,23 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       if (!user) {
-        console.log('No user found, stopping fetch');
         setLoading(false);
         return;
       }
 
-      console.log('Fetching profile for user:', user.uid);
-      
       try {
         const userRef = doc(db, 'users', user.uid);
-        console.log('Fetching document from:', userRef.path);
-        
         const profileDoc = await getDoc(userRef);
-        console.log('Profile doc exists:', profileDoc.exists(), 'Data:', profileDoc.data());
 
         if (profileDoc.exists()) {
-          const data = profileDoc.data();
-          setProfileData(data);
+          setProfileData(profileDoc.data());
         } else {
-          console.log('No profile document found');
           setError('Profile not found');
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
         setError('Failed to load profile');
       } finally {
-        console.log('Setting loading to false');
         setLoading(false);
       }
     };
@@ -49,7 +41,7 @@ const ProfilePage = () => {
     fetchProfileData();
   }, [user]);
 
-  const handleProfileUpdate = (updatedData) => {
+  const handleProfileUpdate = async (updatedData) => {
     setProfileData(updatedData);
   };
 
@@ -83,7 +75,6 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-4 space-y-6">
-      {/* Profile Header */}
       <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
         <div className="p-6">
           <ProfileHeader 
@@ -93,12 +84,10 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
       <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
         <QuickActions profileData={profileData} />
       </div>
 
-      {/* Relationship Milestones */}
       <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
         <RelationshipMilestones 
           anniversary={profileData.relationship?.anniversary}
