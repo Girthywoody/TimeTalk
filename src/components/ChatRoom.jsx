@@ -34,6 +34,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 
+
 const MESSAGES_LIMIT = 100;
 const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
@@ -51,10 +52,11 @@ const ChatRoom = () => {
   const [editingMessage, setEditingMessage] = useState(null);
   const [pressedMessageId, setPressedMessageId] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);  
   const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
   const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
   const [lastMessageId, setLastMessageId] = useState(null);
+  const fileInputRef = useRef(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const scrollToBottom = () => {
     if (scrollContainerRef.current) {
@@ -116,20 +118,16 @@ const ChatRoom = () => {
       console.error('Error toggling reaction:', error);
     }
   };
-  
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !user || !userProfile) return;
-
+  
     try {
       setUploading(true);
-      
       const storageRef = ref(storage, `chat/${user.uid}/${Date.now()}_${file.name}`);
-      
       await uploadBytes(storageRef, file);
-      
       const downloadURL = await getDownloadURL(storageRef);
-
       const isImage = file.type.startsWith('image/');
       
       const messagesRef = collection(db, 'messages');
@@ -142,9 +140,8 @@ const ChatRoom = () => {
         fileType: file.type,
         saved: false
       });
-
+  
       setLastMessageId(docRef.id);
-      
       sendSound.current.play().catch(err => console.log('Audio play failed:', err));
       
       if (fileInputRef.current) {
@@ -452,14 +449,21 @@ const ChatRoom = () => {
                           </div>
                         )}
   
-                        {message.type === 'image' && (
-                          <div className="rounded-lg overflow-hidden mt-1">
+                          {message.type === 'image' && (
+                          <div className="rounded-lg overflow-hidden mt-1 relative group">
                             <img 
                               src={message.fileURL} 
                               alt="Shared image"
-                              className="max-w-full rounded-lg"
+                              className="max-w-full rounded-lg cursor-pointer"
                               loading="lazy"
+                              onClick={() => setImagePreview(message.fileURL)}
                             />
+                            <button
+                              className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => setImagePreview(message.fileURL)}
+                            >
+                              <Maximize2 size={16} />
+                            </button>
                           </div>
                         )}
   
@@ -563,6 +567,13 @@ const ChatRoom = () => {
           className="hidden"
         />
       </div>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        accept="image/*,.pdf,.doc,.docx"
+        className="hidden"
+      />
   
       {/* Message Actions Menu */}
       <MessageActions
@@ -580,6 +591,26 @@ const ChatRoom = () => {
         position={actionPosition}
         isOwnMessage={selectedMessage?.senderId === user?.uid}
       />
+      {/* Image Preview Dialog */}
+      {imagePreview && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+          onClick={() => setImagePreview(null)}
+        >
+          <button 
+            onClick={() => setImagePreview(null)}
+            className="absolute right-4 top-4 text-white/80 hover:text-white z-10"
+          >
+            <X size={24} />
+          </button>
+          <img 
+            src={imagePreview} 
+            alt="Preview" 
+            className="max-w-[90%] max-h-[90vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 };
