@@ -89,21 +89,56 @@ const ChatRoom = () => {
     }
   };
   
-  const handleReaction = async (messageId, reaction) => {
-    try {
-      const messageRef = doc(db, 'messages', messageId);
-      await updateDoc(messageRef, {
-        reaction: {
-          emoji: reaction,
-          userId: user.uid,
-          timestamp: serverTimestamp()
-        }
-      });
-      setSelectedMessage(null);
-    } catch (error) {
-      console.error('Error adding reaction:', error);
+// Update the handleReaction function to toggle reactions
+const handleReaction = async (messageId, reaction) => {
+  try {
+    const messageRef = doc(db, 'messages', messageId);
+    const messageDoc = await getDoc(messageRef);
+    
+    if (messageDoc.exists()) {
+      const currentReaction = messageDoc.data().reaction;
+      
+      // If there's an existing reaction from this user with the same emoji, remove it
+      if (currentReaction?.userId === user.uid && currentReaction?.emoji === reaction) {
+        await updateDoc(messageRef, {
+          reaction: null
+        });
+      } else {
+        // Otherwise, set the new reaction
+        await updateDoc(messageRef, {
+          reaction: {
+            emoji: reaction,
+            userId: user.uid,
+            timestamp: serverTimestamp()
+          }
+        });
+      }
     }
-  };
+    setSelectedMessage(null);
+  } catch (error) {
+    console.error('Error toggling reaction:', error);
+  }
+};
+
+// Update the reaction display in the message rendering code
+{message.reaction && (
+  <div 
+    onClick={(e) => {
+      e.stopPropagation();
+      handleReaction(message.id, message.reaction.emoji);
+    }}
+    className={`
+      absolute -top-3 left-1 
+      bg-white rounded-full shadow-md p-1 text-sm
+      cursor-pointer
+      hover:scale-110 
+      transition-transform
+      ${message.reaction.userId === user.uid ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+    `}
+  >
+    {message.reaction.emoji}
+  </div>
+)}
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -397,11 +432,11 @@ const ChatRoom = () => {
                       <div className="italic text-opacity-70">This message was deleted</div>
                     ) : (
                       <>
-                        {message.reaction && (
-                          <div className="absolute -top-3 left-2 bg-white rounded-full shadow-md p-1 text-sm">
-                            {message.reaction.emoji}
-                          </div>
-                        )}
+                      {message.reaction && (
+                        <div className="absolute -top-3 left-1 bg-white rounded-full shadow-md p-1 text-sm">
+                          {message.reaction.emoji}
+                        </div>
+                      )}
   
                         {(message.type === 'text' || !message.type) && (
                           <div className="break-words">
