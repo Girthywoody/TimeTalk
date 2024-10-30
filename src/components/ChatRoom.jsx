@@ -275,24 +275,45 @@ const ChatRoom = () => {
     return text.match(urlRegex) || [];
   };
 
-  const handleSend = async () => {
-    if (!newMessage.trim() || !user || !userProfile) return;
+  const handleSend = async (e) => {
+    if (e) e.preventDefault();
+    
+    const trimmedMessage = newMessage.trim();
+    if (!trimmedMessage || !user?.uid || !userProfile) {
+      console.log('Send conditions not met:', { 
+        hasMessage: !!trimmedMessage, 
+        hasUser: !!user?.uid, 
+        hasProfile: !!userProfile 
+      });
+      return;
+    }
   
     try {
-      const messagesRef = collection(db, 'messages');
-      const docRef = await addDoc(messagesRef, {
-        text: newMessage.trim(),
+      const links = extractLinks(trimmedMessage);
+      const messageData = {
+        text: trimmedMessage,
         senderId: user.uid,
         timestamp: serverTimestamp(),
         type: 'text',
         edited: false,
         deleted: false,
-        saved: false
+        saved: false,
+        links: links
+      };
+  
+      const messagesRef = collection(db, 'messages');
+      const docRef = await addDoc(messagesRef, messageData);
+      console.log('Message sent successfully:', docRef.id);
+  
+      links.forEach(link => {
+        if (!linkPreviews[link]) {
+          fetchLinkPreview(link);
+        }
       });
   
       setLastMessageId(docRef.id);
-      sendSound.current.play().catch(err => console.log('Audio play failed:', err));
       setNewMessage('');
+      sendSound.current.play().catch(err => console.log('Audio play failed:', err));
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -599,22 +620,22 @@ const ChatRoom = () => {
 
       {/* Message Input */}
       <div className="sticky bottom-0 left-0 right-0 pb-2 bg-white border-t border-gray-100">
-      <form onSubmit={handleSend} className="max-w-2xl mx-auto px-4 py-2">         
-        <div className="flex items-center gap-2">
+        <form onSubmit={handleSend} className="max-w-2xl mx-auto px-4 py-2">         
+          <div className="flex items-center gap-2">
             <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => {  // Changed from onKeyPress to onKeyDown
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder="Message"
-              className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
-            />
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder="Message"
+                className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
+              />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
