@@ -198,6 +198,23 @@ const ChatRoom = () => {
     setIsDropdownOpen(false);
   };
 
+  const scrollToNewestMessage = () => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const inputHeight = 80; // Approximate height of input area
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!loading && messages.length > 0) {
+      scrollToNewestMessage();
+    }
+  }, [loading, messages]);
+
   const scrollToMessage = (messageId) => {
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
