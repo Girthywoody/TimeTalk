@@ -275,45 +275,24 @@ const ChatRoom = () => {
     return text.match(urlRegex) || [];
   };
 
-  const handleSend = async (e) => {
-    if (e) e.preventDefault();
-    
-    const trimmedMessage = newMessage.trim();
-    if (!trimmedMessage || !user?.uid || !userProfile) {
-      console.log('Send conditions not met:', { 
-        hasMessage: !!trimmedMessage, 
-        hasUser: !!user?.uid, 
-        hasProfile: !!userProfile 
-      });
-      return;
-    }
-
+  const handleSend = async () => {
+    if (!newMessage.trim() || !user || !userProfile) return;
+  
     try {
-      const links = extractLinks(trimmedMessage);
-      const messageData = {
-        text: trimmedMessage,
+      const messagesRef = collection(db, 'messages');
+      const docRef = await addDoc(messagesRef, {
+        text: newMessage.trim(),
         senderId: user.uid,
         timestamp: serverTimestamp(),
         type: 'text',
         edited: false,
         deleted: false,
-        saved: false,
-        links: links
-      };
-
-      const messagesRef = collection(db, 'messages');
-      const docRef = await addDoc(messagesRef, messageData);
-      console.log('Message sent successfully:', docRef.id);
-  
-      links.forEach(link => {
-        if (!linkPreviews[link]) {
-          fetchLinkPreview(link);
-        }
+        saved: false
       });
   
       setLastMessageId(docRef.id);
-      setNewMessage('');
       sendSound.current.play().catch(err => console.log('Audio play failed:', err));
+      setNewMessage('');
     } catch (error) {
       console.error("Error sending message:", error);
     }
