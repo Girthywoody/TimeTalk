@@ -718,7 +718,7 @@ const handleSearch = () => {
               scrollBehavior: 'smooth',
               overscrollBehavior: 'contain',
               height: 'calc(100vh - 240px)', // Adjusted to account for header and input
-              paddingBottom: '24px'
+              paddingBottom: '1px'
             }}
           >
             {loading ? (
