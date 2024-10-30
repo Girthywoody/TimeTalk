@@ -76,13 +76,12 @@ const ChatRoom = () => {
   const [isMuted, setIsMuted] = useState(false);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
+  const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const fileInputRef = useRef(null);
   const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
   const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
   const { user } = useAuth();
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
 
   const [notificationSettings, setNotificationSettings] = useState({
     muted: false,
@@ -97,137 +96,33 @@ const ChatRoom = () => {
     } else {
       document.documentElement.classList.remove('dark');
     }
-  
-    const style = document.createElement('style');
-    style.textContent = `
-      .search-highlight-sender {
-        background-color: rgba(79, 70, 229, 1) !important; /* Brighter indigo */
-        box-shadow: 0 0 10px rgba(79, 70, 229, 0.5);
-        transition: all 0.3s ease;
-      }
-      
-      .dark .search-highlight-sender {
-        background-color: rgba(99, 102, 241, 1) !important; /* Brighter indigo for dark mode */
-        box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-      }
-      
-      .search-highlight-receiver {
-        background-color: rgba(209, 213, 219, 1) !important; /* Brighter gray */
-        box-shadow: 0 0 10px rgba(209, 213, 219, 0.5);
-        transition: all 0.3s ease;
-      }
-      
-      .dark .search-highlight-receiver {
-        background-color: rgba(107, 114, 128, 1) !important; /* Brighter gray for dark mode */
-        box-shadow: 0 0 10px rgba(107, 114, 128, 0.5);
-      }
-  
-      .animate-highlight {
-        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      }
-  
-      @keyframes pulse {
-        0%, 100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.8;
-        }
-      }
-    `;
-  
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
   }, [darkMode]);
 
   useEffect(() => {
-    if (searchQuery) {
-      handleSearch();
-    } else {
-      setSearchResults([]);
-      // Remove all search highlights when search is cleared
-      const allMessageBubbles = document.querySelectorAll('.message-bubble');
-      allMessageBubbles.forEach(bubble => {
-        bubble.classList.remove(
-          'search-highlight-sender',
-          'search-highlight-receiver',
-          'animate-highlight'
-        );
+    if (!searchQuery) {
+      const messageElements = document.querySelectorAll('.message-text');
+      messageElements.forEach(element => {
+        element.innerHTML = element.textContent || '';
       });
     }
   }, [searchQuery]);
-
-  const handleSearch = () => {
-    const searchTerm = searchQuery.toLowerCase();
-    const filtered = messages.filter(message => 
-      message.text?.toLowerCase().includes(searchTerm)
-    );
-    setSearchResults(filtered);
-
-    // Clear previous highlights
-    const allMessageBubbles = document.querySelectorAll('.message-bubble');
-    allMessageBubbles.forEach(bubble => {
-      bubble.classList.remove(
-        'search-highlight-sender',
-        'search-highlight-receiver'
-      );
-    });
-  
-    if (searchTerm) {
-      filtered.forEach(message => {
-        const messageBubble = document.getElementById(`message-${message.id}`)
-          ?.querySelector('.message-bubble');
-        
-        if (messageBubble) {
-          messageBubble.classList.add(
-            message.senderId === user?.uid 
-              ? 'search-highlight-sender' 
-              : 'search-highlight-receiver'
-          );
-        }
-      });
-    }
-  };
-
-  useEffect(() => {
-    const handleResize = () => {
-      // Fix for iOS viewport height when keyboard appears
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-    };
-  
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   useEffect(() => {
     if (!loading && messages.length > 0) {
       const scrollContainer = scrollContainerRef.current;
       if (scrollContainer) {
-        const scrollToBottom = () => {
-          scrollContainer.scrollTop = scrollContainer.scrollHeight;
-        };
-  
-        if (isInitialLoad) {
-          // For initial load, scroll immediately
-          scrollToBottom();
-          setIsInitialLoad(false);
-          return;
-        }
-  
-        // For new messages, check if we were near bottom before scrolling
-        const isNearBottom = 
-          scrollContainer.scrollHeight - 
-          scrollContainer.scrollTop - 
-          scrollContainer.clientHeight < 100;
-  
+        const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100;
         if (isNearBottom) {
-          scrollToBottom();
+          setTimeout(() => {
+            scrollContainer.scrollTo({
+              top: scrollContainer.scrollHeight,
+              behavior: 'smooth'
+            });
+          }, 100);
         }
       }
     }
-  }, [loading, messages, isInitialLoad]);
+  }, [loading, messages]);
 
   const handleMuteNotifications = (duration) => {
     const now = new Date();
@@ -257,51 +152,17 @@ const ChatRoom = () => {
     setIsDropdownOpen(false);
   };
 
+  const scrollToNewestMessage = () => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const inputHeight = 80; // Approximate height of input area
+      container.scrollTop = container.scrollHeight - container.clientHeight + inputHeight;
+    }
+  };
 
-  const scrollToMessage = (messageId) => {
-    // Clear any existing highlights first
-    const allMessageBubbles = document.querySelectorAll('.message-bubble');
-    allMessageBubbles.forEach(bubble => {
-      bubble.classList.remove(
-        'search-highlight-sender',
-        'search-highlight-receiver'
-      );
-    });
-  
-    const element = document.getElementById(`message-${messageId}`);
-    if (element) {
-      // Find the message in our messages array
-      const message = messages.find(m => m.id === messageId);
-      const messageBubble = element.querySelector('.message-bubble');
-      
-      if (messageBubble && message) {
-        // Add appropriate highlight class
-        messageBubble.classList.add(
-          message.senderId === user?.uid 
-            ? 'search-highlight-sender' 
-            : 'search-highlight-receiver'
-        );
-        
-        // Scroll to message
-        element.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        });
-        
-        // Close search dropdown and clear query
-        setIsSearchOpen(false);
-        setSearchQuery('');
-  
-        // Remove the highlight after 2 seconds
-        setTimeout(() => {
-          if (messageBubble) {
-            messageBubble.classList.remove(
-              'search-highlight-sender',
-              'search-highlight-receiver'
-            );
-          }
-        }, 2000); // Changed from 5000 to 2000 for 2 seconds
-      }
+  const scrollToBottom = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
   };
 
@@ -514,6 +375,10 @@ const ChatRoom = () => {
   };
 
   useEffect(() => {
+    scrollToBottom();
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
@@ -539,6 +404,57 @@ const ChatRoom = () => {
 
     fetchUserProfile();
   }, [user]);
+
+// Replace your existing useEffect for scrolling
+useEffect(() => {
+  if (!loading && messages.length > 0) {
+    scrollToNewestMessage();
+  }
+}, [loading, messages]);
+
+
+
+const handleSearch = () => {
+  const searchTerm = searchQuery.toLowerCase();
+  const results = messages.filter(message => {
+    if (!message.text) return false;
+    return message.text.toLowerCase().includes(searchTerm);
+  });
+  
+  setSearchResults(results);
+
+  // Only highlight if there's a search term
+  if (searchTerm) {
+    const messageElements = document.querySelectorAll('.message-text');
+    messageElements.forEach(element => {
+      if (!element.textContent) return;
+      
+      const text = element.textContent;
+      const isSenderMessage = element.closest('.message-bubble').classList.contains('bg-[#4E82EA]');
+      
+      // Create a temporary div to safely handle HTML content
+      const tempDiv = document.createElement('div');
+      tempDiv.textContent = text;
+      const safeText = tempDiv.innerHTML;
+      
+      // Use capture groups to preserve case when highlighting
+      const regex = new RegExp(`(${searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+      const highlightClass = isSenderMessage
+        ? 'bg-white/30 rounded px-1' // For sender's messages (blue bubbles)
+        : 'bg-blue-100 dark:bg-blue-900 rounded px-1'; // For received messages
+      
+      element.innerHTML = safeText.replace(regex, `<span class="${highlightClass}">$1</span>`);
+    });
+  } else {
+    // Reset highlights when search is cleared
+    const messageElements = document.querySelectorAll('.message-text');
+    messageElements.forEach(element => {
+      if (element.textContent) {
+        element.innerHTML = element.textContent;
+      }
+    });
+  }
+};
 
   useEffect(() => {
     if (!user) return;
@@ -613,10 +529,7 @@ const ChatRoom = () => {
   }, [user, lastMessageId]);
 
   return (
-    <div 
-      className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}
-      style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
-    >
+    <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
         {/* Header */}
         <div className={`px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b`}>
@@ -776,25 +689,18 @@ const ChatRoom = () => {
                       key={message.id}
                       onClick={() => {
                         scrollToMessage(message.id);
+                        setIsSearchOpen(false);
+                        setSearchQuery('');
                       }}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
-                                border-b border-gray-100 dark:border-gray-700 last:border-0"
+                      className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col"
                     >
-                      <div className="flex items-start space-x-2">
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2">
-                            {message.text}
-                          </p>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {message.timestamp?.toLocaleString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </span>
-                        </div>
-                      </div>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        {message.text?.substring(0, 100)}
+                        {message.text?.length > 100 ? '...' : ''}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {message.timestamp?.toLocaleString()}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -811,10 +717,8 @@ const ChatRoom = () => {
             style={{
               scrollBehavior: 'smooth',
               overscrollBehavior: 'contain',
-              height: 'calc(100vh - 140px)', // Adjusted height
-              paddingTop: '16px',
-              paddingBottom: '110px',  // Increased bottom padding to ensure messages appear above input
-              WebkitOverflowScrolling: 'touch'
+              height: 'calc(100vh - 240px)', // Adjusted to account for header and input
+              paddingBottom: '16px'
             }}
           >
             {loading ? (
@@ -822,14 +726,13 @@ const ChatRoom = () => {
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
               </div>
             ) : (
-              <div className="py-4 space-y-2"> {/* Add consistent padding */}
+              <>
                 {messages.map((message, index) => (
                   <div
-                  id={`message-${message.id}`}
-                  key={message.id}
-                  className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2 
-                    ${highlightedMessageId === message.id ? 'message-highlight' : ''}`}
-                >
+                    id={`message-${message.id}`}
+                    key={message.id}
+                    className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2`}
+                  >
                     {message.senderId !== user?.uid && (
                       <div className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0">
                         {message.senderProfile?.profilePhotoURL ? (
@@ -866,12 +769,10 @@ const ChatRoom = () => {
                         }, { once: true });
                       }}
                     >
-                      {/* Message content */}
                       {message.deleted ? (
                         <div className="italic text-opacity-70">This message was deleted</div>
                       ) : (
                         <>
-                          {/* Reaction */}
                           {message.reaction && (
                             <div 
                               onClick={(e) => {
@@ -889,7 +790,6 @@ const ChatRoom = () => {
                             </div>
                           )}
 
-                          {/* Text message */}
                           {message.type === 'text' && (
                             <div className="break-words">
                               {editingMessage?.id === message.id ? (
@@ -915,23 +815,18 @@ const ChatRoom = () => {
                             </div>
                           )}
 
-                          {/* Image message */}
                           {(message.type === 'image' || message.type === 'mixed') && (
                             <>
                               <div className="rounded-lg overflow-hidden mt-1 relative group">
                                 <img 
                                   src={message.fileURL} 
                                   alt="Shared image"
-                                  className="max-w-full rounded-lg cursor-pointer"
+                                  className={`max-w-full rounded-lg cursor-pointer transition-all duration-200 ${
+                                    imagePreview === message.fileURL ? 'w-full' : 'max-h-48 object-cover'
+                                  }`}
                                   loading="lazy"
                                   onClick={() => setImagePreview(message.fileURL)}
                                 />
-                                <button
-                                  className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => setImagePreview(message.fileURL)}
-                                >
-                                  <Maximize2 size={16} />
-                                </button>
                               </div>
                               {message.text && (
                                 <div className="mt-2 text-[15px] leading-relaxed">
@@ -941,7 +836,6 @@ const ChatRoom = () => {
                             </>
                           )}
 
-                          {/* File message */}
                           {message.type === 'file' && (
                             <a 
                               href={message.fileURL}
@@ -958,7 +852,6 @@ const ChatRoom = () => {
                             </a>
                           )}
 
-                          {/* Edited indicator */}
                           {message.edited && (
                             <div className={`text-xs mt-1 ${
                               message.senderId === user?.uid 
@@ -969,7 +862,6 @@ const ChatRoom = () => {
                             </div>
                           )}
 
-                          {/* Saved indicator */}
                           {message.saved && (
                             <div className="absolute -top-2 -right-2">
                               <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
@@ -978,7 +870,6 @@ const ChatRoom = () => {
                         </>
                       )}
 
-                      {/* Timestamp */}
                       <div className={`text-[11px] mt-1 ${
                         message.senderId === user?.uid 
                           ? "text-white/60" 
@@ -992,14 +883,15 @@ const ChatRoom = () => {
                     </div>
                   </div>
                 ))}
-              </div>
+                <div ref={messagesEndRef} />
+              </>
             )}
           </div>
         </div>
 
         {/* Message Input */}
         <div className={`sticky bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
-          <div className="max-w-2xl mx-auto px-4 py-3"> {/* Adjusted padding */}
+         <div className="max-w-2xl mx-auto px-4 py-3">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
                 <div className="relative inline-block">
