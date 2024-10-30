@@ -713,10 +713,10 @@ const handleSearch = () => {
         </div>
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 overflow-hidden">
           <div 
             ref={scrollContainerRef}
-            className="absolute inset-0 overflow-y-auto px-4"
+            className="h-full overflow-y-auto px-4"
             style={{
               paddingBottom: '100px',
               paddingTop: '16px',
