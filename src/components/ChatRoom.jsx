@@ -118,6 +118,32 @@ const ChatRoom = () => {
       console.error('Error toggling reaction:', error);
     }
   };
+    // File handling functions
+    const handleFileSelect = (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+  
+      if (file.type.startsWith('image/')) {
+        setSelectedFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFilePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Handle non-image files if needed
+        setSelectedFile(file);
+        setFilePreview(null);
+      }
+    };
+
+    const removeSelectedFile = () => {
+      setSelectedFile(null);
+      setFilePreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -264,25 +290,49 @@ const ChatRoom = () => {
   }, [user, lastMessageId]);
 
   const handleSend = async () => {
-    if (!newMessage.trim() || !user || !userProfile) return;
+    if ((!newMessage.trim() && !selectedFile) || !user || !userProfile) return;
 
     try {
+      setUploading(true);
+      let fileURL = null;
+      
+      if (selectedFile) {
+        const storageRef = ref(storage, `chat/${user.uid}/${Date.now()}_${selectedFile.name}`);
+        await uploadBytes(storageRef, selectedFile);
+        fileURL = await getDownloadURL(storageRef);
+      }
+
       const messagesRef = collection(db, 'messages');
-      const docRef = await addDoc(messagesRef, {
-        text: newMessage.trim(),
+      const messageData = {
         senderId: user.uid,
         timestamp: serverTimestamp(),
-        type: 'text',
         edited: false,
         deleted: false,
         saved: false
-      });
+      };
 
+      if (fileURL) {
+        messageData.type = selectedFile.type.startsWith('image/') ? 'image' : 'file';
+        messageData.fileURL = fileURL;
+        messageData.fileName = selectedFile.name;
+        messageData.fileType = selectedFile.type;
+      }
+
+      if (newMessage.trim()) {
+        messageData.text = newMessage.trim();
+        messageData.type = fileURL ? 'mixed' : 'text';
+      }
+
+      const docRef = await addDoc(messagesRef, messageData);
       setLastMessageId(docRef.id);
       sendSound.current.play().catch(err => console.log('Audio play failed:', err));
+      
       setNewMessage('');
+      removeSelectedFile();
     } catch (error) {
       console.error("Error sending message:", error);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -523,57 +573,72 @@ const ChatRoom = () => {
       {/* Message Input */}
       <div className="sticky bottom-0 left-0 right-0 pb-2 bg-white border-t border-gray-100">
         <div className="max-w-2xl mx-auto px-4 py-2">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder="Message"
-                className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
-              />
+          <div className="flex flex-col gap-2">
+            {filePreview && (
+              <div className="relative inline-block">
+                <img 
+                  src={filePreview} 
+                  alt="Selected file" 
+                  className="h-20 w-auto rounded-lg object-cover"
+                />
+                <button
+                  onClick={removeSelectedFile}
+                  className="absolute -top-2 -right-2 p-1 bg-gray-800 rounded-full text-white hover:bg-gray-900"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Message"
+                  className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <Paperclip size={20} />
+                </button>
+              </div>
+              
               <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+                onClick={handleSend}
+                disabled={(!newMessage.trim() && !selectedFile) || !userProfile || uploading}
+                className={`p-3 rounded-full flex items-center justify-center transition-all duration-200 
+                  ${(newMessage.trim() || selectedFile) && userProfile && !uploading
+                    ? "bg-[#4E82EA] text-white hover:bg-blue-600"
+                    : "bg-gray-100 text-gray-400"}`}
               >
-                <Paperclip size={20} />
+                {uploading ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <Send size={20} />
+                )}
               </button>
             </div>
-            
-            <button
-              onClick={handleSend}
-              disabled={!newMessage.trim() || !userProfile || uploading}
-              className={`p-3 rounded-full flex items-center justify-center transition-all duration-200 
-                ${newMessage.trim() && userProfile && !uploading
-                  ? "bg-[#4E82EA] text-white hover:bg-blue-600"
-                  : "bg-gray-100 text-gray-400"}`}
-            >
-              <Send size={20} />
-            </button>
           </div>
         </div>
         <input
           type="file"
           ref={fileInputRef}
-          onChange={handleFileUpload}
+          onChange={handleFileSelect}
           accept="image/*,.pdf,.doc,.docx"
           className="hidden"
         />
       </div>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileUpload}
-        accept="image/*,.pdf,.doc,.docx"
-        className="hidden"
-      />
   
       {/* Message Actions Menu */}
       <MessageActions
