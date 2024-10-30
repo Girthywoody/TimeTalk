@@ -82,6 +82,8 @@ const ChatRoom = () => {
   const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
   const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
   const { user } = useAuth();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
 
   const [notificationSettings, setNotificationSettings] = useState({
     muted: false,
@@ -153,22 +155,34 @@ const ChatRoom = () => {
     }
   }, [searchQuery]);
 
-useEffect(() => {
-  if (!loading && messages.length > 0) {
-    const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100;
-      if (isNearBottom) {
-        setTimeout(() => {
-          scrollContainer.scrollTo({
-            top: scrollContainer.scrollHeight,
-            behavior: 'smooth'
-          });
-        }, 100);
+  useEffect(() => {
+    if (!loading && messages.length > 0) {
+      const scrollContainer = scrollContainerRef.current;
+      if (scrollContainer) {
+        // Always scroll to bottom on initial load
+        if (isInitialLoad) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          setIsInitialLoad(false);
+          return;
+        }
+
+        // Check if user is near bottom before auto-scrolling
+        const isNearBottom = 
+          scrollContainer.scrollHeight - 
+          scrollContainer.scrollTop - 
+          scrollContainer.clientHeight < 150;
+
+        if (isNearBottom) {
+          setTimeout(() => {
+            scrollContainer.scrollTo({
+              top: scrollContainer.scrollHeight,
+              behavior: 'smooth'
+            });
+          }, 100);
+        }
       }
     }
-  }
-}, [loading, messages]);
+  }, [loading, messages, isInitialLoad]);
 
   const handleMuteNotifications = (duration) => {
     const now = new Date();
@@ -207,16 +221,16 @@ useEffect(() => {
         block: 'center' 
       });
       
-      // Flash animation for the scrolled message
-      const messageBubble = element.querySelector('.message-bubble');
-      if (messageBubble) {
-        messageBubble.classList.add('animate-highlight');
-        setTimeout(() => {
-          messageBubble.classList.remove('animate-highlight');
-        }, 2000);
-      }
+      // Set the highlighted message
+      setHighlightedMessageId(messageId);
+      
+      // Clear the highlight after 5 seconds
+      setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 5000);
     }
   };
+
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -452,48 +466,6 @@ useEffect(() => {
 
     fetchUserProfile();
   }, [user]);
-
-
-
-
-
-
-const handleSearch = () => {
-  const searchTerm = searchQuery.toLowerCase();
-  const filtered = messages.filter(message => 
-    message.text?.toLowerCase().includes(searchTerm)
-  );
-  setSearchResults(filtered);
-
-  // Remove previous search highlights
-  const allMessageBubbles = document.querySelectorAll('.message-bubble');
-  allMessageBubbles.forEach(bubble => {
-    bubble.classList.remove(
-      'search-highlight-sender',
-      'search-highlight-receiver',
-      'animate-highlight'
-    );
-  });
-
-  if (searchTerm) {
-    filtered.forEach(message => {
-      const messageBubble = document.getElementById(`message-${message.id}`)
-        ?.querySelector('.message-bubble');
-      
-      if (messageBubble) {
-        // Add appropriate highlight class based on message sender
-        if (message.senderId === user?.uid) {
-          messageBubble.classList.add('search-highlight-sender');
-        } else {
-          messageBubble.classList.add('search-highlight-receiver');
-        }
-        
-        // Add animation class
-        messageBubble.classList.add('animate-highlight');
-      }
-    });
-  }
-};
 
   useEffect(() => {
     if (!user) return;
@@ -778,10 +750,11 @@ const handleSearch = () => {
               <div className="py-4 space-y-2"> {/* Add consistent padding */}
                 {messages.map((message, index) => (
                   <div
-                    id={`message-${message.id}`}
-                    key={message.id}
-                    className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2`}
-                  >
+                  id={`message-${message.id}`}
+                  key={message.id}
+                  className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2 
+                    ${highlightedMessageId === message.id ? 'message-highlight' : ''}`}
+                >
                     {message.senderId !== user?.uid && (
                       <div className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0">
                         {message.senderProfile?.profilePhotoURL ? (
