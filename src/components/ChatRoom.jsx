@@ -292,6 +292,11 @@ const handleReaction = async (messageId, reaction) => {
     return () => unsubscribe();
   }, [user, lastMessageId]);
 
+  const extractLinks = (text) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.match(urlRegex) || [];
+  };
+  
   const handleSend = async () => {
     if (!newMessage.trim() || !user || !userProfile) return;
   
@@ -305,7 +310,7 @@ const handleReaction = async (messageId, reaction) => {
         edited: false,
         deleted: false,
         saved: false,
-        links: links // Add this field
+        links: links
       };
   
       const messagesRef = collection(db, 'messages');
