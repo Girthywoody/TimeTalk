@@ -10,7 +10,6 @@ import {
   doc,
   getDoc,
   updateDoc,
-  deleteDoc,
   where,
   Timestamp
 } from 'firebase/firestore';
@@ -18,25 +17,19 @@ import { useAuth } from '../hooks/useAuth';
 import MessageActions from './MessageActions';
 import { 
   Send, 
-  Lock, 
   Loader2, 
-  Heart, 
-  Pencil, 
-  Trash2, 
   X, 
-  Image, 
   Paperclip, 
-  Bookmark,
-  ChevronLeft,
   Phone,
-  Video 
+  Video,
+  Bookmark,
+  Maximize2
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 
-
 const MESSAGES_LIMIT = 100;
-const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000;
 
 const ChatRoom = () => {
   const [messages, setMessages] = useState([]);
@@ -44,25 +37,98 @@ const ChatRoom = () => {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
   const [chatProfiles, setChatProfiles] = useState({});
-  const messagesEndRef = useRef(null);
-  const scrollContainerRef = useRef(null);
-  const { user } = useAuth();
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [actionPosition, setActionPosition] = useState({ x: 0, y: 0 });
   const [editingMessage, setEditingMessage] = useState(null);
   const [pressedMessageId, setPressedMessageId] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
-  const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
   const [lastMessageId, setLastMessageId] = useState(null);
-  const fileInputRef = useRef(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedFilePreview, setSelectedFilePreview] = useState(null);
 
+  const messagesEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
+  const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
+  const { user } = useAuth();
+
   const scrollToBottom = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type.startsWith('image/')) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedFilePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setSelectedFile(file);
+      setSelectedFilePreview(null);
+    }
+  };
+
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    setSelectedFilePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSend = async () => {
+    if ((!newMessage.trim() && !selectedFile) || !user || !userProfile) return;
+
+    try {
+      setUploading(true);
+      let fileURL = null;
+      
+      if (selectedFile) {
+        const storageRef = ref(storage, `chat/${user.uid}/${Date.now()}_${selectedFile.name}`);
+        await uploadBytes(storageRef, selectedFile);
+        fileURL = await getDownloadURL(storageRef);
+      }
+
+      const messagesRef = collection(db, 'messages');
+      const messageData = {
+        senderId: user.uid,
+        timestamp: serverTimestamp(),
+        edited: false,
+        deleted: false,
+        saved: false
+      };
+
+      if (fileURL) {
+        messageData.type = selectedFile.type.startsWith('image/') ? 'image' : 'file';
+        messageData.fileURL = fileURL;
+        messageData.fileName = selectedFile.name;
+        messageData.fileType = selectedFile.type;
+      }
+
+      if (newMessage.trim()) {
+        messageData.text = newMessage.trim();
+        messageData.type = fileURL ? 'mixed' : 'text';
+      }
+
+      const docRef = await addDoc(messagesRef, messageData);
+      setLastMessageId(docRef.id);
+      sendSound.current.play().catch(err => console.log('Audio play failed:', err));
+      
+      setNewMessage('');
+      removeSelectedFile();
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -79,7 +145,7 @@ const ChatRoom = () => {
       console.error('Error editing message:', error);
     }
   };
-  
+
   const handleDeleteMessage = async (messageId) => {
     try {
       const messageRef = doc(db, 'messages', messageId);
@@ -92,7 +158,7 @@ const ChatRoom = () => {
       console.error('Error deleting message:', error);
     }
   };
-  
+
   const handleReaction = async (messageId, reaction) => {
     try {
       const messageRef = doc(db, 'messages', messageId);
@@ -120,66 +186,35 @@ const ChatRoom = () => {
       console.error('Error toggling reaction:', error);
     }
   };
-    // File handling functions
-    const handleFileSelect = (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-  
-      if (file.type.startsWith('image/')) {
-        setSelectedFile(file);
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setFilePreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        // Handle non-image files if needed
-        setSelectedFile(file);
-        setFilePreview(null);
-      }
-    };
 
-    const removeSelectedFile = () => {
-      setSelectedFile(null);
-      setFilePreview(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    };
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !user || !userProfile) return;
-  
+  const handleSaveMessage = async (messageId) => {
     try {
-      setUploading(true);
-      const storageRef = ref(storage, `chat/${user.uid}/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      const isImage = file.type.startsWith('image/');
+      const messageRef = doc(db, 'messages', messageId);
+      const messageDoc = await getDoc(messageRef);
       
-      const messagesRef = collection(db, 'messages');
-      const docRef = await addDoc(messagesRef, {
-        senderId: user.uid,
-        timestamp: serverTimestamp(),
-        type: isImage ? 'image' : 'file',
-        fileURL: downloadURL,
-        fileName: file.name,
-        fileType: file.type,
-        saved: false
-      });
-  
-      setLastMessageId(docRef.id);
-      sendSound.current.play().catch(err => console.log('Audio play failed:', err));
-      
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      if (messageDoc.exists()) {
+        const currentSavedState = messageDoc.data().saved;
+        await updateDoc(messageRef, {
+          saved: !currentSavedState
+        });
       }
+      setSelectedMessage(null);
     } catch (error) {
-      console.error("Error uploading file:", error);
-    } finally {
-      setUploading(false);
+      console.error('Error toggling save state:', error);
     }
+  };
+
+  const handleMessageLongPress = (message, event) => {
+    event.preventDefault();
+    const messageElement = event.target.closest('.message-bubble');
+    if (messageElement) {
+      const rect = messageElement.getBoundingClientRect();
+      setActionPosition({
+        x: rect.left,
+        y: rect.bottom + 8
+      });
+    }
+    setSelectedMessage(message);
   };
 
   useEffect(() => {
@@ -198,26 +233,13 @@ const ChatRoom = () => {
         console.error("Error fetching user profile:", error);
       }
     };
-  
+
     fetchUserProfile();
   }, [user]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const handleMessageLongPress = (message, event) => {
-    event.preventDefault();
-    const messageElement = event.target.closest('.message-bubble');
-    if (messageElement) {
-      const rect = messageElement.getBoundingClientRect();
-      setActionPosition({
-        x: rect.left,
-        y: rect.bottom + 8
-      });
-    }
-    setSelectedMessage(message);
-  };
 
   useEffect(() => {
     if (!user) return;
@@ -291,73 +313,6 @@ const ChatRoom = () => {
     return () => unsubscribe();
   }, [user, lastMessageId]);
 
-  const handleSend = async () => {
-    if ((!newMessage.trim() && !selectedFile) || !user || !userProfile) return;
-
-    try {
-      setUploading(true);
-      let fileURL = null;
-      
-      if (selectedFile) {
-        const storageRef = ref(storage, `chat/${user.uid}/${Date.now()}_${selectedFile.name}`);
-        await uploadBytes(storageRef, selectedFile);
-        fileURL = await getDownloadURL(storageRef);
-      }
-
-      const messagesRef = collection(db, 'messages');
-      const messageData = {
-        senderId: user.uid,
-        timestamp: serverTimestamp(),
-        edited: false,
-        deleted: false,
-        saved: false
-      };
-
-      if (fileURL) {
-        messageData.type = selectedFile.type.startsWith('image/') ? 'image' : 'file';
-        messageData.fileURL = fileURL;
-        messageData.fileName = selectedFile.name;
-        messageData.fileType = selectedFile.type;
-      }
-
-      if (newMessage.trim()) {
-        messageData.text = newMessage.trim();
-        messageData.type = fileURL ? 'mixed' : 'text';
-      }
-
-      const docRef = await addDoc(messagesRef, messageData);
-      setLastMessageId(docRef.id);
-      sendSound.current.play().catch(err => console.log('Audio play failed:', err));
-      
-      setNewMessage('');
-      removeSelectedFile();
-    } catch (error) {
-      console.error("Error sending message:", error);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleSaveMessage = async (messageId) => {
-    if (!messageId) return;
-    
-    try {
-      const messageRef = doc(db, 'messages', messageId);
-      const messageDoc = await getDoc(messageRef);
-      
-      if (messageDoc.exists()) {
-        const currentSavedState = messageDoc.data().saved;
-        await updateDoc(messageRef, {
-          saved: !currentSavedState
-        });
-      }
-      
-      setSelectedMessage(null);
-    } catch (error) {
-      console.error('Error toggling save state:', error);
-    }
-  };
-
   return (
     <div className="fixed inset-0 flex flex-col bg-[#F8F9FE]">
       {/* Header */}
@@ -395,7 +350,7 @@ const ChatRoom = () => {
           </div>
         </div>
       </div>
-  
+
       {/* Messages Container */}
       <div className="flex-1 overflow-hidden">
         <div 
@@ -467,16 +422,15 @@ const ChatRoom = () => {
                             className={`
                               absolute -top-3 
                               ${message.senderId === user?.uid ? '-left-3' : '-right-3'}
-                              bg-white rounded-full shadow-md p-1 text-sm
-                              cursor-pointer
+                              bg-white rounded-full shadow-md p-1 text-sm cursor-pointer
                               hover:scale-110 
                               transition-transform`}
                           >
                             {message.reaction.emoji}
                           </div>
                         )}
-  
-                        {(message.type === 'text' || !message.type) && (
+
+                        {message.type === 'text' && (
                           <div className="break-words">
                             {editingMessage?.id === message.id ? (
                               <input
@@ -500,25 +454,32 @@ const ChatRoom = () => {
                             )}
                           </div>
                         )}
-  
-                          {message.type === 'image' && (
-                          <div className="rounded-lg overflow-hidden mt-1 relative group">
-                            <img 
-                              src={message.fileURL} 
-                              alt="Shared image"
-                              className="max-w-full rounded-lg cursor-pointer"
-                              loading="lazy"
-                              onClick={() => setImagePreview(message.fileURL)}
-                            />
-                            <button
-                              className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => setImagePreview(message.fileURL)}
-                            >
-                              <Maximize2 size={16} />
-                            </button>
-                          </div>
+
+                        {(message.type === 'image' || message.type === 'mixed') && (
+                          <>
+                            <div className="rounded-lg overflow-hidden mt-1 relative group">
+                              <img 
+                                src={message.fileURL} 
+                                alt="Shared image"
+                                className="max-w-full rounded-lg cursor-pointer"
+                                loading="lazy"
+                                onClick={() => setImagePreview(message.fileURL)}
+                              />
+                              <button
+                                className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => setImagePreview(message.fileURL)}
+                              >
+                                <Maximize2 size={16} />
+                              </button>
+                            </div>
+                            {message.text && (
+                              <div className="mt-2 text-[15px] leading-relaxed">
+                                {message.text}
+                              </div>
+                            )}
+                          </>
                         )}
-  
+
                         {message.type === 'file' && (
                           <a 
                             href={message.fileURL}
@@ -534,7 +495,7 @@ const ChatRoom = () => {
                             {message.fileName}
                           </a>
                         )}
-  
+
                         {message.edited && (
                           <div className={`text-xs mt-1 ${
                             message.senderId === user?.uid 
@@ -544,7 +505,7 @@ const ChatRoom = () => {
                             (edited)
                           </div>
                         )}
-  
+
                         {message.saved && (
                           <div className="absolute -top-2 -right-2">
                             <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
@@ -552,7 +513,7 @@ const ChatRoom = () => {
                         )}
                       </>
                     )}
-  
+
                     <div className={`text-[11px] mt-1 ${
                       message.senderId === user?.uid 
                         ? "text-white/60" 
@@ -571,15 +532,15 @@ const ChatRoom = () => {
           )}
         </div>
       </div>
-  
+
       {/* Message Input */}
       <div className="sticky bottom-0 left-0 right-0 pb-2 bg-white border-t border-gray-100">
         <div className="max-w-2xl mx-auto px-4 py-2">
           <div className="flex flex-col gap-2">
-            {filePreview && (
+            {selectedFilePreview && (
               <div className="relative inline-block">
                 <img 
-                  src={filePreview} 
+                  src={selectedFilePreview} 
                   alt="Selected file" 
                   className="h-20 w-auto rounded-lg object-cover"
                 />
@@ -641,7 +602,7 @@ const ChatRoom = () => {
           className="hidden"
         />
       </div>
-  
+
       {/* Message Actions Menu */}
       <MessageActions
         currentReaction={selectedMessage?.reaction?.emoji}
@@ -658,6 +619,7 @@ const ChatRoom = () => {
         position={actionPosition}
         isOwnMessage={selectedMessage?.senderId === user?.uid}
       />
+
       {/* Image Preview Dialog */}
       {imagePreview && (
         <div 
