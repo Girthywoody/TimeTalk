@@ -711,14 +711,16 @@ const handleSearch = () => {
 
         {/* Messages Container */}
         <div className="flex-1 overflow-hidden">
-          <div 
+         <div 
             ref={scrollContainerRef}
             className="h-full overflow-y-auto px-4"
             style={{
               scrollBehavior: 'smooth',
               overscrollBehavior: 'contain',
-              height: 'calc(100vh - 240px)', // Adjusted to account for header and input
-              paddingBottom: '1px'
+              height: 'calc(100vh - 180px)',
+              paddingTop: '16px',
+              paddingBottom: '16px',
+              WebkitOverflowScrolling: 'touch'
             }}
           >
             {loading ? (
