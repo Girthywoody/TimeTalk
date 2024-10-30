@@ -780,7 +780,7 @@ const ChatRoom = () => {
                               )}
                             </div>
                           )}
-                          
+
                           {(message.type === 'image' || message.type === 'mixed') && (
                             <>
                               <div className="rounded-lg overflow-hidden mt-1 relative group">
@@ -995,36 +995,38 @@ const ChatRoom = () => {
           isOwnMessage={selectedMessage?.senderId === user?.uid}
         />
 
-        {/* Image Preview Dialog */}
-        {imagePreview && (
-          <div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
-            onClick={() => setImagePreview(null)}
-          >
-            <div className="absolute top-4 right-4 flex gap-2">
-              <a 
-                href={imagePreview}
-                download
-                onClick={e => e.stopPropagation()}
-                className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-              >
-                <Download size={24} />
-              </a>
-              <button 
-                onClick={() => setImagePreview(null)}
-                className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-              >
-                <X size={24} />
-              </button>
+          {/* Image Preview Dialog */}
+          {imagePreview && (
+            <div 
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 pb-16"
+              onClick={() => setImagePreview(null)}
+            >
+              <div className="absolute top-4 right-4 flex gap-2 z-10">
+                <a 
+                  href={imagePreview}
+                  download
+                  onClick={e => e.stopPropagation()}
+                  className="p-2 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full text-white transition-colors"
+                >
+                  <Download size={24} />
+                </a>
+                <button 
+                  onClick={() => setImagePreview(null)}
+                  className="p-2 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full text-white transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="relative max-h-[calc(100vh-7rem)] overflow-auto">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="max-w-[90%] max-h-[calc(100vh-7rem)] mx-auto object-contain"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
             </div>
-            <img 
-              src={imagePreview} 
-              alt="Preview" 
-              className="max-w-[90%] max-h-[90vh] object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        )}
+          )}
       </div>
     </div>
   );
