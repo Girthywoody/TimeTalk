@@ -153,14 +153,22 @@ const ChatRoom = () => {
     }
   }, [searchQuery]);
 
-  useEffect(() => {
-    if (!loading && messages.length > 0) {
-      const scrollContainer = scrollContainerRef.current;
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+useEffect(() => {
+  if (!loading && messages.length > 0) {
+    const scrollContainer = scrollContainerRef.current;
+    if (scrollContainer) {
+      const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100;
+      if (isNearBottom) {
+        setTimeout(() => {
+          scrollContainer.scrollTo({
+            top: scrollContainer.scrollHeight,
+            behavior: 'smooth'
+          });
+        }, 100);
       }
     }
-  }, [loading, messages]);
+  }
+}, [loading, messages]);
 
   const handleMuteNotifications = (duration) => {
     const now = new Date();
@@ -190,17 +198,6 @@ const ChatRoom = () => {
     setIsDropdownOpen(false);
   };
 
-  const scrollToNewestMessage = () => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const inputHeight = 80; // Approximate height of input area
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior: 'smooth'
-      });
-    }
-  };
-
   useEffect(() => {
     if (!loading && messages.length > 0) {
       scrollToNewestMessage();
@@ -223,12 +220,6 @@ const ChatRoom = () => {
           messageBubble.classList.remove('animate-highlight');
         }, 2000);
       }
-    }
-  };
-
-  const scrollToBottom = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
   };
 
@@ -441,10 +432,6 @@ const ChatRoom = () => {
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, []);
-
-  useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
@@ -471,12 +458,7 @@ const ChatRoom = () => {
     fetchUserProfile();
   }, [user]);
 
-// Replace your existing useEffect for scrolling
-useEffect(() => {
-  if (!loading && messages.length > 0) {
-    scrollToNewestMessage();
-  }
-}, [loading, messages]);
+
 
 
 
