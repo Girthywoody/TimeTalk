@@ -15,20 +15,27 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import MessageActions from './MessageActions';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
 import { 
   Send, 
   Loader2, 
   X, 
   Paperclip, 
   Search,
-  Pin,
   MoreVertical,
   Download,
   Bookmark,
-  Maximize2
+  Maximize2,
+  BookmarkCheck,
+  Trash2,
+  AlertCircle,
+  Settings,
+  Bell,
+  BellOff,
+  Moon,
+  LogOut
 } from 'lucide-react';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase';
 
 const MESSAGES_LIMIT = 100;
 const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000;
@@ -57,7 +64,14 @@ const ChatRoom = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedFilePreview, setSelectedFilePreview] = useState(null);
-
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -284,6 +298,17 @@ const ChatRoom = () => {
   }, []);
 
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
     const fetchUserProfile = async () => {
       if (!user) return;
       try {
@@ -302,6 +327,30 @@ const ChatRoom = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleSearch = () => {
+    const filtered = messages.filter(message => 
+      message.text?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setSearchResults(filtered);
+  };
+
+  useEffect(() => {
+    if (searchQuery) {
+      handleSearch();
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchQuery]);
+
+  const scrollToMessage = (messageId) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('bg-blue-50');
+      setTimeout(() => element.classList.remove('bg-blue-50'), 2000);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -378,54 +427,177 @@ const ChatRoom = () => {
   return (
     <div className="fixed inset-0 flex flex-col bg-[#F8F9FE]">
       {/* Header */}
-      // Replace the header section in your ChatRoom component with this:
-<div className="px-4 py-2 bg-white">
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-3">
-      {userProfile?.profilePhotoURL ? (
-        <img 
-          src={userProfile.profilePhotoURL} 
-          alt="Profile" 
-          className="w-10 h-10 rounded-full object-cover"
-        />
-      ) : (
-        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-          <span className="text-blue-500 font-medium">
-            {userProfile?.username?.[0] || userProfile?.displayName?.[0] || '?'}
-          </span>
+      <div className="px-4 py-2 bg-white border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {userProfile?.profilePhotoURL ? (
+              <img 
+                src={userProfile.profilePhotoURL} 
+                alt="Profile" 
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <span className="text-blue-500 font-medium">
+                  {userProfile?.username?.[0] || userProfile?.displayName?.[0] || '?'}
+                </span>
+              </div>
+            )}
+            <div>
+              <h1 className="text-gray-900 font-semibold">
+                {userProfile?.username || userProfile?.displayName}
+              </h1>
+              <p className="text-sm text-green-500">Online</p>
+            </div>
+          </div>
+  
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                setIsSearchOpen(!isSearchOpen);
+                setTimeout(() => searchInputRef.current?.focus(), 100);
+              }}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              title="Search Messages"
+            >
+              <Search size={20} className="text-blue-500" />
+            </button>
+            
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="More Options"
+              >
+                <MoreVertical size={20} className="text-blue-500" />
+              </button>
+  
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setIsMuted(!isMuted);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
+                    >
+                      {isMuted ? (
+                        <>
+                          <Bell className="mr-2 h-4 w-4" />
+                          <span>Unmute Notifications</span>
+                        </>
+                      ) : (
+                        <>
+                          <BellOff className="mr-2 h-4 w-4" />
+                          <span>Mute Notifications</span>
+                        </>
+                      )}
+                    </button>
+  
+                    <button
+                      onClick={() => {
+                        setIsDarkMode(!isDarkMode);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
+                    >
+                      <Moon className="mr-2 h-4 w-4" />
+                      <span>Toggle Dark Mode</span>
+                    </button>
+  
+                    <button
+                      onClick={() => {
+                        /* Clear chat function */
+                        setIsDropdownOpen(false);
+                      }}
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      <span>Clear Chat</span>
+                    </button>
+  
+                    <button
+                      onClick={() => {
+                        /* Report function */
+                        setIsDropdownOpen(false);
+                      }}
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
+                    >
+                      <AlertCircle className="mr-2 h-4 w-4" />
+                      <span>Report User</span>
+                    </button>
+  
+                    <button
+                      onClick={() => {
+                        /* Block function */
+                        setIsDropdownOpen(false);
+                      }}
+                      className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Leave Chat</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      )}
-      <div>
-        <h1 className="text-gray-900 font-semibold">
-          {userProfile?.username || userProfile?.displayName}
-        </h1>
-        <p className="text-sm text-green-500">Online</p>
+  
+        {/* Search bar */}
+        {isSearchOpen && (
+          <div className="mt-2 relative">
+            <div className="relative">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search messages..."
+                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSearchResults([]);
+                  }}
+                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={20} />
+                </button>
+              )}
+            </div>
+            
+            {searchResults.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg max-h-60 overflow-auto">
+                {searchResults.map((message) => (
+                  <button
+                    key={message.id}
+                    onClick={() => {
+                      scrollToMessage(message.id);
+                      setIsSearchOpen(false);
+                      setSearchQuery('');
+                    }}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-100 flex flex-col"
+                  >
+                    <span className="text-sm text-gray-600">
+                      {message.text?.substring(0, 100)}
+                      {message.text?.length > 100 ? '...' : ''}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {message.timestamp?.toLocaleString()}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-    </div>
-
-    <div className="flex items-center gap-2">
-      <button 
-        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        title="Search Messages"
-      >
-        <Search size={20} className="text-blue-500" />
-      </button>
-      <button 
-        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        title="Pin Important"
-      >
-        <Pin size={20} className="text-blue-500" />
-      </button>
-      <button 
-        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        title="More Options"
-      >
-        <MoreVertical size={20} className="text-blue-500" />
-      </button>
-    </div>
-  </div>
-</div>
-
+  
       {/* Messages Container */}
       <div className="flex-1 overflow-hidden">
         <div 
@@ -445,6 +617,7 @@ const ChatRoom = () => {
             <>
               {messages.map((message, index) => (
                 <div
+                  id={`message-${message.id}`}
                   key={message.id}
                   className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2`}
                 >
@@ -504,7 +677,7 @@ const ChatRoom = () => {
                             {message.reaction.emoji}
                           </div>
                         )}
-
+  
                         {message.type === 'text' && (
                           <div className="break-words">
                             {editingMessage?.id === message.id ? (
@@ -529,7 +702,7 @@ const ChatRoom = () => {
                             )}
                           </div>
                         )}
-
+  
                         {(message.type === 'image' || message.type === 'mixed') && (
                           <>
                             <div className="rounded-lg overflow-hidden mt-1 relative group">
@@ -554,7 +727,7 @@ const ChatRoom = () => {
                             )}
                           </>
                         )}
-
+  
                         {message.type === 'file' && (
                           <a 
                             href={message.fileURL}
@@ -570,7 +743,7 @@ const ChatRoom = () => {
                             {message.fileName}
                           </a>
                         )}
-
+  
                         {message.edited && (
                           <div className={`text-xs mt-1 ${
                             message.senderId === user?.uid 
@@ -580,7 +753,7 @@ const ChatRoom = () => {
                             (edited)
                           </div>
                         )}
-
+  
                         {message.saved && (
                           <div className="absolute -top-2 -right-2">
                             <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
@@ -588,7 +761,7 @@ const ChatRoom = () => {
                         )}
                       </>
                     )}
-
+  
                     <div className={`text-[11px] mt-1 ${
                       message.senderId === user?.uid 
                         ? "text-white/60" 
@@ -607,133 +780,126 @@ const ChatRoom = () => {
           )}
         </div>
       </div>
-
-      {/* Message Input */}
-      <div className="sticky bottom-0 left-0 right-0 pb-2 bg-white border-t border-gray-100">
-        <div className="max-w-2xl mx-auto px-4 py-2">
-          <div className="flex flex-col gap-2">
-            {selectedFilePreview && (
-              <div className="relative inline-block">
-                <img 
-                  src={selectedFilePreview} 
-                  alt="Selected file" 
-                  className="h-20 w-auto rounded-lg object-cover"
-                />
-                <button
-                  onClick={removeSelectedFile}
-                  className="absolute -top-2 -right-2 p-1 bg-gray-800 rounded-full text-white hover:bg-gray-900"
-                >
-                  <X size={14} />
-                </button>
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    accept="image/*,.pdf,.doc,.docx"
-                    className="hidden"
-                  />
-                </div>            
-            )}
-            
-            <div className="flex items-center gap-2">
-              <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder="Message"
-                  className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  <Paperclip size={20} />
-                </button>
-              </div>
-              
-              <button
-                onClick={handleSend}
-                disabled={(!newMessage.trim() && !selectedFile) || !userProfile || uploading}
-                className={`p-3 rounded-full flex items-center justify-center transition-all duration-200 
-                  ${(newMessage.trim() || selectedFile) && userProfile && !uploading
-                    ? "bg-[#4E82EA] text-white hover:bg-blue-600"
-                    : "bg-gray-100 text-gray-400"}`}
-              >
-                {uploading ? (
-                  <Loader2 size={20} className="animate-spin" />
-                ) : (
-                  <Send size={20} />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          accept="image/*,.pdf,.doc,.docx"
-          className="hidden"
-        />
-      </div>
-
-      {/* Message Actions Menu */}
-      <MessageActions
-        currentReaction={selectedMessage?.reaction?.emoji}
-        isOpen={!!selectedMessage}
-        onClose={() => {
-          setSelectedMessage(null);
-          setPressedMessageId(null);
-        }}
-        onEdit={() => setEditingMessage(selectedMessage)}
-        onDelete={() => handleDeleteMessage(selectedMessage?.id)}
-        onReact={(reaction) => handleReaction(selectedMessage?.id, reaction)}
-        onSave={() => handleSaveMessage(selectedMessage?.id)}
-        isSaved={selectedMessage?.saved}
-        position={actionPosition}
-        isOwnMessage={selectedMessage?.senderId === user?.uid}
-      />
-
-      {/* Image Preview Dialog */}
-      {imagePreview && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
-          onClick={() => setImagePreview(null)}
-        >
-          <div className="absolute top-4 right-4 flex gap-2">
-            <a 
-              href={imagePreview}
-              download
-              onClick={e => e.stopPropagation()}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-            >
-              <Download size={24} />
-            </a>
-            <button 
-              onClick={() => setImagePreview(null)}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-            >
-              <X size={24} />
-            </button>
-          </div>
+  
+{/* Message Input */}
+<div className="sticky bottom-0 left-0 right-0 pb-2 bg-white border-t border-gray-100">
+  <div className="max-w-2xl mx-auto px-4 py-2">
+    <div className="flex flex-col gap-2">
+      {selectedFilePreview && (
+        <div className="relative inline-block">
           <img 
-            src={imagePreview} 
-            alt="Preview" 
-            className="max-w-[90%] max-h-[90vh] object-contain"
-            onClick={(e) => e.stopPropagation()}
+            src={selectedFilePreview} 
+            alt="Selected file" 
+            className="h-20 w-auto rounded-lg object-cover"
           />
+          <button
+            onClick={removeSelectedFile}
+            className="absolute -top-2 -right-2 p-1 bg-gray-800 rounded-full text-white hover:bg-gray-900"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
+      
+      <div className="flex items-center gap-2">
+        <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Message"
+            className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            <Paperclip size={20} />
+          </button>
+        </div>
+        
+        <button
+          onClick={handleSend}
+          disabled={(!newMessage.trim() && !selectedFile) || !userProfile || uploading}
+          className={`p-3 rounded-full flex items-center justify-center transition-all duration-200 
+            ${(newMessage.trim() || selectedFile) && userProfile && !uploading
+              ? "bg-[#4E82EA] text-white hover:bg-blue-600"
+              : "bg-gray-100 text-gray-400"}`}
+        >
+          {uploading ? (
+            <Loader2 size={20} className="animate-spin" />
+          ) : (
+            <Send size={20} />
+          )}
+        </button>
+      </div>
     </div>
-  );
+  </div>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        accept="image/*,.pdf,.doc,.docx"
+        className="hidden"
+      />
+    </div>
+
+    {/* Message Actions Menu */}
+    <MessageActions
+      currentReaction={selectedMessage?.reaction?.emoji}
+      isOpen={!!selectedMessage}
+      onClose={() => {
+        setSelectedMessage(null);
+        setPressedMessageId(null);
+      }}
+      onEdit={() => setEditingMessage(selectedMessage)}
+      onDelete={() => handleDeleteMessage(selectedMessage?.id)}
+      onReact={(reaction) => handleReaction(selectedMessage?.id, reaction)}
+      onSave={() => handleSaveMessage(selectedMessage?.id)}
+      isSaved={selectedMessage?.saved}
+      position={actionPosition}
+      isOwnMessage={selectedMessage?.senderId === user?.uid}
+    />
+
+    {/* Image Preview Dialog */}
+    {imagePreview && (
+      <div 
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+        onClick={() => setImagePreview(null)}
+      >
+        <div className="absolute top-4 right-4 flex gap-2">
+          <a 
+            href={imagePreview}
+            download
+            onClick={e => e.stopPropagation()}
+            className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+          >
+            <Download size={24} />
+          </a>
+          <button 
+            onClick={() => setImagePreview(null)}
+            className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        <img 
+          src={imagePreview} 
+          alt="Preview" 
+          className="max-w-[90%] max-h-[90vh] object-contain"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    )}
+  </div>
+);
 };
 
 export default ChatRoom;
