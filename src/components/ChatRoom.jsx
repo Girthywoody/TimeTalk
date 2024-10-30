@@ -98,6 +98,17 @@ const ChatRoom = () => {
     }
   }, [darkMode]);
 
+  useEffect(() => {
+    if (!loading && messages.length > 0) {
+      setTimeout(() => {
+        scrollContainerRef.current?.scrollTo({
+          top: scrollContainerRef.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 100);
+    }
+  }, [loading, messages]);
+
   const handleMuteNotifications = (duration) => {
     const now = new Date();
     let mutedUntil = null;
@@ -475,7 +486,7 @@ const ChatRoom = () => {
     <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
         {/* Header */}
-        <div className="px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+        <div className="px-4 py-2 bg-white border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {userProfile?.profilePhotoURL ? (
@@ -836,7 +847,7 @@ const ChatRoom = () => {
         </div>
 
         {/* Message Input */}
-        <div className="sticky bottom-0 left-0 right-0 pb-2 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+        <div className="sticky bottom-0 left-0 right-0 pb-2 bg-white border-t border-gray-100">
           <div className="max-w-2xl mx-auto px-4 py-2">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
@@ -856,20 +867,20 @@ const ChatRoom = () => {
               )}
               
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-[#F8F9FE] dark:bg-gray-700 rounded-full flex items-center pl-4 pr-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    placeholder="Message"
-                    className="flex-1 bg-transparent border-none py-2 text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none"
-                  />
+              <div className="flex-1 bg-[#F8F9FE] rounded-full flex items-center pl-4 pr-2">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Message"
+                  className="flex-1 bg-transparent border-none py-2 text-gray-800 placeholder-gray-500 focus:outline-none"
+                />
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}

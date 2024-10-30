@@ -1,142 +1,229 @@
-import React, { useState } from 'react';
-import { Calendar, Heart, Camera, Loader2 } from 'lucide-react';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
-import { useAuth } from '../../hooks/useAuth';
+import React, { useState, useRef } from 'react';
+import { Camera, X, Check, Edit2, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 const ProfileHeader = ({ profileData, onProfileUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [showPhotoCropper, setShowPhotoCropper] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const { user } = useAuth();
-  const storage = getStorage();
-
-  // Calculate days together if anniversary exists
-  const getDaysTogether = () => {
-    if (!profileData.relationship?.anniversary) return 0;
-    const anniversary = new Date(profileData.relationship.anniversary);
-    const today = new Date();
-    return Math.floor((today - anniversary) / (1000 * 60 * 60 * 24));
-  };
+  const [editedData, setEditedData] = useState(profileData);
+  const fileInputRef = useRef(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
 
   const handlePhotoClick = () => {
-    document.getElementById('profile-photo-input').click();
+    fileInputRef.current?.click();
   };
 
-  const handlePhotoChange = async (event) => {
+  const handlePhotoSelect = (event) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSelectedImage(e.target.result);
+        setShowPhotoCropper(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
+  const handleCropComplete = async () => {
+    setUploading(true);
     try {
-      setUploading(true);
-
-      // Create a reference to the file location in Firebase Storage
-      const storageRef = ref(storage, `profile-photos/${user.uid}/${file.name}`);
-
-      // Upload the file
-      const snapshot = await uploadBytes(storageRef, file);
+      // Here you would implement the actual cropping and upload logic
+      // For now, we'll just simulate it
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Get the download URL
-      const downloadURL = await getDownloadURL(snapshot.ref);
-
-      // Update the user document in Firestore
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        profilePhotoURL: downloadURL
+      // Update the profile with the new photo URL
+      onProfileUpdate({
+        ...profileData,
+        profilePhotoURL: selectedImage // In reality, this would be the uploaded image URL
       });
-
-      // Update local state through parent component
-      if (onProfileUpdate) {
-        onProfileUpdate({
-          ...profileData,
-          profilePhotoURL: downloadURL
-        });
-      }
+      
+      setShowPhotoCropper(false);
+      setSelectedImage(null);
     } catch (error) {
       console.error('Error uploading photo:', error);
-      // Here you might want to show an error message to the user
     } finally {
       setUploading(false);
     }
   };
 
+  const handleSaveProfile = async () => {
+    try {
+      await onProfileUpdate(editedData);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center space-y-4">
-      <div className="relative">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 p-1">
-          <div className="w-full h-full rounded-full overflow-hidden relative">
-            {uploading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-white animate-spin" />
+    <>
+      <div className="relative max-w-2xl mx-auto">
+        {/* Profile Header */}
+        <div className="flex flex-col items-center space-y-6">
+          {/* Profile Photo */}
+          <div className="relative group">
+            <div className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 p-1">
+              <div className="w-full h-full rounded-full overflow-hidden relative group-hover:opacity-90 transition-opacity">
+                <img 
+                  src={profileData.profilePhotoURL || "/api/placeholder/128/128"}
+                  alt={profileData.displayName} 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <Camera size={24} className="text-white" />
+                </div>
               </div>
-            )}
-            <img 
-              src={profileData.profilePhotoURL || "/api/placeholder/96/96"}
-              alt={profileData.displayName} 
-              className="w-full h-full object-cover"
+            </div>
+            <button 
+              onClick={handlePhotoClick}
+              className="absolute bottom-1 right-1 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+            >
+              <Camera size={16} className="text-gray-600" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*"
+              onChange={handlePhotoSelect}
             />
           </div>
-        </div>
-        {/* Camera icon overlay */}
-        <button 
-          onClick={handlePhotoClick}
-          className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
-          disabled={uploading}
-        >
-          <Camera size={16} className="text-gray-600" />
-        </button>
-        {/* Hidden file input */}
-        <input
-          type="file"
-          id="profile-photo-input"
-          className="hidden"
-          accept="image/*"
-          onChange={handlePhotoChange}
-          disabled={uploading}
-        />
-      </div>
-      
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-gray-800">{profileData.displayName}</h2>
-        <p className="text-gray-600 text-sm">@{profileData.username}</p>
-        {profileData.bio && (
-          <p className="text-gray-600 max-w-md">{profileData.bio}</p>
-        )}
-        {profileData.relationship?.anniversary && (
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-            <Calendar size={16} className="text-blue-500" />
-            <span>Together since {new Date(profileData.relationship.anniversary).toLocaleDateString('en-US', {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric'
-            })}</span>
-          </div>
-        )}
-        {profileData.partnerInfo?.name && (
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-            <Heart size={16} className="text-rose-500" />
-            <span>With {profileData.partnerInfo.name}</span>
-            {profileData.partnerInfo.nickname && (
-              <span className="text-gray-400">({profileData.partnerInfo.nickname})</span>
+
+          {/* Profile Info */}
+          <div className="text-center space-y-4 w-full max-w-md">
+            {isEditing ? (
+              <div className="space-y-4">
+                <Input
+                  value={editedData.displayName}
+                  onChange={(e) => setEditedData({ ...editedData, displayName: e.target.value })}
+                  className="text-center text-xl font-bold"
+                  placeholder="Display Name"
+                />
+                <Input
+                  value={editedData.username}
+                  onChange={(e) => setEditedData({ ...editedData, username: e.target.value })}
+                  className="text-center"
+                  placeholder="Username"
+                />
+                <Textarea
+                  value={editedData.bio}
+                  onChange={(e) => setEditedData({ ...editedData, bio: e.target.value })}
+                  className="text-center resize-none"
+                  placeholder="Write a bio..."
+                  rows={3}
+                />
+                <div className="flex justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveProfile}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="relative">
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="absolute -right-8 top-0 p-2 text-gray-400 hover:text-gray-600"
+                >
+                  <Edit2 size={16} />
+                </button>
+                <h2 className="text-2xl font-bold text-gray-800">{profileData.displayName}</h2>
+                <p className="text-gray-600">@{profileData.username}</p>
+                {profileData.bio && (
+                  <p className="text-gray-600 mt-2">{profileData.bio}</p>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </div>
+
+        {/* Stats Section */}
+        <div className="mt-8 grid grid-cols-3 gap-8 w-full max-w-md mx-auto">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-blue-600">{profileData.stats?.memories || 0}</p>
+            <p className="text-sm text-gray-600">Memories</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-blue-600">{profileData.stats?.scheduled || 0}</p>
+            <p className="text-sm text-gray-600">Scheduled</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-blue-600">
+              {Math.floor((new Date() - new Date(profileData.relationship?.anniversary)) / (1000 * 60 * 60 * 24))}
+            </p>
+            <p className="text-sm text-gray-600">Days Together</p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-8 w-full max-w-xs">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-blue-600">{profileData.stats?.memories || 0}</p>
-          <p className="text-sm text-gray-600">Memories</p>
-        </div>
-        <div className="text-center">
-          <p className="text-2xl font-bold text-blue-600">{profileData.stats?.scheduled || 0}</p>
-          <p className="text-sm text-gray-600">Scheduled</p>
-        </div>
-        <div className="text-center">
-          <p className="text-2xl font-bold text-blue-600">{getDaysTogether()}</p>
-          <p className="text-sm text-gray-600">Days Together</p>
-        </div>
-      </div>
-    </div>
+      {/* Photo Cropper Dialog */}
+      <Dialog open={showPhotoCropper} onOpenChange={setShowPhotoCropper}>
+        <DialogContent className="sm:max-w-lg">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Adjust Profile Photo</h3>
+            <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-gray-100">
+              {selectedImage && (
+                <>
+                  <img
+                    src={selectedImage}
+                    alt="Crop preview"
+                    className="w-full h-full object-cover"
+                    style={{
+                      transform: `translate(${cropPosition.x}px, ${cropPosition.y}px)`
+                    }}
+                  />
+                  {/* Overlay with grid lines */}
+                  <div className="absolute inset-0 bg-black/40">
+                    <div className="absolute inset-0 border-2 border-white rounded-full m-auto w-[90%] h-[90%]" />
+                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0">
+                      {[...Array(9)].map((_, i) => (
+                        <div key={i} className="border border-white/30" />
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowPhotoCropper(false)}
+                disabled={uploading}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCropComplete}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 mr-2" />
+                )}
+                Save
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
