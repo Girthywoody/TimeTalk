@@ -57,6 +57,8 @@ const ChatRoom = () => {
   const [lastMessageId, setLastMessageId] = useState(null);
   const fileInputRef = useRef(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFilePreview, setSelectedFilePreview] = useState(null);
 
   const scrollToBottom = () => {
     if (scrollContainerRef.current) {
