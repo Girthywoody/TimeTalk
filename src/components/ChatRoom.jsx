@@ -26,7 +26,8 @@ import {
   Maximize2
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
+import { getStorage } from 'firebase/storage';
 
 const MESSAGES_LIMIT = 100;
 const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000;
@@ -55,7 +56,7 @@ const ChatRoom = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedFilePreview, setSelectedFilePreview] = useState(null);
-
+  const storage = getStorage(app);
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const fileInputRef = useRef(null);
