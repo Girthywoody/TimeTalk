@@ -12,7 +12,8 @@ const MessageActions = ({
   position,
   isOwnMessage,
   onSave,
-  isSaved
+  isSaved,
+  currentReaction // Add this prop
 }) => {
   const menuRef = useRef(null);
 
@@ -59,8 +60,13 @@ const MessageActions = ({
           {REACTIONS.map(reaction => (
             <button
               key={reaction}
-              onClick={() => onReact(reaction)}
-              className="text-xl hover:scale-125 transition-transform"
+              onClick={() => {
+                onReact(reaction);
+                onClose(); // Close menu after selecting reaction
+              }}
+              className={`text-xl hover:scale-125 transition-transform p-1 rounded-lg
+                ${reaction === currentReaction ? 'ring-2 ring-blue-500 ring-offset-1 scale-110' : ''}
+              `}
             >
               {reaction}
             </button>
@@ -69,7 +75,10 @@ const MessageActions = ({
 
         {/* Save Message Action */}
         <button
-          onClick={onSave}
+          onClick={() => {
+            onSave();
+            onClose(); // Close menu after action
+          }}
           className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
         >
           {isSaved ? (
@@ -89,14 +98,20 @@ const MessageActions = ({
         {isOwnMessage && (
           <>
             <button
-              onClick={onEdit}
+              onClick={() => {
+                onEdit();
+                onClose(); // Close menu after action
+              }}
               className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
             >
               <Pencil size={18} />
               Edit Message
             </button>
             <button
-              onClick={onDelete}
+              onClick={() => {
+                onDelete();
+                onClose(); // Close menu after action
+              }}
               className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
             >
               <Trash2 size={18} />

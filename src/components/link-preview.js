@@ -8,7 +8,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const metadata = await parse(url);
+    const result = await fetch(url);
+    const html = await result.text();
+    const metadata = await parse(html);
     
     res.json({
       title: metadata.meta.title || '',

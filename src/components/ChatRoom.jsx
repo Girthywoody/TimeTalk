@@ -166,7 +166,8 @@ const handleReaction = async (messageId, reaction) => {
 
   const fetchLinkPreview = async (url) => {
     try {
-      const response = await fetch(`/component/link-preview?url=${encodeURIComponent(url)}`);
+      const response = await fetch(`/api/components/link-preview?url=${encodeURIComponent(url)}`);
+      if (!response.ok) throw new Error('Failed to fetch preview');
       const data = await response.json();
       setLinkPreviews(prev => ({
         ...prev,
@@ -174,11 +175,12 @@ const handleReaction = async (messageId, reaction) => {
       }));
     } catch (error) {
       console.error('Error fetching link preview:', error);
+      // Set a null preview to prevent repeated failed attempts
+      setLinkPreviews(prev => ({
+        ...prev,
+        [url]: null
+      }));
     }
-  };
-  const extractLinks = (text) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return text.match(urlRegex) || [];
   };
 
   useEffect(() => {
@@ -477,26 +479,22 @@ const handleReaction = async (messageId, reaction) => {
         <div className="italic text-opacity-70">This message was deleted</div>
       ) : (
         <>
-          {/* Reaction */}
-          {message.reaction && (
+        {message.reaction && (
             <div 
               onClick={(e) => {
                 e.stopPropagation();
                 handleReaction(message.id, message.reaction.emoji);
               }}
-              className={`
+              className="
                 absolute -top-3 left-1 
                 bg-white rounded-full shadow-md p-1 text-sm
                 cursor-pointer
                 hover:scale-110 
-                transition-transform
-                ${message.reaction.userId === user.uid ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
-              `}
+                transition-transform"
             >
               {message.reaction.emoji}
             </div>
           )}
-
           {/* Text Message */}
           {(message.type === 'text' || !message.type) && (
             <div className="break-words">
@@ -656,6 +654,7 @@ const handleReaction = async (messageId, reaction) => {
   
       {/* Message Actions Menu */}
       <MessageActions
+      currentReaction={selectedMessage?.reaction?.emoji}
       isOpen={!!selectedMessage}
       onClose={() => {
         setSelectedMessage(null);
