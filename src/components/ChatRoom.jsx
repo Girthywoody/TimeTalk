@@ -157,15 +157,7 @@ const ChatRoom = () => {
     if (!loading && messages.length > 0) {
       const scrollContainer = scrollContainerRef.current;
       if (scrollContainer) {
-        const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100;
-        if (isNearBottom) {
-          setTimeout(() => {
-            scrollContainer.scrollTo({
-              top: scrollContainer.scrollHeight,
-              behavior: 'smooth'
-            });
-          }, 100);
-        }
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
       }
     }
   }, [loading, messages]);
@@ -790,14 +782,15 @@ const handleSearch = () => {
 
         {/* Messages Container */}
         <div className="flex-1 overflow-hidden">
-          <div 
+         <div 
             ref={scrollContainerRef}
             className="h-full overflow-y-auto px-4"
             style={{
               scrollBehavior: 'smooth',
               overscrollBehavior: 'contain',
-              height: 'calc(100vh - 180px)', // Account for header and input heights
-              paddingBottom: '16px'
+              height: 'calc(100vh - 240px)', // Increased to account for input height
+              paddingTop: '16px',
+              paddingBottom: '80px'  // Added more padding at bottom
             }}
           >
             {loading ? (
