@@ -414,27 +414,29 @@ useEffect(() => {
 
 
 
-  const handleSearch = () => {
-    const searchTerm = searchQuery.toLowerCase();
-    const results = messages.filter(message => {
-      if (!message.text) return false;
-      return message.text.toLowerCase().includes(searchTerm);
-    });
-    
-    setSearchResults(results);
+const handleSearch = () => {
+  const searchTerm = searchQuery.toLowerCase();
+  const results = messages.filter(message => {
+    if (!message.text) return false;
+    return message.text.toLowerCase().includes(searchTerm);
+  });
   
-    // Highlight matching text in messages
-    const messageElements = document.querySelectorAll('.message-text');
-    messageElements.forEach(element => {
-      const text = element.textContent;
-      if (text && searchTerm) {
-        const regex = new RegExp(`(${searchTerm})`, 'gi');
-        element.innerHTML = text.replace(regex, `<span class="bg-yellow-200 dark:bg-yellow-900 dark:text-white rounded px-1">$1</span>`);
-      } else {
-        element.innerHTML = text || '';
-      }
-    });
-  };
+  setSearchResults(results);
+
+  const messageElements = document.querySelectorAll('.message-text');
+  messageElements.forEach(element => {
+    const text = element.textContent;
+    if (text && searchTerm) {
+      const regex = new RegExp(`(${searchTerm})`, 'gi');
+      const highlightClass = element.closest('.message-bubble').classList.contains('bg-[#4E82EA]')
+        ? 'bg-white/30 rounded px-1' // For blue message bubbles
+        : 'bg-blue-100 dark:bg-blue-900 rounded px-1'; // For white/dark message bubbles
+      element.innerHTML = text.replace(regex, `<span class="${highlightClass}">$1</span>`);
+    } else {
+      element.innerHTML = text || '';
+    }
+  });
+};
 
   useEffect(() => {
     if (!user) return;
@@ -693,12 +695,12 @@ useEffect(() => {
         <div className="flex-1 overflow-hidden">
           <div 
             ref={scrollContainerRef}
-            className="h-full overflow-y-auto px-4 py-3"
+            className="h-full overflow-y-auto px-4"
             style={{
               scrollBehavior: 'smooth',
               overscrollBehavior: 'contain',
-              paddingBottom: '80px', // Reduced padding
-              height: 'calc(100vh - 190px)' // Accounts for header, input, and navigation            
+              height: 'calc(100vh - 180px)',
+              marginBottom: '16px'        
             }}
           >
             {loading ? (
@@ -870,7 +872,7 @@ useEffect(() => {
         </div>
 
         {/* Message Input */}
-        <div className={`sticky bottom-16 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
+        <div className={`fixed bottom-16 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
          <div className="max-w-2xl mx-auto px-4 py-3">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
@@ -1012,7 +1014,8 @@ useEffect(() => {
           {/* Image Preview Dialog */}
           {imagePreview && (
             <div 
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 pb-16"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+              style={{ paddingBottom: '80px' }}
               onClick={() => setImagePreview(null)}
             >
               <div className="absolute top-4 right-4 flex gap-2 z-10">
@@ -1031,14 +1034,12 @@ useEffect(() => {
                   <X size={24} />
                 </button>
               </div>
-              <div className="relative max-h-[calc(100vh-7rem)] overflow-auto">
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
-                  className="max-w-[90%] max-h-[calc(100vh-7rem)] mx-auto object-contain"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
+              <img 
+                src={imagePreview} 
+                alt="Preview" 
+                className="max-w-[90%] max-h-[calc(100vh-160px)] object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
             </div>
           )}
       </div>
