@@ -20,8 +20,10 @@ import {
   Loader2, 
   X, 
   Paperclip, 
-  Phone,
-  Video,
+  Search,
+  Pin,
+  MoreVertical,
+  Download,
   Bookmark,
   Maximize2
 } from 'lucide-react';
@@ -376,40 +378,53 @@ const ChatRoom = () => {
   return (
     <div className="fixed inset-0 flex flex-col bg-[#F8F9FE]">
       {/* Header */}
-      <div className="px-4 py-2 bg-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {userProfile?.profilePhotoURL ? (
-              <img 
-                src={userProfile.profilePhotoURL} 
-                alt="Profile" 
-                className="w-10 h-10 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-blue-500 font-medium">
-                  {userProfile?.username?.[0] || userProfile?.displayName?.[0] || '?'}
-                </span>
-              </div>
-            )}
-            <div>
-              <h1 className="text-gray-900 font-semibold">
-                {userProfile?.username || userProfile?.displayName}
-              </h1>
-              <p className="text-sm text-green-500">Online</p>
-            </div>
-          </div>
-  
-          <div className="flex items-center gap-2">
-            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <Phone size={20} className="text-blue-500" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <Video size={20} className="text-blue-500" />
-            </button>
-          </div>
+      // Replace the header section in your ChatRoom component with this:
+<div className="px-4 py-2 bg-white">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      {userProfile?.profilePhotoURL ? (
+        <img 
+          src={userProfile.profilePhotoURL} 
+          alt="Profile" 
+          className="w-10 h-10 rounded-full object-cover"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+          <span className="text-blue-500 font-medium">
+            {userProfile?.username?.[0] || userProfile?.displayName?.[0] || '?'}
+          </span>
         </div>
+      )}
+      <div>
+        <h1 className="text-gray-900 font-semibold">
+          {userProfile?.username || userProfile?.displayName}
+        </h1>
+        <p className="text-sm text-green-500">Online</p>
       </div>
+    </div>
+
+    <div className="flex items-center gap-2">
+      <button 
+        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        title="Search Messages"
+      >
+        <Search size={20} className="text-blue-500" />
+      </button>
+      <button 
+        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        title="Pin Important"
+      >
+        <Pin size={20} className="text-blue-500" />
+      </button>
+      <button 
+        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        title="More Options"
+      >
+        <MoreVertical size={20} className="text-blue-500" />
+      </button>
+    </div>
+  </div>
+</div>
 
       {/* Messages Container */}
       <div className="flex-1 overflow-hidden">
@@ -693,12 +708,22 @@ const ChatRoom = () => {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
           onClick={() => setImagePreview(null)}
         >
-          <button 
-            onClick={() => setImagePreview(null)}
-            className="absolute right-4 top-4 text-white/80 hover:text-white z-10"
-          >
-            <X size={24} />
-          </button>
+          <div className="absolute top-4 right-4 flex gap-2">
+            <a 
+              href={imagePreview}
+              download
+              onClick={e => e.stopPropagation()}
+              className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+            >
+              <Download size={24} />
+            </a>
+            <button 
+              onClick={() => setImagePreview(null)}
+              className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
           <img 
             src={imagePreview} 
             alt="Preview" 
