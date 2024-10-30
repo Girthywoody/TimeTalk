@@ -448,7 +448,7 @@ const ChatRoom = () => {
               {/* Text Message */}
               {(message.type === 'text' || !message.type) && (
                 <div className="break-words">
-                  {editingMessage{editingMessage?.id === message.id ? (
+                    {editingMessage?.id === message.id ? (  // <-- Fixed syntax
                     <input
                       type="text"
                       value={editingMessage.text}
