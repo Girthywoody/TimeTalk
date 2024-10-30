@@ -34,7 +34,6 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { ExternalLink, Maximize2 } from 'lucide-react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 const MESSAGES_LIMIT = 100;
 const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
