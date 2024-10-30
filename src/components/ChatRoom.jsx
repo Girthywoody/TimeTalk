@@ -162,6 +162,7 @@ const ChatRoom = () => {
       container.scrollTop = container.scrollHeight - container.clientHeight - spacing;
     }
   };
+  
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -371,11 +372,18 @@ const ChatRoom = () => {
     setSelectedMessage(message);
   };
 
+// Scroll to the newest message after loading completes
 useEffect(() => {
   if (!loading && messages.length > 0) {
     scrollToNewestMessage();
   }
 }, [loading, messages]);
+
+// Ensure the scroll stays at the newest message when a new message arrives
+useEffect(() => {
+  scrollToNewestMessage();
+}, [messages]);
+
 
   useEffect(() => {
     const handleClickOutside = (event) => {
