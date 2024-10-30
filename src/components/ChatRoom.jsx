@@ -155,30 +155,75 @@ const ChatRoom = () => {
     }
   }, [searchQuery]);
 
+  const handleSearch = () => {
+    const searchTerm = searchQuery.toLowerCase();
+    const filtered = messages.filter(message => 
+      message.text?.toLowerCase().includes(searchTerm)
+    );
+    setSearchResults(filtered);
+  
+    // Clear previous highlights
+    const allMessageBubbles = document.querySelectorAll('.message-bubble');
+    allMessageBubbles.forEach(bubble => {
+      bubble.classList.remove(
+        'search-highlight-sender',
+        'search-highlight-receiver'
+      );
+    });
+  
+    if (searchTerm) {
+      filtered.forEach(message => {
+        const messageBubble = document.getElementById(`message-${message.id}`)
+          ?.querySelector('.message-bubble');
+        
+        if (messageBubble) {
+          messageBubble.classList.add(
+            message.senderId === user?.uid 
+              ? 'search-highlight-sender' 
+              : 'search-highlight-receiver'
+          );
+        }
+      });
+    }
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      // Fix for iOS viewport height when keyboard appears
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+  
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     if (!loading && messages.length > 0) {
       const scrollContainer = scrollContainerRef.current;
       if (scrollContainer) {
-        // Always scroll to bottom on initial load
+        // For initial load or when new messages arrive
+        const scrollToBottom = () => {
+          requestAnimationFrame(() => {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          });
+        };
+  
         if (isInitialLoad) {
-          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          scrollToBottom();
           setIsInitialLoad(false);
           return;
         }
-
-        // Check if user is near bottom before auto-scrolling
+  
+        // For new messages, check if we're near bottom
         const isNearBottom = 
           scrollContainer.scrollHeight - 
           scrollContainer.scrollTop - 
-          scrollContainer.clientHeight < 150;
-
+          scrollContainer.clientHeight < 100;
+  
         if (isNearBottom) {
-          setTimeout(() => {
-            scrollContainer.scrollTo({
-              top: scrollContainer.scrollHeight,
-              behavior: 'smooth'
-            });
-          }, 100);
+          scrollToBottom();
         }
       }
     }
@@ -540,7 +585,10 @@ const ChatRoom = () => {
   }, [user, lastMessageId]);
 
   return (
-    <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
+    <div 
+      className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}
+      style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
+    >
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
         {/* Header */}
         <div className={`px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b`}>
@@ -731,15 +779,15 @@ const ChatRoom = () => {
 
         {/* Messages Container */}
         <div className="flex-1 overflow-hidden">
-         <div 
+          <div 
             ref={scrollContainerRef}
             className="h-full overflow-y-auto px-4"
             style={{
               scrollBehavior: 'smooth',
               overscrollBehavior: 'contain',
-              height: 'calc(100vh - 240px)', // Increased to account for input height
-              paddingTop: '16px',
-              paddingBottom: '80px'  // Added more padding at bottom
+              height: 'calc(100vh - 130px)', // Adjusted for iPhone
+              paddingBottom: '16px',
+              WebkitOverflowScrolling: 'touch' // For smooth iOS scrolling
             }}
           >
             {loading ? (
