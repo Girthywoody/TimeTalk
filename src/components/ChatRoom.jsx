@@ -155,11 +155,7 @@ const ChatRoom = () => {
   const scrollToNewestMessage = () => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
-      const inputHeight = 76; // Height of input area
-      const spacing = 16; // Desired spacing between last message and input
-      
-      // Adjusted scroll position to account for bottom padding
-      container.scrollTop = container.scrollHeight - container.clientHeight - spacing;
+      container.scrollTop = container.scrollHeight;
     }
   };
   
@@ -718,18 +714,16 @@ const handleSearch = () => {
 
         {/* Messages Container */}
         <div className="flex-1 overflow-hidden">
-         <div 
-          ref={scrollContainerRef}
-          className="h-full overflow-y-auto px-4"
-          style={{
-            scrollBehavior: 'smooth',
-            overscrollBehavior: 'contain',
-            height: 'calc(100vh - 140px)', // Adjusted to account for header (64px) and input area (76px)
-            paddingTop: '16px',
-            paddingBottom: '76px', // Increased padding to match input area height
-            WebkitOverflowScrolling: 'touch'
-          }}
-        >
+          <div 
+              ref={scrollContainerRef}
+              className="absolute inset-0 overflow-y-auto px-4"
+              style={{
+                paddingBottom: '100px', // Increased padding to prevent messages from hiding behind input
+                paddingTop: '16px',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
             {loading ? (
               <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -899,7 +893,7 @@ const handleSearch = () => {
         </div>
 
         {/* Message Input */}
-        <div className={`sticky bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
+        <div className={`relative bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t`}>
          <div className="max-w-2xl mx-auto px-4 py-3">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
