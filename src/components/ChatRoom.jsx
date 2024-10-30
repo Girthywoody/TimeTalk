@@ -26,8 +26,7 @@ import {
   Maximize2
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db } from '../firebase';
-import { getStorage } from 'firebase/storage';
+import { db, storage } from '../firebase';
 
 const MESSAGES_LIMIT = 100;
 const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000;
@@ -56,7 +55,7 @@ const ChatRoom = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedFilePreview, setSelectedFilePreview] = useState(null);
-  const storage = getStorage(app);
+
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -108,20 +107,21 @@ const ChatRoom = () => {
 
   const uploadFile = async (file) => {
     if (!file || !user) throw new Error('No file or user');
-
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExtension}`;
-    const filePath = `uploads/${user.uid}/${fileName}`;
-    
-    const storageRef = ref(storage, filePath);
-    
+  
     try {
+      // Create a reference with the correct path matching the storage rules
+      const storageRef = ref(storage, `chat-files/${user.uid}/${Date.now()}-${file.name}`);
+      
+      // Upload the file
       const snapshot = await uploadBytes(storageRef, file);
+      
+      // Get the download URL
       const downloadURL = await getDownloadURL(snapshot.ref);
+      
       return downloadURL;
     } catch (error) {
-      console.error('Error uploading file:', error);
-      throw new Error('Failed to upload file');
+      console.error('Error in uploadFile:', error);
+      throw error;
     }
   };
 
