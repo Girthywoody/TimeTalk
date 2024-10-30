@@ -99,13 +99,28 @@ const ChatRoom = () => {
   }, [darkMode]);
 
   useEffect(() => {
+    if (!searchQuery) {
+      const messageElements = document.querySelectorAll('.message-text');
+      messageElements.forEach(element => {
+        element.innerHTML = element.textContent || '';
+      });
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
     if (!loading && messages.length > 0) {
-      setTimeout(() => {
-        scrollContainerRef.current?.scrollTo({
-          top: scrollContainerRef.current.scrollHeight,
-          behavior: 'smooth'
-        });
-      }, 100);
+      const scrollContainer = scrollContainerRef.current;
+      if (scrollContainer) {
+        const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100;
+        if (isNearBottom) {
+          setTimeout(() => {
+            scrollContainer.scrollTo({
+              top: scrollContainer.scrollHeight,
+              behavior: 'smooth'
+            });
+          }, 100);
+        }
+      }
     }
   }, [loading, messages]);
 
@@ -387,27 +402,25 @@ const ChatRoom = () => {
   }, [messages]);
 
   const handleSearch = () => {
-    const filtered = messages.filter(message => 
-      message.text?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setSearchResults(filtered);
-  };
-
-  useEffect(() => {
-    if (searchQuery) {
-      handleSearch();
-    } else {
-      setSearchResults([]);
-    }
-  }, [searchQuery]);
-
-  const scrollToMessage = (messageId) => {
-    const element = document.getElementById(`message-${messageId}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      element.classList.add('bg-blue-50');
-      setTimeout(() => element.classList.remove('bg-blue-50'), 2000);
-    }
+    const searchTerm = searchQuery.toLowerCase();
+    const results = messages.filter(message => {
+      if (!message.text) return false;
+      return message.text.toLowerCase().includes(searchTerm);
+    });
+    
+    setSearchResults(results);
+  
+    // Highlight matching text in messages
+    const messageElements = document.querySelectorAll('.message-text');
+    messageElements.forEach(element => {
+      const text = element.textContent;
+      if (text && searchTerm) {
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        element.innerHTML = text.replace(regex, `<span class="bg-yellow-200 dark:bg-yellow-900 dark:text-white rounded px-1">$1</span>`);
+      } else {
+        element.innerHTML = text || '';
+      }
+    });
   };
 
   useEffect(() => {
@@ -763,27 +776,23 @@ const ChatRoom = () => {
                                   autoFocus
                                 />
                               ) : (
-                                <span className="text-[15px] leading-relaxed">{message.text}</span>
+                                <span className="message-text text-[15px] leading-relaxed">{message.text}</span>
                               )}
                             </div>
                           )}
-
+                          
                           {(message.type === 'image' || message.type === 'mixed') && (
                             <>
                               <div className="rounded-lg overflow-hidden mt-1 relative group">
                                 <img 
                                   src={message.fileURL} 
                                   alt="Shared image"
-                                  className="max-w-full rounded-lg cursor-pointer"
+                                  className={`max-w-full rounded-lg cursor-pointer transition-all duration-200 ${
+                                    imagePreview === message.fileURL ? 'w-full' : 'max-h-48 object-cover'
+                                  }`}
                                   loading="lazy"
                                   onClick={() => setImagePreview(message.fileURL)}
                                 />
-                                <button
-                                  className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => setImagePreview(message.fileURL)}
-                                >
-                                  <Maximize2 size={16} />
-                                </button>
                               </div>
                               {message.text && (
                                 <div className="mt-2 text-[15px] leading-relaxed">
