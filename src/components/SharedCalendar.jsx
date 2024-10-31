@@ -36,6 +36,21 @@ const SharedCalendar = () => {
     type: "general"
   });
 
+  const [profileData, setProfileData] = useState(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!auth.currentUser) return;
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const profileDoc = await getDoc(userRef);
+      if (profileDoc.exists()) {
+        setProfileData(profileDoc.data());
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) {
@@ -196,6 +211,7 @@ const SharedCalendar = () => {
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="p-4 h-full pb-20"            >
+                
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4">
@@ -207,7 +223,7 @@ const SharedCalendar = () => {
                     {getGreeting().text}
                   </h1>
                   <h2 className="text-lg text-gray-600">
-                    {auth.currentUser?.displayName || 'User'}
+                    {profileData?.displayName}
                   </h2>
                 </div>
               </div>
