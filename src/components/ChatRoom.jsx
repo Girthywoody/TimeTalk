@@ -108,23 +108,6 @@ const ChatRoom = () => {
     }
   }, [searchQuery]);
 
-  useEffect(() => {
-    if (!loading && messages.length > 0) {
-      const scrollContainer = scrollContainerRef.current;
-      if (scrollContainer) {
-        const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100;
-        if (isNearBottom) {
-          setTimeout(() => {
-            scrollContainer.scrollTo({
-              top: scrollContainer.scrollHeight,
-              behavior: 'smooth'
-            });
-          }, 100);
-        }
-      }
-    }
-  }, [loading, messages]);
-
   const handleMuteNotifications = (duration) => {
     const now = new Date();
     let mutedUntil = null;
@@ -397,10 +380,6 @@ useEffect(() => {
   }
 }, [loading, messages, isVisible]);
 
-// Ensure the scroll stays at the newest message when a new message arrives
-useEffect(() => {
-  scrollToNewestMessage();
-}, [messages]);
 
 
   useEffect(() => {
@@ -421,23 +400,15 @@ useEffect(() => {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           setUserProfile(userDoc.data());
+          // Add scroll after profile loads
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
       }
     };
-
+  
     fetchUserProfile();
   }, [user]);
-
-// Replace your existing useEffect for scrolling
-useEffect(() => {
-  if (!loading && messages.length > 0) {
-    scrollToNewestMessage();
-  }
-}, [loading, messages]);
-
-
 
 const handleSearch = () => {
   const searchTerm = searchQuery.toLowerCase();
@@ -743,7 +714,13 @@ const handleSearch = () => {
               paddingBottom: '120px',
               paddingTop: '16px',
               overscrollBehavior: 'contain',
-              WebkitOverflowScrolling: 'touch'
+              WebkitOverflowScrolling: 'touch',
+              scrollBehavior: 'smooth' // Add smooth scrolling
+            }}
+            onLoad={() => {
+              if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+              }
             }}
           >
             {loading ? (
