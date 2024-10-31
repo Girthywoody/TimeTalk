@@ -13,6 +13,7 @@ import CustomDateTimeSelector from './CustomDateTimeSelector';
 import ChatRoom from './ChatRoom';
 import SharedCalendar from './SharedCalendar';
 import SecretPostModal from './SecretPostModal';
+import { auth } from '../firebase';  // Add this line with your other imports
 
 
 const MainApp = () => {
