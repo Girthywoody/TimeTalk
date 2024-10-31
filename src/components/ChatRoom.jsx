@@ -463,8 +463,6 @@ useEffect(() => {
       // Remove highlight class from all messages
       document.querySelectorAll('.message-bubble').forEach(element => {
         element.classList.remove('search-highlight', 'search-highlight-dark');
-        // Reset any transform
-        element.style.transform = '';
       });
       return;
     }
@@ -483,23 +481,24 @@ useEffect(() => {
     // First remove highlight from all messages
     document.querySelectorAll('.message-bubble').forEach(element => {
       element.classList.remove('search-highlight', 'search-highlight-dark');
-      // Reset any transform
-      element.style.transform = '';
     });
   
-    // Then add highlight to matching messages
+    // Then add highlight to matching messages with auto-unhighlight
     results.forEach(message => {
       const element = document.getElementById(`message-${message.id}`);
       if (element) {
         const messageBubble = element.querySelector('.message-bubble');
         if (messageBubble) {
           if (messageBubble.classList.contains('bg-[#4E82EA]')) {
-            // For sender's messages (blue bubbles)
             messageBubble.classList.add('search-highlight-dark');
           } else {
-            // For received messages
             messageBubble.classList.add('search-highlight');
           }
+          
+          // Auto-unhighlight after 3 seconds (you can adjust this time)
+          setTimeout(() => {
+            messageBubble.classList.remove('search-highlight', 'search-highlight-dark');
+          }, 3000); // 3000ms = 3 seconds
         }
       }
     });
