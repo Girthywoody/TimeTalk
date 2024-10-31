@@ -597,7 +597,7 @@ const SharedCalendar = () => {
           {!newEvent.isAllDay && (
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Time</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1">
                 <div className="space-y-2">
                   <label className="block text-xs text-gray-500">From</label>
                   <input
@@ -612,7 +612,7 @@ const SharedCalendar = () => {
                         endTime: prev.endTime && newStartTime > prev.endTime ? newStartTime : prev.endTime
                       }));
                     }}
-                    className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
                   />
                 </div>
                 <div className="space-y-2">
