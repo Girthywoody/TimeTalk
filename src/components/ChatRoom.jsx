@@ -91,6 +91,26 @@ const ChatRoom = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // Add this near the top of your ChatRoom component
+const searchHighlightStyles = `
+.search-highlight {
+  background-color: #E3EEFF !important;
+  border: 2px solid #4E82EA !important;
+}
+.dark .search-highlight {
+  background-color: #1E3A8A !important;
+  border: 2px solid #60A5FA !important;
+}
+.search-highlight-dark {
+  background-color: #6B9AFF !important;
+  border: 2px solid white !important;
+}
+.dark .search-highlight-dark {
+  background-color: #2563EB !important;
+  border: 2px solid #93C5FD !important;
+}
+`;
+
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -135,6 +155,18 @@ const ChatRoom = () => {
     });
     setIsDropdownOpen(false);
   };
+
+  useEffect(() => {
+    // Add styles to head
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = searchHighlightStyles;
+    document.head.appendChild(styleSheet);
+  
+    // Cleanup on unmount
+    return () => {
+      styleSheet.remove();
+    };
+  }, []);
 
   const scrollToNewestMessage = () => {
     if (scrollContainerRef.current) {
@@ -425,6 +457,10 @@ useEffect(() => {
   const handleSearch = (query) => {
     if (!query.trim()) {
       setSearchResults([]);
+      // Remove highlight class from all messages
+      document.querySelectorAll('.message-bubble').forEach(element => {
+        element.classList.remove('search-highlight', 'search-highlight-dark');
+      });
       return;
     }
   
@@ -435,42 +471,32 @@ useEffect(() => {
         message.text.toLowerCase().includes(searchTerm) ||
         message.senderProfile?.username?.toLowerCase().includes(searchTerm)
       );
-    }).slice(0, 15); // Limit to 15 results for performance
+    }).slice(0, 15);
     
     setSearchResults(results);
-
-  // Only highlight if there's a search term
-  if (searchTerm) {
-    const messageElements = document.querySelectorAll('.message-text');
-    messageElements.forEach(element => {
-      if (!element.textContent) return;
-      
-      const text = element.textContent;
-      const isSenderMessage = element.closest('.message-bubble').classList.contains('bg-[#4E82EA]');
-      
-      // Create a temporary div to safely handle HTML content
-      const tempDiv = document.createElement('div');
-      tempDiv.textContent = text;
-      const safeText = tempDiv.innerHTML;
-      
-      // Use capture groups to preserve case when highlighting
-      const regex = new RegExp(`(${searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
-      const highlightClass = isSenderMessage
-        ? 'bg-white/30 rounded px-1' // For sender's messages (blue bubbles)
-        : 'bg-blue-100 dark:bg-blue-900 rounded px-1'; // For received messages
-      
-      element.innerHTML = safeText.replace(regex, `<span class="${highlightClass}">$1</span>`);
+  
+    // First remove highlight from all messages
+    document.querySelectorAll('.message-bubble').forEach(element => {
+      element.classList.remove('search-highlight', 'search-highlight-dark');
     });
-  } else {
-    // Reset highlights when search is cleared
-    const messageElements = document.querySelectorAll('.message-text');
-    messageElements.forEach(element => {
-      if (element.textContent) {
-        element.innerHTML = element.textContent;
+  
+    // Then add highlight to matching messages
+    results.forEach(message => {
+      const element = document.getElementById(`message-${message.id}`);
+      if (element) {
+        const messageBubble = element.querySelector('.message-bubble');
+        if (messageBubble) {
+          if (messageBubble.classList.contains('bg-[#4E82EA]')) {
+            // For sender's messages (blue bubbles)
+            messageBubble.classList.add('search-highlight-dark');
+          } else {
+            // For received messages
+            messageBubble.classList.add('search-highlight');
+          }
+        }
       }
     });
-  }
-};
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -575,8 +601,12 @@ useEffect(() => {
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => {
-                  setIsSearchOpen(!isSearchOpen);
-                  setTimeout(() => searchInputRef.current?.focus(), 100);
+                  const element = document.getElementById(`message-${message.id}`);
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                  setIsSearchOpen(false);
+                  setSearchQuery('');
                 }}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 title="Search Messages"
