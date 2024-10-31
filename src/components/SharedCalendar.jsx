@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, MapPin, Heart, Lock, Trash2, Edit2, X } from 'lucide-react';
+import { 
+  Bell, 
+  ChevronLeft, 
+  ChevronRight, 
+  Plus, 
+  Calendar as CalendarIcon, 
+  Clock, 
+  MapPin, 
+  Heart, 
+  Lock, 
+  Trash2, 
+  Edit2, 
+  X,
+  CalendarDays as Calendar // Add this import
+} from 'lucide-react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
