@@ -17,6 +17,7 @@ import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon, Sunrise, Sunset } from 'lucide-react';
 
+
 const SharedCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
@@ -24,8 +25,8 @@ const SharedCalendar = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [profileData, setProfileData] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
   const [showDayView, setShowDayView] = useState(false);  
+  const [selectedDate, setSelectedDate] = useState(new Date());  // Default to today
   const [newEvent, setNewEvent] = useState({
     title: "",
     date: "",
@@ -50,7 +51,6 @@ const SharedCalendar = () => {
   const handleDateClick = (date) => {
     if (date) {
       setSelectedDate(date);
-      setShowDayView(true);
     }
   };
 
@@ -297,15 +297,23 @@ const SharedCalendar = () => {
             </div>
           </div>
 
-          {/* Today's Meetings */}
+          {/* Selected Date Meetings */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Today Meeting</h3>
+              <h3 className="font-semibold">
+                {selectedDate.toDateString() === new Date().toDateString() 
+                  ? "Today Meeting" 
+                  : selectedDate.toLocaleDateString('en-US', { 
+                      month: 'long', 
+                      day: 'numeric'
+                    }) + " Meetings"
+                }
+              </h3>
               <button
                 onClick={() => {
                   setNewEvent(prev => ({
                     ...prev,
-                    date: new Date().toISOString().split('T')[0]
+                    date: selectedDate.toISOString().split('T')[0]
                   }));
                   setIsEditing(false);
                   setShowEventForm(true);
@@ -317,42 +325,49 @@ const SharedCalendar = () => {
               </button>
             </div>
             
-            {getDayEvents(new Date()).map((event) => (
-              <div
-                key={event.id}
-                className="bg-blue-900 text-white p-4 rounded-xl mb-3"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-semibold">{event.title}</h4>
-                  <div className="flex gap-2">
-                    <Edit2 
-                      size={18} 
-                      className="cursor-pointer"
-                      onClick={() => {
-                        setNewEvent(event);
-                        setIsEditing(true);
-                        setShowEventForm(true);
-                      }}
-                    />
-                    <Trash2 
-                      size={18} 
-                      className="cursor-pointer"
-                      onClick={() => handleDeleteEvent(event.id)}
-                    />
+            {getDayEvents(selectedDate).length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No events scheduled for this day</p>
+            ) : (
+              getDayEvents(selectedDate).map((event) => (
+                <div
+                  key={event.id}
+                  className="bg-blue-900 text-white p-4 rounded-xl mb-3"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-semibold">{event.title}</h4>
+                    <div className="flex gap-2">
+                      <Edit2 
+                        size={18} 
+                        className="cursor-pointer hover:text-blue-200 transition-colors"
+                        onClick={() => {
+                          setNewEvent(event);
+                          setIsEditing(true);
+                          setShowEventForm(true);
+                        }}
+                      />
+                      <Trash2 
+                        size={18} 
+                        className="cursor-pointer hover:text-blue-200 transition-colors"
+                        onClick={() => handleDeleteEvent(event.id)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock size={14} />
+                    <span>{formatTime(event.time)}</span>
+                  </div>
+                  {event.location && (
+                    <div className="flex items-center gap-2 text-sm mt-1">
+                      <MapPin size={14} />
+                      <span>{event.location}</span>
+                    </div>
+                  )}
+                  <div className="mt-2 text-sm text-blue-200">
+                    Type: {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock size={14} />
-                  <span>{formatTime(event.time)}</span>
-                </div>
-                {event.location && (
-                  <div className="flex items-center gap-2 text-sm mt-1">
-                    <MapPin size={14} />
-                    <span>{event.location}</span>
-                  </div>
-                )}
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* Navigation */}
@@ -372,6 +387,102 @@ const SharedCalendar = () => {
           </div>
         </motion.div>
       </AnimatePresence>
+
+      {/* Selected Date Events Modal */}
+{showDayView && selectedDate && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <motion.div
+      initial={{ scale: 0.95, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.95, opacity: 0 }}
+      transition={{ type: "spring", duration: 0.3 }}
+      className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-xl max-h-[80vh] overflow-y-auto"
+    >
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-2xl font-semibold text-blue-900">
+          {selectedDate.toLocaleDateString('en-US', { 
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+          })}
+        </h3>
+        <button
+          onClick={() => setShowDayView(false)}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <X size={24} />
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {getDayEvents(selectedDate).length === 0 ? (
+          <p className="text-gray-500 text-center py-4">No events scheduled for this day</p>
+        ) : (
+          getDayEvents(selectedDate).map((event) => (
+            <div
+              key={event.id}
+              className="bg-blue-50 p-4 rounded-xl"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-semibold text-blue-900">{event.title}</h4>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setNewEvent(event);
+                      setIsEditing(true);
+                      setShowDayView(false);
+                      setShowEventForm(true);
+                    }}
+                    className="p-1.5 hover:bg-blue-100 rounded-full transition-colors"
+                  >
+                    <Edit2 size={16} className="text-blue-700" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteEvent(event.id)}
+                    className="p-1.5 hover:bg-blue-100 rounded-full transition-colors"
+                  >
+                    <Trash2 size={16} className="text-blue-700" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-blue-700">
+                <Clock size={14} />
+                <span>{formatTime(event.time)}</span>
+              </div>
+              {event.location && (
+                <div className="flex items-center gap-2 text-sm mt-1 text-blue-700">
+                  <MapPin size={14} />
+                  <span>{event.location}</span>
+                </div>
+              )}
+              <div className="mt-2 text-sm text-blue-600">
+                Type: {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="mt-6">
+        <button
+          onClick={() => {
+            setNewEvent(prev => ({
+              ...prev,
+              date: selectedDate.toISOString().split('T')[0]
+            }));
+            setIsEditing(false);
+            setShowDayView(false);
+            setShowEventForm(true);
+          }}
+          className="w-full p-4 bg-blue-900 text-white rounded-xl hover:bg-blue-800 font-medium transition-colors flex items-center justify-center gap-2"
+        >
+          <Plus size={20} />
+          <span>Add Event for This Day</span>
+        </button>
+      </div>
+    </motion.div>
+  </div>
+)}
 
       {/* Event Form Modal */}
       {showEventForm && (
