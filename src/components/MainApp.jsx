@@ -112,6 +112,7 @@ const MainApp = () => {
         mediaUrl,
         createdAt: new Date().toISOString(),
         author: 'Partner 1',
+        authorId: auth.currentUser.uid,  // Add this line
         likes: 0
       });
       
