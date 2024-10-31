@@ -589,7 +589,7 @@ const SharedCalendar = () => {
               type="date"
               value={newEvent.date}
               onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
-              className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+              className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
             />
           </div>
 
@@ -637,7 +637,7 @@ const SharedCalendar = () => {
             type="text"
             value={newEvent.location}
             onChange={e => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
-            className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
             placeholder="Enter location"
           />
         </div>
@@ -648,7 +648,7 @@ const SharedCalendar = () => {
           <select
             value={newEvent.type}
             onChange={e => setNewEvent(prev => ({ ...prev, type: e.target.value }))}
-            className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
           >
             <option value="general">General</option>
             <option value="meeting">Meeting</option>
