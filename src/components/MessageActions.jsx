@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Heart, Pencil, Trash2, X, Bookmark, BookmarkX } from 'lucide-react';
 
 const REACTIONS = ['❤️', '😊', '👍', '😮', '😢', '😡'];
@@ -13,9 +13,22 @@ const MessageActions = ({
   isOwnMessage,
   onSave,
   isSaved,
-  currentReaction // Add this prop
+  currentReaction
 }) => {
   const menuRef = useRef(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsAnimating(true);
+      // Slight delay before showing content for smoother animation
+      setTimeout(() => setShowContent(true), 50);
+    } else {
+      setShowContent(false);
+      setIsAnimating(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && menuRef.current) {
@@ -46,79 +59,104 @@ const MessageActions = ({
     }
   }, [isOpen, position]);
 
-  if (!isOpen) return null;
+  if (!isAnimating && !isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50" onClick={onClose}>
+    <div 
+      className={`fixed inset-0 z-50 transition-all duration-200 ${
+        showContent ? 'bg-black/20 backdrop-blur-sm' : 'bg-transparent'
+      }`} 
+      onClick={onClose}
+    >
       <div 
         ref={menuRef}
-        className="fixed bg-white rounded-xl shadow-xl p-2 flex flex-col gap-1 min-w-[200px]"
+        className={`fixed bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden transition-all duration-200 ${
+          showContent 
+            ? 'opacity-100 scale-100 translate-y-0' 
+            : 'opacity-0 scale-95 -translate-y-2'
+        }`}
         onClick={e => e.stopPropagation()}
       >
-        {/* Reactions */}
-        <div className="flex justify-around p-2 border-b">
-          {REACTIONS.map(reaction => (
-            <button
-              key={reaction}
-              onClick={() => {
-                onReact(reaction);
-                onClose(); // Close menu after selecting reaction
-              }}
-              className={`text-xl hover:scale-125 transition-transform p-1 rounded-lg
-                ${reaction === currentReaction ? 'ring-2 ring-blue-500 ring-offset-1 scale-110' : ''}
-              `}
-            >
-              {reaction}
-            </button>
-          ))}
+        {/* Reactions Section */}
+        <div className="p-2 border-b dark:border-gray-700">
+          <div className="flex gap-1">
+            {REACTIONS.map((reaction, index) => (
+              <button
+                key={reaction}
+                onClick={() => {
+                  onReact(reaction);
+                  onClose();
+                }}
+                className={`group relative p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 ${
+                  showContent 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-4'
+                }`}
+                style={{ 
+                  transitionDelay: `${index * 50}ms`,
+                }}
+              >
+                <span className={`text-xl transition-transform duration-200 group-hover:scale-125 block ${
+                  reaction === currentReaction 
+                    ? 'scale-110 ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-800 rounded-full' 
+                    : ''
+                }`}>
+                  {reaction}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Save Message Action */}
-        <button
-          onClick={() => {
-            onSave();
-            onClose(); // Close menu after action
-          }}
-          className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-        >
-          {isSaved ? (
+        {/* Actions Section */}
+        <div className={`flex flex-col transition-all duration-200 ${
+          showContent ? 'opacity-100' : 'opacity-0'
+        }`}>
+          <button
+            onClick={() => {
+              onSave();
+              onClose();
+            }}
+            className="flex items-center gap-2 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+          >
+            {isSaved ? (
+              <>
+                <BookmarkX size={18} />
+                <span className="text-sm">Unsave Message</span>
+              </>
+            ) : (
+              <>
+                <Bookmark size={18} />
+                <span className="text-sm">Save Message</span>
+              </>
+            )}
+          </button>
+
+          {isOwnMessage && (
             <>
-              <BookmarkX size={18} />
-              Unsave Message
-            </>
-          ) : (
-            <>
-              <Bookmark size={18} />
-              Save Message
+              <button
+                onClick={() => {
+                  onEdit();
+                  onClose();
+                }}
+                className="flex items-center gap-2 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+              >
+                <Pencil size={18} />
+                <span className="text-sm">Edit Message</span>
+              </button>
+              <button
+                onClick={() => {
+                  onDelete();
+                  onClose();
+                }}
+                className="flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+              >
+                <Trash2 size={18} />
+                <span className="text-sm">Delete Message</span>
+              </button>
             </>
           )}
-        </button>
-
-        {/* Edit and Delete (only for own messages) */}
-        {isOwnMessage && (
-          <>
-            <button
-              onClick={() => {
-                onEdit();
-                onClose(); // Close menu after action
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-            >
-              <Pencil size={18} />
-              Edit Message
-            </button>
-            <button
-              onClick={() => {
-                onDelete();
-                onClose(); // Close menu after action
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-            >
-              <Trash2 size={18} />
-              Delete Message
-            </button>
-          </>
-        )}
+        </div>
       </div>
     </div>
   );

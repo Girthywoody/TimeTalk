@@ -711,7 +711,7 @@ const handleSearch = () => {
             ref={scrollContainerRef}
             className="absolute inset-0 overflow-y-auto px-4 z-0"
             style={{
-              paddingBottom: '80px',
+              paddingBottom: '90px',
               paddingTop: '16px',
               overscrollBehavior: 'contain',
               WebkitOverflowScrolling: 'touch',
