@@ -4,11 +4,23 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
+import EditableBio from './EditableBio';
+
 
 const ProfileHeader = ({ profileData, onProfileUpdate }) => {
   const [uploading, setUploading] = useState(false);
   const { user } = useAuth();
   const storage = getStorage();
+  
+
+  const handleBioUpdate = (newBio) => {
+    if (onProfileUpdate) {
+      onProfileUpdate({
+        ...profileData,
+        bio: newBio
+      });
+    }
+  };
 
   // Calculate days together if anniversary exists
   const getDaysTogether = () => {
@@ -99,7 +111,9 @@ const ProfileHeader = ({ profileData, onProfileUpdate }) => {
         <h2 className="text-2xl font-bold text-gray-800">{profileData.displayName}</h2>
         <p className="text-gray-600 text-sm">@{profileData.username}</p>
         {profileData.bio && (
-          <p className="text-gray-600 max-w-md">{profileData.bio}</p>
+                  <EditableBio 
+                  initialBio={profileData.bio}
+                  onBioUpdate={handleBioUpdate}
         )}
         {profileData.relationship?.anniversary && (
           <div className="flex items-center justify-center gap-2 text-sm text-gray-600">

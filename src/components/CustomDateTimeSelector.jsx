@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 const CustomDateTimeSelector = ({ selectedDateTime, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +18,22 @@ const CustomDateTimeSelector = ({ selectedDateTime, onChange }) => {
     return selectedDateTime || new Date(minDate.getTime());
   });
 
+  // Preset date options
+  const presetOptions = [
+    { label: '1 Month', days: 30 },
+    { label: '3 Months', days: 90 },
+    { label: '6 Months', days: 180 },
+    { label: '1 Year', days: 365 }
+  ];
+
+  const handlePresetSelect = (days) => {
+    const newDate = new Date();
+    newDate.setDate(newDate.getDate() + days);
+    // Set to 8 AM by default for presets
+    newDate.setHours(8, 0, 0, 0);
+    onChange(newDate);
+    setIsOpen(false);
+  };
 
   const generateCalendarDays = () => {
     const year = displayDate.getFullYear();
@@ -31,12 +47,10 @@ const CustomDateTimeSelector = ({ selectedDateTime, onChange }) => {
     
     const days = [];
     
-    // Add empty cells for days before the first of the month
     for (let i = 0; i < startingDay; i++) {
       days.push(null);
     }
     
-    // Add the actual days
     for (let i = 1; i <= totalDays; i++) {
       days.push(new Date(year, month, i));
     }
@@ -56,6 +70,18 @@ const CustomDateTimeSelector = ({ selectedDateTime, onChange }) => {
     setView('time');
   };
 
+  const generateTimeSlots = () => {
+    const slots = [];
+    // Start from 8 AM
+    for (let hour = 8; hour < 32; hour++) {
+      const displayHour = hour % 24;
+      for (let minute = 0; minute < 60; minute += 30) {
+        slots.push({ hour: displayHour, minute });
+      }
+    }
+    return slots;
+  };
+
   const handleTimeSelect = (hours, minutes) => {
     const newDateTime = new Date(selectedDateTime || displayDate);
     newDateTime.setHours(hours);
@@ -63,16 +89,6 @@ const CustomDateTimeSelector = ({ selectedDateTime, onChange }) => {
     
     onChange(newDateTime);
     setIsOpen(false);
-  };
-
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        slots.push({ hour, minute });
-      }
-    }
-    return slots;
   };
 
   const changeMonth = (delta) => {
@@ -86,7 +102,6 @@ const CustomDateTimeSelector = ({ selectedDateTime, onChange }) => {
     const displayHours = hours % 12 || 12;
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   };
-
 
   return (
     <div className="relative isolate">
@@ -116,7 +131,28 @@ const CustomDateTimeSelector = ({ selectedDateTime, onChange }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full mt-2 bg-white rounded-lg shadow-xl p-4 w-80 z-[100]">
+        <div className="absolute left-0 top-full mt-2 bg-white rounded-lg shadow-xl p-4 w-[340px] z-[100]">
+          {/* Preset Options */}
+          <div className="mb-4 p-2 bg-blue-50 rounded-lg">
+            <div className="text-sm font-medium text-blue-600 mb-2 flex items-center gap-2">
+              <Calendar size={14} />
+              Quick Select
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {presetOptions.map((option) => (
+                <button
+                  key={option.label}
+                  onClick={() => handlePresetSelect(option.days)}
+                  className="px-3 py-2 text-sm rounded-md bg-white hover:bg-blue-100 
+                           text-blue-600 hover:text-blue-700 transition-colors
+                           border border-blue-200 hover:border-blue-300"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => setView('date')}
