@@ -601,12 +601,8 @@ useEffect(() => {
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => {
-                  const element = document.getElementById(`message-${message.id}`);
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }
-                  setIsSearchOpen(false);
-                  setSearchQuery('');
+                  setIsSearchOpen(!isSearchOpen);
+                  setTimeout(() => searchInputRef.current?.focus(), 100);
                 }}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 title="Search Messages"
