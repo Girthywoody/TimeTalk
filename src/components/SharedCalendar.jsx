@@ -23,7 +23,7 @@ const SharedCalendar = () => {
   const [events, setEvents] = useState([]);
   const [showEventForm, setShowEventForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [profileData, setProfileData] = useState(null);
   const [showDayView, setShowDayView] = useState(false);  
   const [selectedDate, setSelectedDate] = useState(new Date());  // Default to today
@@ -424,7 +424,7 @@ const SharedCalendar = () => {
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.95, opacity: 0 }}
       transition={{ type: "spring", duration: 0.3 }}
-      className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-xl max-h-[80vh] overflow-y-auto"
+      className="bg-white rounded-3xl p-4 w-full max-w-lg shadow-xl"
     >
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-2xl font-semibold text-blue-900">
@@ -547,7 +547,7 @@ const SharedCalendar = () => {
         </button>
       </div>
       
-      <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-6">
+      <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-4">
         {/* Title Input */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Title</label>
