@@ -418,7 +418,7 @@ const SharedCalendar = () => {
 
       {/* Selected Date Events Modal */}
 {showDayView && selectedDate && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 mt-8">
     <motion.div
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
@@ -612,7 +612,7 @@ const SharedCalendar = () => {
                         endTime: prev.endTime && newStartTime > prev.endTime ? newStartTime : prev.endTime
                       }));
                     }}
-                    className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
                   />
                 </div>
                 <div className="space-y-2">
@@ -622,7 +622,7 @@ const SharedCalendar = () => {
                     value={newEvent.endTime}
                     min={newEvent.startTime}
                     onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
-                    className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
                   />
                 </div>
               </div>
@@ -637,7 +637,7 @@ const SharedCalendar = () => {
             type="text"
             value={newEvent.location}
             onChange={e => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
-            className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
             placeholder="Enter location"
           />
         </div>
@@ -648,7 +648,7 @@ const SharedCalendar = () => {
           <select
             value={newEvent.type}
             onChange={e => setNewEvent(prev => ({ ...prev, type: e.target.value }))}
-            className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
           >
             <option value="general">General</option>
             <option value="meeting">Meeting</option>
