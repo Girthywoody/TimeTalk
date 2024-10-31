@@ -371,7 +371,7 @@ const SharedCalendar = () => {
             damping: 30,
             mass: 1
           }}
-          className="bg-white rounded-t-3xl p-6 w-full max-w-lg mb-22"        >
+          className="bg-white rounded-t-3xl p-6 w-full max-w-lg mb-28">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold">
                 {isEditing ? 'Edit Event' : 'New Event'}
@@ -394,8 +394,8 @@ const SharedCalendar = () => {
               </button>
             </div>
             
-            <div className="max-h-[calc(100vh-200px)] overflow-y-auto"> {/* Added scrollable container */}
-            <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-4">
+            <div className="max-h-[calc(100vh-350px)] overflow-y-auto">
+              <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-4">
               <input
                 type="text"
                 value={newEvent.title}
