@@ -718,7 +718,7 @@ const handleSearch = () => {
             ref={scrollContainerRef}
             className="absolute inset-0 overflow-y-auto px-4 z-0"
             style={{
-              paddingBottom: '100px',
+              paddingBottom: '1w0px',
               paddingTop: '16px',
               overscrollBehavior: 'contain',
               WebkitOverflowScrolling: 'touch'
@@ -893,39 +893,20 @@ const handleSearch = () => {
         </div>
 
         {/* Message Input */}
-        <div className={`relative bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t z-10`}>
-         <div className="max-w-2xl mx-auto px-4 py-3">
-            <div className="flex flex-col gap-2">
-              {selectedFilePreview && (
-                <div className="relative inline-block">
-                  <img 
-                    src={selectedFilePreview} 
-                    alt="Selected file" 
-                    className="h-20 w-auto rounded-lg object-cover"
-                  />
-                  <button
-                    onClick={removeSelectedFile}
-                    className="absolute -top-2 -right-2 p-1 bg-gray-800 dark:bg-gray-600 rounded-full text-white hover:bg-gray-900 dark:hover:bg-gray-700"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              )}
-              
-              <div className="flex items-center gap-2">
-              <div className={`flex-1 ${darkMode ? 'bg-gray-700' : 'bg-[#F8F9FE]'} rounded-full flex items-center pl-4 pr-2`}>
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder="Message"
-                  className={`flex-1 bg-transparent border-none py-2 ${darkMode ? 'text-white placeholder-gray-400' : 'text-gray-800 placeholder-gray-500'} focus:outline-none`}
+        <div className="flex items-center gap-2">
+                <div className={`flex-1 ${darkMode ? 'bg-gray-700' : 'bg-[#F8F9FE]'} rounded-full flex items-center pl-4 pr-2`}>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                    placeholder="Message"
+                    className={`flex-1 bg-transparent border-none py-2 ${darkMode ? 'text-white placeholder-gray-400' : 'text-gray-800 placeholder-gray-500'} focus:outline-none`}
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
