@@ -91,24 +91,27 @@ const ChatRoom = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Add this near the top of your ChatRoom component
-const searchHighlightStyles = `
-.search-highlight {
-  background-color: #E3EEFF !important;
-  border: 2px solid #4E82EA !important;
-}
-.dark .search-highlight {
-  background-color: #1E3A8A !important;
-  border: 2px solid #60A5FA !important;
-}
-.search-highlight-dark {
-  background-color: #6B9AFF !important;
-  border: 2px solid white !important;
-}
-.dark .search-highlight-dark {
-  background-color: #2563EB !important;
-  border: 2px solid #93C5FD !important;
-}
+  const searchHighlightStyles = `
+  .search-highlight {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    box-shadow: 0 0 0 2px #4E82EA !important;
+    transform: scale(1.01);
+    z-index: 1;
+  }
+  .dark .search-highlight {
+    background-color: rgba(59, 130, 246, 0.3) !important;
+    box-shadow: 0 0 0 2px #60A5FA !important;
+  }
+  .search-highlight-dark {
+    background-color: #6495ED !important;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5) !important;
+    transform: scale(1.01);
+    z-index: 1;
+  }
+  .dark .search-highlight-dark {
+    background-color: #4169E1 !important;
+    box-shadow: 0 0 0 2px rgba(147, 197, 253, 0.5) !important;
+  }
 `;
 
   useEffect(() => {
@@ -460,6 +463,8 @@ useEffect(() => {
       // Remove highlight class from all messages
       document.querySelectorAll('.message-bubble').forEach(element => {
         element.classList.remove('search-highlight', 'search-highlight-dark');
+        // Reset any transform
+        element.style.transform = '';
       });
       return;
     }
@@ -478,6 +483,8 @@ useEffect(() => {
     // First remove highlight from all messages
     document.querySelectorAll('.message-bubble').forEach(element => {
       element.classList.remove('search-highlight', 'search-highlight-dark');
+      // Reset any transform
+      element.style.transform = '';
     });
   
     // Then add highlight to matching messages
@@ -737,9 +744,15 @@ useEffect(() => {
                         const element = document.getElementById(`message-${message.id}`);
                         if (element) {
                           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          // Add highlight effect
-                          element.classList.add('bg-yellow-100/20');
-                          setTimeout(() => element.classList.remove('bg-yellow-100/20'), 2000);
+                          // Add a brief scaling animation to draw attention
+                          const messageBubble = element.querySelector('.message-bubble');
+                          if (messageBubble) {
+                            messageBubble.style.transition = 'transform 0.3s ease';
+                            messageBubble.style.transform = 'scale(1.05)';
+                            setTimeout(() => {
+                              messageBubble.style.transform = 'scale(1.01)';
+                            }, 300);
+                          }
                         }
                         setIsSearchOpen(false);
                         setSearchQuery('');
