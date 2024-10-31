@@ -93,24 +93,24 @@ const ChatRoom = () => {
 
   const searchHighlightStyles = `
   .search-highlight {
-    background-color: rgba(59, 130, 246, 0.2) !important;
-    box-shadow: 0 0 0 2px #4E82EA !important;
-    transform: scale(1.01);
+    background-color: #FFE082 !important;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.4) !important;
+    transform: scale(1.02);
     z-index: 1;
   }
   .dark .search-highlight {
-    background-color: rgba(59, 130, 246, 0.3) !important;
-    box-shadow: 0 0 0 2px #60A5FA !important;
+    background-color: #FFA000 !important;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.5) !important;
   }
   .search-highlight-dark {
-    background-color: #6495ED !important;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5) !important;
-    transform: scale(1.01);
+    background-color: #4CAF50 !important;
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.4) !important;
+    transform: scale(1.02);
     z-index: 1;
   }
   .dark .search-highlight-dark {
-    background-color: #4169E1 !important;
-    box-shadow: 0 0 0 2px rgba(147, 197, 253, 0.5) !important;
+    background-color: #2E7D32 !important;
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.5) !important;
   }
 `;
 
