@@ -81,6 +81,7 @@ const ChatRoom = () => {
   const fileInputRef = useRef(null);
   const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
   const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
+  const [isVisible, setIsVisible] = useState(false);
   const { user } = useAuth();
 
   const [notificationSettings, setNotificationSettings] = useState({
@@ -158,7 +159,28 @@ const ChatRoom = () => {
       container.scrollTop = container.scrollHeight;
     }
   };
-  
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setIsVisible(true);
+        // Add a small delay to ensure content is rendered
+        setTimeout(scrollToNewestMessage, 100);
+      }
+    };
+
+    // Call immediately on mount
+    setIsVisible(true);
+    setTimeout(scrollToNewestMessage, 100);
+
+    // Listen for visibility changes (when user switches tabs or windows)
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -370,10 +392,10 @@ const ChatRoom = () => {
 
 // Scroll to the newest message after loading completes
 useEffect(() => {
-  if (!loading && messages.length > 0) {
+  if (!loading && messages.length > 0 && isVisible) {
     scrollToNewestMessage();
   }
-}, [loading, messages]);
+}, [loading, messages, isVisible]);
 
 // Ensure the scroll stays at the newest message when a new message arrives
 useEffect(() => {
