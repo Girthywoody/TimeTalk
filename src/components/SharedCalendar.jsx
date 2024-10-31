@@ -418,7 +418,7 @@ const SharedCalendar = () => {
 
       {/* Selected Date Events Modal */}
 {showDayView && selectedDate && (
-  <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 mt-1">
+  <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 mb-10">
     <motion.div
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
