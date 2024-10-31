@@ -17,6 +17,7 @@ import {
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
+import Navigation from './Navigation';
 
 const SharedCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -157,17 +158,18 @@ const SharedCalendar = () => {
     const formattedHours = hours % 12 || 12;
     return `${formattedHours}:${minutes} ${period}`;
   };
-
-  return (
-    <div className="h-screen bg-white">
-      <AnimatePresence>
-        {!showDayView ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="p-4 h-full"
-          >
+  
+    return (
+      <div className="h-screen bg-white">
+        <AnimatePresence mode="wait">
+          {!showDayView ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="p-4 h-full"
+            >
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -325,11 +327,17 @@ const SharedCalendar = () => {
       {showEventForm && (
         <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
           <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            className="bg-white rounded-t-3xl p-6 w-full max-w-lg"
-          >
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ 
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+            mass: 1
+          }}
+          className="bg-white rounded-t-3xl p-6 w-full max-w-lg mb-16" // Added mb-16 for navigation spacing
+        >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold">
                 {isEditing ? 'Edit Event' : 'New Event'}
@@ -352,6 +360,7 @@ const SharedCalendar = () => {
               </button>
             </div>
             
+            <div className="max-h-[calc(100vh-200px)] overflow-y-auto"> {/* Added scrollable container */}
             <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-4">
               <input
                 type="text"
@@ -420,11 +429,12 @@ const SharedCalendar = () => {
                 </button>
               </div>
             </form>
-          </motion.div>
-        </div>
-      )}
-    </div>
-  );
+          </div>
+        </motion.div>
+      </div>
+    )}
+  </div>
+);
 };
 
 
