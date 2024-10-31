@@ -41,6 +41,10 @@ const ProfilePage = () => {
     fetchProfileData();
   }, [user]);
 
+  const handleProfileUpdate = (updatedData) => {
+    setProfileData(updatedData);
+  };
+
   // Combined loading check
   if (loading || !profileData) {
     return (
