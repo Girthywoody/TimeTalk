@@ -32,13 +32,6 @@ export default function Navigation({ currentPage, setCurrentPage }) {
           </button>
 
           <button 
-            onClick={() => setCurrentPage('new')}
-            className="p-3 bg-emerald-400 rounded-full text-white shadow-lg hover:bg-emerald-500 transition-colors"
-          >
-            <Plus size={24} />
-          </button>
-
-          <button 
             onClick={() => setCurrentPage('calendar')}
             className={buttonClasses('calendar')}
           >
@@ -46,10 +39,11 @@ export default function Navigation({ currentPage, setCurrentPage }) {
           </button>
 
           <button 
-            onClick={() => setCurrentPage('map')}
-            className={buttonClasses('map')}
+            data-page="profile"
+            onClick={() => setCurrentPage('profile')}
+            className={buttonClasses('profile')}
           >
-            <Map className={iconClasses('map')} size={24} />
+            <User className={iconClasses('profile')} size={24} />
           </button>
         </div>
       </div>
