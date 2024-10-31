@@ -9,20 +9,24 @@ import { Loader2 } from 'lucide-react';
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Make sure this starts as true
   const [error, setError] = useState(null);
   const { user } = useAuth();
 
   useEffect(() => {
     const fetchProfileData = async () => {
-      if (!user?.uid) return; // Add this check
-      
+      if (!user?.uid) {
+        setLoading(true); // Keep loading true if no user
+        return;
+      }
+
       try {
         const userRef = doc(db, 'users', user.uid);
         const profileDoc = await getDoc(userRef);
-        
+
         if (profileDoc.exists()) {
           setProfileData(profileDoc.data());
+          setError(null);
         } else {
           setError('Profile not found');
         }
@@ -33,15 +37,12 @@ const ProfilePage = () => {
         setLoading(false);
       }
     };
-  
+
     fetchProfileData();
   }, [user]);
 
-  const handleProfileUpdate = (updatedData) => {
-    setProfileData(updatedData);
-  };
-
-  if (loading) {
+  // Combined loading check
+  if (loading || !profileData) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -52,21 +53,12 @@ const ProfilePage = () => {
     );
   }
 
-  if (error) {
+  // Only show error if we have an actual error and we're not loading
+  if (error && !loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
         <div className="bg-red-50 text-red-500 p-4 rounded-lg">
           {error}
-        </div>
-      </div>
-    );
-  }
-  
-  if (!profileData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-        <div className="flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
         </div>
       </div>
     );
