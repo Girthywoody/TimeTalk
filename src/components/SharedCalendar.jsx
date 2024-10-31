@@ -24,6 +24,8 @@ const SharedCalendar = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [profileData, setProfileData] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [showDayView, setShowDayView] = useState(false);  
   const [newEvent, setNewEvent] = useState({
     title: "",
     date: "",
@@ -47,12 +49,8 @@ const SharedCalendar = () => {
 
   const handleDateClick = (date) => {
     if (date) {
-      setNewEvent(prev => ({
-        ...prev,
-        date: date.toISOString().split('T')[0]
-      }));
-      setIsEditing(false);
-      setShowEventForm(true);
+      setSelectedDate(date);
+      setShowDayView(true);
     }
   };
 
