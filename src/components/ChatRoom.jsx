@@ -41,6 +41,7 @@ import {
   LogOut
 } from 'lucide-react';
 
+
 const MESSAGES_LIMIT = 100;
 const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000;
 const ALLOWED_FILE_TYPES = [
@@ -83,7 +84,6 @@ const ChatRoom = () => {
   const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
   const [isVisible, setIsVisible] = useState(false);
   const { user } = useAuth();
-
   const [notificationSettings, setNotificationSettings] = useState({
     muted: false,
     mutedUntil: null
@@ -140,6 +140,18 @@ const ChatRoom = () => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
       container.scrollTop = container.scrollHeight;
+    }
+  };
+
+  const scrollToMessage = (messageId) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Add temporary highlight effect
+      element.classList.add('bg-yellow-100', 'dark:bg-yellow-900/20');
+      setTimeout(() => {
+        element.classList.remove('bg-yellow-100', 'dark:bg-yellow-900/20');
+      }, 2000);
     }
   };
 
@@ -410,14 +422,22 @@ useEffect(() => {
     fetchUserProfile();
   }, [user]);
 
-const handleSearch = () => {
-  const searchTerm = searchQuery.toLowerCase();
-  const results = messages.filter(message => {
-    if (!message.text) return false;
-    return message.text.toLowerCase().includes(searchTerm);
-  });
+  const handleSearch = (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
   
-  setSearchResults(results);
+    const searchTerm = query.toLowerCase();
+    const results = messages.filter(message => {
+      if (!message.text) return false;
+      return (
+        message.text.toLowerCase().includes(searchTerm) ||
+        message.senderProfile?.username?.toLowerCase().includes(searchTerm)
+      );
+    }).slice(0, 15); // Limit to 15 results for performance
+    
+    setSearchResults(results);
 
   // Only highlight if there's a search term
   if (searchTerm) {
@@ -660,7 +680,10 @@ const handleSearch = () => {
                   ref={searchInputRef}
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    handleSearch(e.target.value); // Call search immediately on input
+                  }}
                   placeholder="Search messages..."
                   className="w-full pl-10 pr-4 py-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
@@ -678,24 +701,48 @@ const handleSearch = () => {
                 )}
               </div>
               
-              {searchResults.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg max-h-60 overflow-auto">
+              {/* Search Results Dropdown */}
+              {searchQuery && searchResults.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg max-h-96 overflow-auto border dark:border-gray-700">
                   {searchResults.map((message) => (
                     <button
                       key={message.id}
                       onClick={() => {
-                        scrollToMessage(message.id);
+                        const element = document.getElementById(`message-${message.id}`);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          // Add highlight effect
+                          element.classList.add('bg-yellow-100/20');
+                          setTimeout(() => element.classList.remove('bg-yellow-100/20'), 2000);
+                        }
                         setIsSearchOpen(false);
                         setSearchQuery('');
                       }}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col"
+                      className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col border-b dark:border-gray-700 last:border-0"
                     >
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        {message.text?.substring(0, 100)}
-                        {message.text?.length > 100 ? '...' : ''}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {message.timestamp?.toLocaleString()}
+                      <div className="flex items-center gap-2">
+                        {message.senderProfile?.profilePhotoURL ? (
+                          <img 
+                            src={message.senderProfile.profilePhotoURL} 
+                            alt="Profile"
+                            className="w-6 h-6 rounded-full"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-blue-500 text-xs">
+                              {message.senderProfile?.username?.[0] || '?'}
+                            </span>
+                          </div>
+                        )}
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                          {message.senderProfile?.username || 'Unknown'}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {message.timestamp?.toLocaleString()}
+                        </span>
+                      </div>
+                      <span className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
+                        {message.text}
                       </span>
                     </button>
                   ))}
