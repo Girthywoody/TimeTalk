@@ -14,12 +14,11 @@ import {
   X,
   CalendarDays as Calendar // Add this import
 } from 'lucide-react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navigation from './Navigation';
 import { Sun, Moon, Sunrise, Sunset } from 'lucide-react';
-
 
 const SharedCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -211,7 +210,7 @@ const SharedCalendar = () => {
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="p-4 h-full pb-20"            >
-                
+
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4">
