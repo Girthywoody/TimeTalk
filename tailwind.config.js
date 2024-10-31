@@ -5,7 +5,17 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      keyframes: {
+        'highlight-message': {
+          '0%, 100%': { backgroundColor: 'transparent' },
+          '50%': { backgroundColor: 'rgb(147 197 253 / 0.3)' }
+        }
+      },
+      animation: {
+        'highlight-message': 'highlight-message 2s ease-in-out'
+      }
+    },
   },
   plugins: [],
 }

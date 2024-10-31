@@ -574,10 +574,20 @@ useEffect(() => {
 
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => {
-                  setIsSearchOpen(!isSearchOpen);
-                  setTimeout(() => searchInputRef.current?.focus(), 100);
-                }}
+              onClick={() => {
+                const element = document.getElementById(`message-${message.id}`);
+                if (element) {
+                  setIsSearchOpen(false);
+                  setSearchQuery('');
+                  
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  element.classList.add('animate-highlight-message');
+                  
+                  setTimeout(() => {
+                    element.classList.remove('animate-highlight-message');
+                  }, 2000);
+                }
+              }}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 title="Search Messages"
               >
