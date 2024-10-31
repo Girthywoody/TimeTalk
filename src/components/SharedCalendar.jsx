@@ -53,8 +53,10 @@ const SharedCalendar = () => {
   const handleDateClick = (date) => {
     if (date) {
       setSelectedDate(date);
+      setShowDayView(true); // Add this line to show the day view modal
     }
   };
+
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -325,11 +327,11 @@ const SharedCalendar = () => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">
                 {selectedDate.toDateString() === new Date().toDateString() 
-                  ? "Today Meetings" 
+                  ? "Today's Events" 
                   : selectedDate.toLocaleDateString('en-US', { 
                       month: 'long', 
                       day: 'numeric'
-                    }) + " Meetings"
+                    }) + "'s Events"
                 }
               </h3>
               <button
@@ -351,45 +353,47 @@ const SharedCalendar = () => {
             {getDayEvents(selectedDate).length === 0 ? (
               <p className="text-gray-500 text-center py-4">No events scheduled for this day</p>
             ) : (
-              getDayEvents(selectedDate).map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-blue-900 text-white p-4 rounded-xl mb-3"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-semibold">{event.title}</h4>
-                    <div className="flex gap-2">
-                      <Edit2 
-                        size={18} 
-                        className="cursor-pointer hover:text-blue-200 transition-colors"
-                        onClick={() => {
-                          setNewEvent(event);
-                          setIsEditing(true);
-                          setShowEventForm(true);
-                        }}
-                      />
-                      <Trash2 
-                        size={18} 
-                        className="cursor-pointer hover:text-blue-200 transition-colors"
-                        onClick={() => handleDeleteEvent(event.id)}
-                      />
+              <div className="space-y-3">
+                {getDayEvents(selectedDate).map((event) => (
+                  <div
+                    key={event.id}
+                    className="bg-blue-900 text-white p-4 rounded-xl"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-semibold">{event.title}</h4>
+                      <div className="flex gap-2">
+                        <Edit2 
+                          size={18} 
+                          className="cursor-pointer hover:text-blue-200 transition-colors"
+                          onClick={() => {
+                            setNewEvent(event);
+                            setIsEditing(true);
+                            setShowEventForm(true);
+                          }}
+                        />
+                        <Trash2 
+                          size={18} 
+                          className="cursor-pointer hover:text-blue-200 transition-colors"
+                          onClick={() => handleDeleteEvent(event.id)}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock size={14} />
+                      <span>{formatTime(event)}</span>
+                    </div>
+                    {event.location && (
+                      <div className="flex items-center gap-2 text-sm mt-1">
+                        <MapPin size={14} />
+                        <span>{event.location}</span>
+                      </div>
+                    )}
+                    <div className="mt-2 text-sm text-blue-200">
+                      Type: {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock size={14} />
-                    <span>{formatTime(event)}</span>
-                  </div>
-                  {event.location && (
-                    <div className="flex items-center gap-2 text-sm mt-1">
-                      <MapPin size={14} />
-                      <span>{event.location}</span>
-                    </div>
-                  )}
-                  <div className="mt-2 text-sm text-blue-200">
-                    Type: {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
 
@@ -470,7 +474,7 @@ const SharedCalendar = () => {
               </div>
               <div className="flex items-center gap-2 text-sm text-blue-700">
                 <Clock size={14} />
-                <span>{formatTime(event.time)}</span>
+                  <span>{formatTime(event)}</span>
               </div>
               {event.location && (
                 <div className="flex items-center gap-2 text-sm mt-1 text-blue-700">
@@ -508,125 +512,183 @@ const SharedCalendar = () => {
 )}
 
       {/* Event Form Modal */}
-      {showEventForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ type: "spring", duration: 0.3 }}
-            className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-xl"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-semibold text-blue-900">
-                {isEditing ? 'Edit Event' : 'New Event'}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowEventForm(false);
-                  setIsEditing(false);
-                  setNewEvent({
-                    title: "",
-                    date: "",
-                    time: "",
-                    location: "",
-                    type: "general"
-                  });
-                }}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            
-            <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Title</label>
-                <input
-                  type="text"
-                  value={newEvent.title}
-                  onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                  placeholder="Enter event title"
-                />
-              </div>
+{/* Event Form Modal */}
+{showEventForm && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <motion.div
+      initial={{ scale: 0.95, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.95, opacity: 0 }}
+      transition={{ type: "spring", duration: 0.3 }}
+      className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-xl"
+    >
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-2xl font-semibold text-blue-900">
+          {isEditing ? 'Edit Event' : 'New Event'}
+        </h3>
+        <button
+          onClick={() => {
+            setShowEventForm(false);
+            setIsEditing(false);
+            setNewEvent({
+              title: "",
+              date: "",
+              isAllDay: false,
+              startTime: "",
+              endTime: "",
+              location: "",
+              type: "general"
+            });
+          }}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <X size={24} />
+        </button>
+      </div>
+      
+      <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-6">
+        {/* Title Input */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Title</label>
+          <input
+            type="text"
+            value={newEvent.title}
+            onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
+            className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+            placeholder="Enter event title"
+          />
+        </div>
 
+        <div className="space-y-6">
+          {/* All Day Switch */}
+          <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
+            <label className="text-sm font-medium text-gray-700">All Day</label>
+            <button
+              type="button"
+              onClick={() => setNewEvent(prev => ({
+                ...prev,
+                isAllDay: !prev.isAllDay,
+                startTime: "",
+                endTime: ""
+              }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                ${newEvent.isAllDay ? 'bg-blue-900' : 'bg-gray-200'}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                  ${newEvent.isAllDay ? 'translate-x-6' : 'translate-x-1'}`}
+              />
+            </button>
+          </div>
+
+          {/* Date Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Date</label>
+            <input
+              type="date"
+              value={newEvent.date}
+              onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+              className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+            />
+          </div>
+
+          {/* Time Range (hidden if All Day is selected) */}
+          {!newEvent.isAllDay && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Time</label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Date</label>
+                  <label className="block text-xs text-gray-500">From</label>
                   <input
-                    type="date"
-                    value={newEvent.date}
-                    onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                    type="time"
+                    value={newEvent.startTime}
+                    onChange={e => {
+                      const newStartTime = e.target.value;
+                      setNewEvent(prev => ({
+                        ...prev,
+                        startTime: newStartTime,
+                        // If end time is earlier than start time, update it
+                        endTime: prev.endTime && newStartTime > prev.endTime ? newStartTime : prev.endTime
+                      }));
+                    }}
                     className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Time</label>
+                  <label className="block text-xs text-gray-500">To</label>
                   <input
                     type="time"
-                    value={newEvent.time}
-                    onChange={e => setNewEvent(prev => ({ ...prev, time: e.target.value }))}
+                    value={newEvent.endTime}
+                    min={newEvent.startTime}
+                    onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
                     className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
                   />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Location</label>
-                <input
-                  type="text"
-                  value={newEvent.location}
-                  onChange={e => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                  placeholder="Enter location"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Event Type</label>
-                <select
-                  value={newEvent.type}
-                  onChange={e => setNewEvent(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                >
-                  <option value="general">General</option>
-                  <option value="meeting">Meeting</option>
-                  <option value="personal">Personal</option>
-                  <option value="important">Important</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEventForm(false);
-                    setIsEditing(false);
-                    setNewEvent({
-                      title: "",
-                      date: "",
-                      time: "",
-                      location: "",
-                      type: "general"
-                    });
-                  }}
-                  className="flex-1 p-4 border rounded-xl hover:bg-gray-50 font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 p-4 bg-blue-900 text-white rounded-xl hover:bg-blue-800 font-medium transition-colors disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Saving...' : (isEditing ? 'Update Event' : 'Add Event')}
-                </button>
-              </div>
-            </form>
-          </motion.div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Location Input */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Location</label>
+          <input
+            type="text"
+            value={newEvent.location}
+            onChange={e => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
+            className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+            placeholder="Enter location"
+          />
+        </div>
+
+        {/* Event Type Select */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Event Type</label>
+          <select
+            value={newEvent.type}
+            onChange={e => setNewEvent(prev => ({ ...prev, type: e.target.value }))}
+            className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+          >
+            <option value="general">General</option>
+            <option value="meeting">Meeting</option>
+            <option value="personal">Personal</option>
+            <option value="important">Important</option>
+          </select>
+        </div>
+
+        {/* Form Buttons */}
+        <div className="flex gap-3 pt-4">
+          <button
+            type="button"
+            onClick={() => {
+              setShowEventForm(false);
+              setIsEditing(false);
+              setNewEvent({
+                title: "",
+                date: "",
+                isAllDay: false,
+                startTime: "",
+                endTime: "",
+                location: "",
+                type: "general"
+              });
+            }}
+            className="flex-1 p-4 border rounded-xl hover:bg-gray-50 font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-1 p-4 bg-blue-900 text-white rounded-xl hover:bg-blue-800 font-medium transition-colors disabled:opacity-50"
+          >
+            {isSubmitting ? 'Saving...' : (isEditing ? 'Update' : 'Add Event')}
+          </button>
+        </div>
+      </form>
+    </motion.div>
+  </div>
+)}
     </div>
   );
 };
