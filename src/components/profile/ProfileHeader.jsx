@@ -114,6 +114,7 @@ const ProfileHeader = ({ profileData, onProfileUpdate }) => {
                   <EditableBio 
                   initialBio={profileData.bio}
                   onBioUpdate={handleBioUpdate}
+                 />
         )}
         {profileData.relationship?.anniversary && (
           <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
