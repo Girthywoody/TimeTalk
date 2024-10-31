@@ -30,7 +30,9 @@ const SharedCalendar = () => {
   const [newEvent, setNewEvent] = useState({
     title: "",
     date: "",
-    time: "",
+    isAllDay: false,
+    startTime: "",
+    endTime: "",
     location: "",
     type: "general"
   });
@@ -100,6 +102,16 @@ const SharedCalendar = () => {
     e.preventDefault();
     if (!newEvent.title || !newEvent.date) return;
     
+    if (!newEvent.isAllDay && newEvent.startTime && !newEvent.endTime) {
+      alert('Please specify an end time');
+      return;
+    }
+  
+    if (!newEvent.isAllDay && newEvent.startTime > newEvent.endTime) {
+      alert('End time must be after start time');
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       const eventData = {
@@ -108,13 +120,15 @@ const SharedCalendar = () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-
+  
       await addDoc(collection(db, 'events'), eventData);
       
       setNewEvent({
         title: "",
         date: "",
-        time: "",
+        isAllDay: false,
+        startTime: "",
+        endTime: "",
         location: "",
         type: "general"
       });
@@ -202,12 +216,21 @@ const SharedCalendar = () => {
     return events.filter(event => event.date === formattedDate);
   };
 
-  const formatTime = (time) => {
-    if (!time) return '';
-    const [hours, minutes] = time.split(':');
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const formattedHours = hours % 12 || 12;
-    return `${formattedHours}:${minutes} ${period}`;
+  const formatTime = (event) => {
+    if (event.isAllDay) return 'All Day';
+    if (!event.startTime) return '';
+    
+    const formatTimeStr = (timeStr) => {
+      const [hours, minutes] = timeStr.split(':');
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const formattedHours = hours % 12 || 12;
+      return `${formattedHours}:${minutes} ${period}`;
+    };
+  
+    const startTimeFormatted = formatTimeStr(event.startTime);
+    const endTimeFormatted = event.endTime ? formatTimeStr(event.endTime) : '';
+    
+    return endTimeFormatted ? `${startTimeFormatted} - ${endTimeFormatted}` : startTimeFormatted;
   };
   
   return (
@@ -302,7 +325,7 @@ const SharedCalendar = () => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">
                 {selectedDate.toDateString() === new Date().toDateString() 
-                  ? "Today Meeting" 
+                  ? "Today Meetings" 
                   : selectedDate.toLocaleDateString('en-US', { 
                       month: 'long', 
                       day: 'numeric'
@@ -354,7 +377,7 @@ const SharedCalendar = () => {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Clock size={14} />
-                    <span>{formatTime(event.time)}</span>
+                    <span>{formatTime(event)}</span>
                   </div>
                   {event.location && (
                     <div className="flex items-center gap-2 text-sm mt-1">
