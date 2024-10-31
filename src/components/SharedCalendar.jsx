@@ -168,8 +168,7 @@ const SharedCalendar = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="p-4 h-full"
-            >
+              className="p-4 h-full pb-20"            >
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -460,8 +459,7 @@ const DayView = ({ date, events, onClose, onAddEvent, onEditEvent, onDeleteEvent
       initial={{ y: '100%' }}
       animate={{ y: 0 }}
       exit={{ y: '100%' }}
-      className="fixed inset-0 bg-white z-50 overflow-y-auto"
-    >
+      className="fixed inset-0 bg-white z-50 overflow-y-auto pb-20"    >
       {/* Header */}
       <div className="sticky top-0 bg-white/80 backdrop-blur-sm p-4 border-b">
         <div className="flex justify-between items-center mb-4">
