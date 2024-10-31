@@ -236,14 +236,15 @@ const SharedCalendar = () => {
   };
   
   return (
-    <div className="h-screen bg-white">
+    <div className="h-screen bg-white overflow-hidden flex flex-col"> {/* Root div */}
       <AnimatePresence mode="wait">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="p-4 h-full pb-20">
+          className="p-4 flex-1 overflow-y-auto pb-24" // Changed this line
+        >
 
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
@@ -283,8 +284,8 @@ const SharedCalendar = () => {
           </div>
 
           {/* Calendar Grid */}
-          <div className="mb-4">
-            <div className="grid grid-cols-7 mb-2">
+            <div className="mb-4 min-h-fit">
+              <div className="grid grid-cols-7 mb-2">
               {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(day => (
                 <div key={day} className="text-center text-xs font-medium text-gray-500">
                   {day}
@@ -323,7 +324,7 @@ const SharedCalendar = () => {
           </div>
 
           {/* Selected Date Meetings */}
-          <div>
+          <div className="max-h-[calc(100vh-460px)] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">
                 {selectedDate.toDateString() === new Date().toDateString() 
@@ -398,8 +399,8 @@ const SharedCalendar = () => {
           </div>
 
           {/* Navigation */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-around">
-            <button className="flex flex-col items-center text-blue-900">
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-around z-10">
+              <button className="flex flex-col items-center text-blue-900">
               <CalendarIcon size={24} />
               <span className="text-xs mt-1">Home</span>
             </button>
