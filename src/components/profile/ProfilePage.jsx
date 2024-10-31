@@ -15,37 +15,25 @@ const ProfilePage = () => {
 
   useEffect(() => {
     const fetchProfileData = async () => {
-      if (!user) {
-        console.log('No user found, stopping fetch');
-        setLoading(false);
-        return;
-      }
-
-      console.log('Fetching profile for user:', user.uid);
+      if (!user?.uid) return; // Add this check
       
       try {
         const userRef = doc(db, 'users', user.uid);
-        console.log('Fetching document from:', userRef.path);
-        
         const profileDoc = await getDoc(userRef);
-        console.log('Profile doc exists:', profileDoc.exists(), 'Data:', profileDoc.data());
-
+        
         if (profileDoc.exists()) {
-          const data = profileDoc.data();
-          setProfileData(data);
+          setProfileData(profileDoc.data());
         } else {
-          console.log('No profile document found');
           setError('Profile not found');
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
         setError('Failed to load profile');
       } finally {
-        console.log('Setting loading to false');
         setLoading(false);
       }
     };
-
+  
     fetchProfileData();
   }, [user]);
 
@@ -55,8 +43,11 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="text-gray-500">Loading your profile...</p>
+        </div>
       </div>
     );
   }
@@ -70,12 +61,12 @@ const ProfilePage = () => {
       </div>
     );
   }
-
+  
   if (!profileData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-yellow-50 text-yellow-600 p-4 rounded-lg">
-          No profile data available. Try logging out and back in.
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
+        <div className="flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
         </div>
       </div>
     );
