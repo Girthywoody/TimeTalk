@@ -547,7 +547,7 @@ const SharedCalendar = () => {
         </button>
       </div>
       
-      <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-3">
+      <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-1">
         {/* Title Input */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Title</label>
