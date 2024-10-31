@@ -18,6 +18,8 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapsh
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navigation from './Navigation';
+import { Sun, Moon, Sunrise, Sunset } from 'lucide-react';
+
 
 const SharedCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -33,6 +35,31 @@ const SharedCalendar = () => {
     location: "",
     type: "general"
   });
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      return {
+        text: 'Good Morning',
+        icon: <Sun className="text-yellow-500" size={28} />
+      };
+    } else if (hour >= 12 && hour < 17) {
+      return {
+        text: 'Good Afternoon',
+        icon: <Sunrise className="text-orange-500" size={28} />
+      };
+    } else if (hour >= 17 && hour < 21) {
+      return {
+        text: 'Good Evening',
+        icon: <Sunset className="text-purple-500" size={28} />
+      };
+    } else {
+      return {
+        text: 'Good Night',
+        icon: <Moon className="text-blue-400" size={28} />
+      };
+    }
+  };
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -171,11 +198,20 @@ const SharedCalendar = () => {
               className="p-4 h-full pb-20"            >
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-              <div>
-                <h1 className="text-2xl font-bold">Good Morning.</h1>
-                <h2 className="text-xl text-gray-600">Johnson</h2>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl">
+                  {getGreeting().icon}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    {getGreeting().text}
+                  </h1>
+                  <h2 className="text-lg text-gray-600">
+                    {auth.currentUser?.displayName || 'User'}
+                  </h2>
+                </div>
               </div>
-              <Bell className="text-gray-600" size={24} />
+              <Bell className="text-gray-600 hover:text-blue-600 transition-colors" size={24} />
             </div>
 
             {/* Month Selector */}
@@ -335,8 +371,7 @@ const SharedCalendar = () => {
             damping: 30,
             mass: 1
           }}
-          className="bg-white rounded-t-3xl p-6 w-full max-w-lg mb-16" // Added mb-16 for navigation spacing
-        >
+          className="bg-white rounded-t-3xl p-6 w-full max-w-lg mb-22"        >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold">
                 {isEditing ? 'Edit Event' : 'New Event'}
