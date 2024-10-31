@@ -560,7 +560,7 @@ const SharedCalendar = () => {
           />
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* All Day Switch */}
           <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
             <label className="text-sm font-medium text-gray-700">All Day</label>
