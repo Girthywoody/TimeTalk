@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, MapPin, Heart, Lock, Trash2, Edit2, X } from 'lucide-react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
+import { auth } from '../firebase';  // Add this line with your other imports
+
 
 const SharedCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -16,6 +18,30 @@ const SharedCalendar = () => {
     type: "general"
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!auth.currentUser) {
+      console.log('No user signed in');
+      return;
+    }
+    
+    const eventsRef = collection(db, 'events');
+    const q = query(eventsRef, orderBy('date', 'asc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedEvents = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setEvents(fetchedEvents);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching events: ", error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Fetch events from Firebase
   useEffect(() => {
@@ -39,61 +65,65 @@ const SharedCalendar = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleAddEvent = async (e) => {
-    e.preventDefault();
-    if (!newEvent.title || !newEvent.date) return;
+// In SharedCalendar.jsx, modify the handleAddEvent function:
 
-    try {
-      const eventData = {
-        ...newEvent,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+const handleAddEvent = async (e) => {
+  e.preventDefault();
+  if (!newEvent.title || !newEvent.date) return;
 
-      await addDoc(collection(db, 'events'), eventData);
-      
-      setNewEvent({
-        title: "",
-        date: "",
-        time: "",
-        location: "",
-        type: "general"
-      });
-      setShowEventForm(false);
-    } catch (error) {
-      console.error("Error adding event: ", error);
-      alert('Failed to add event. Please try again.');
-    }
-  };
+  try {
+    const eventData = {
+      ...newEvent,
+      userId: auth.currentUser.uid, // Add this line
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
 
-  const handleUpdateEvent = async (e) => {
-    e.preventDefault();
-    if (!newEvent.title || !newEvent.date) return;
+    await addDoc(collection(db, 'events'), eventData);
+    
+    setNewEvent({
+      title: "",
+      date: "",
+      time: "",
+      location: "",
+      type: "general"
+    });
+    setShowEventForm(false);
+  } catch (error) {
+    console.error("Error adding event: ", error);
+    alert('Failed to add event. Please try again.');
+  }
+};
 
-    try {
-      const eventRef = doc(db, 'events', newEvent.id);
-      const eventData = {
-        ...newEvent,
-        updatedAt: new Date().toISOString()
-      };
-      delete eventData.id; // Remove id before updating
+const handleUpdateEvent = async (e) => {
+  e.preventDefault();
+  if (!newEvent.title || !newEvent.date) return;
 
-      await updateDoc(eventRef, eventData);
-      
-      setShowEventForm(false);
-      setIsEditing(false);
-      setNewEvent({
-        title: "",
-        date: "",
-        time: "",
-        location: "",
-        type: "general"
-      });
-    } catch (error) {
-      console.error("Error updating event: ", error);
-      alert('Failed to update event. Please try again.');
-    }
-  };
+  try {
+    const eventRef = doc(db, 'events', newEvent.id);
+    const eventData = {
+      ...newEvent,
+      userId: auth.currentUser.uid, // Add this line
+      updatedAt: new Date().toISOString()
+    };
+    delete eventData.id;
+
+    await updateDoc(eventRef, eventData);
+    
+    setShowEventForm(false);
+    setIsEditing(false);
+    setNewEvent({
+      title: "",
+      date: "",
+      time: "",
+      location: "",
+      type: "general"
+    });
+  } catch (error) {
+    console.error("Error updating event: ", error);
+    alert('Failed to update event. Please try again.');
+  }
+};
 
   const handleDeleteEvent = async (e) => {
     e.preventDefault();
@@ -172,6 +202,8 @@ const SharedCalendar = () => {
         return "bg-blue-100 text-blue-800";
       case "date":
         return "bg-purple-100 text-purple-800";
+      case "appointment":
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -384,10 +416,11 @@ const SharedCalendar = () => {
                   onChange={e => setNewEvent(prev => ({ ...prev, type: e.target.value }))}
                   className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                 >
-                  <option value="general">General</option>
-                  <option value="celebration">Celebration</option>
-                  <option value="trip">Trip</option>
-                  <option value="date">Date</option>
+                  <option value="General">General</option>
+                  <option value="Appointment">Date</option>
+                  <option value="Celebration">Celebration</option>
+                  <option value="Trip">Trip</option>
+                  <option value="Date">Date</option>
                 </select>
               </div>
 
