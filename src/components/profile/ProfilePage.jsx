@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
-import { Loader2, Settings } from 'lucide-react';
-
-// Components
+import { db } from '../../firebase';
+import { useAuth } from '../../hooks/useAuth';
 import ProfileHeader from './ProfileHeader';
 import QuickActions from './QuickActions';
 import RelationshipMilestones from './RelationshipMilestones';
-
-// Hooks and Config
-import { useAuth } from '../../hooks/useAuth';
-import { db } from '../../firebase';
+import { Loader2 } from 'lucide-react';
+import { Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
@@ -18,29 +15,37 @@ const ProfilePage = () => {
   const [error, setError] = useState(null);
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
+
   useEffect(() => {
     const fetchProfileData = async () => {
-      if (!user?.uid) {
+      if (!user) {
+        console.log('No user found, stopping fetch');
         setLoading(false);
-        setError('No user found');
         return;
       }
 
+      console.log('Fetching profile for user:', user.uid);
+      
       try {
         const userRef = doc(db, 'users', user.uid);
+        console.log('Fetching document from:', userRef.path);
+        
         const profileDoc = await getDoc(userRef);
+        console.log('Profile doc exists:', profileDoc.exists(), 'Data:', profileDoc.data());
 
         if (profileDoc.exists()) {
-          setProfileData(profileDoc.data());
-          setError(null);
+          const data = profileDoc.data();
+          setProfileData(data);
         } else {
+          console.log('No profile document found');
           setError('Profile not found');
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
         setError('Failed to load profile');
       } finally {
+        console.log('Setting loading to false');
         setLoading(false);
       }
     };
@@ -54,26 +59,17 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <p className="text-gray-500 dark:text-gray-400">Loading your profile...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-        <div className="bg-red-50 dark:bg-red-900/10 rounded-lg p-4 max-w-md mx-auto">
-          <p className="text-red-600 dark:text-red-400 text-center">{error}</p>
-          <button 
-            onClick={() => navigate('/')}
-            className="mt-4 w-full py-2 px-4 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors"
-          >
-            Return Home
-          </button>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-50 text-red-500 p-4 rounded-lg">
+          {error}
         </div>
       </div>
     );
@@ -81,36 +77,42 @@ const ProfilePage = () => {
 
   if (!profileData) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-500 dark:text-gray-400">
-          No profile data available
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-yellow-50 text-yellow-600 p-4 rounded-lg">
+          No profile data available. Try logging out and back in.
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
-      {/* Settings Button */}
-      <div className="fixed top-4 right-4 z-10">
-        <button
-          onClick={() => navigate('/settings')}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-          aria-label="Settings"
-        >
-          <Settings className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-        </button>
+    
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-4 space-y-6">
+      {/* Profile Header */}
+      <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
+        <div className="p-6">
+          <ProfileHeader 
+            profileData={profileData} 
+            onProfileUpdate={handleProfileUpdate}
+          />
+          <div className="absolute top-4 right-4">
+            <button
+              onClick={() => navigate('/settings')}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+            >
+              <Settings className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Profile Content */}
-      <div className="max-w-2xl mx-auto px-4 py-12 space-y-8">
-        <ProfileHeader 
-          profileData={profileData} 
-          onProfileUpdate={handleProfileUpdate}
-        />
-        
+      {/* Quick Actions */}
+      <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
         <QuickActions profileData={profileData} />
-        
+      </div>
+
+      {/* Relationship Milestones */}
+      <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
         <RelationshipMilestones 
           anniversary={profileData.relationship?.anniversary}
           milestones={profileData.relationship?.milestones || []}

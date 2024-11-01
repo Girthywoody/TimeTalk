@@ -7,6 +7,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import WelcomePage from './components/WelcomePage';
+import SettingsPage from './profile/SettingsPage';
+
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -37,6 +39,9 @@ const App = () => {
           </ProtectedRoute>
         }
       />
+
+      <Route path="/settings" element={<SettingsPage />} />
+
 
       {/* Protected routes for main app */}
       <Route

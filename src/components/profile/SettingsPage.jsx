@@ -1,7 +1,7 @@
-// SettingsPage.jsx
+// src/profile/SettingsPage.jsx
 import React from 'react';
-import { ChevronRight, User, Lock, Bell, Palette, Sliders } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, User, Lock, Bell, Palette, Sliders } from 'lucide-react';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -15,8 +15,25 @@ const SettingsPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 p-6">
-      <div className="max-w-md mx-auto space-y-6">
+    <div 
+      className="fixed inset-0 bg-white dark:bg-gray-900 transform transition-transform duration-300 ease-in-out"
+      style={{ 
+        animation: 'slideInRight 300ms ease-out',
+      }}
+    >
+      <style>
+        {`
+          @keyframes slideInRight {
+            from {
+              transform: translateX(100%);
+            }
+            to {
+              transform: translateX(0);
+            }
+          }
+        `}
+      </style>
+      <div className="max-w-md mx-auto p-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button 
@@ -41,9 +58,10 @@ const SettingsPage = () => {
                 <span className="text-gray-700 dark:text-gray-300">{item.label}</span>
               </div>
               {item.isToggle ? (
-                <div className="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <button className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600">
+                </button>
               ) : (
-                <ChevronRight className="w-5 h-5 text-gray-400" />
+                <ChevronLeft className="w-5 h-5 text-gray-400 rotate-180" />
               )}
             </div>
           ))}
@@ -52,3 +70,5 @@ const SettingsPage = () => {
     </div>
   );
 };
+
+export default SettingsPage;
