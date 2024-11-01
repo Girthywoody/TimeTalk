@@ -678,24 +678,30 @@ useEffect(() => {
                         </>
                       )}
                     </div>
+                      {/* Display Settings */}
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setDarkMode(!darkMode);
+                            setIsDropdownOpen(false);
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                          <Moon className="mr-2 h-4 w-4" />
+                          <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                        </button>
 
-                    {/* Display Settings */}
-                    <div className="py-1">
-                        <Moon className="mr-2 h-4 w-4" />
-                        <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setIsSettingsOpen(true);
-                          setIsDropdownOpen(false);
-                        }}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                      >
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Chat Settings</span>
-                      </button>
-                    </div>
+                        <button
+                          onClick={() => {
+                            setIsSettingsOpen(true);
+                            setIsDropdownOpen(false);
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Chat Settings</span>
+                        </button>
+                      </div>
                   </div>
                 )}
               </div>
