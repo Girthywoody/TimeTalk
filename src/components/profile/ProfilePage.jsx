@@ -5,9 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Settings, MessageCircle, Heart, Calendar, Gift, Loader2 } from 'lucide-react';
-import SettingsPage from '../profile/SettingsPage';  // Add this line
-
-
+import SettingsPage from '../profile/SettingsPage';
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
@@ -16,6 +14,7 @@ const ProfilePage = () => {
   const { user } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const navigate = useNavigate();
+
   const handleProfileUpdate = (updatedData) => {
     setProfileData(updatedData);
   };
@@ -23,7 +22,6 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       if (!user) {
-        console.log('No user found, stopping fetch');
         setLoading(false);
         return;
       }
@@ -95,7 +93,7 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="flex items-center justify-center h-full">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     );
@@ -103,7 +101,7 @@ const ProfilePage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="flex items-center justify-center h-full">
         <div className="bg-red-500/10 text-red-400 p-4 rounded-lg">
           {error}
         </div>
@@ -113,7 +111,7 @@ const ProfilePage = () => {
 
   if (!profileData) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="flex items-center justify-center h-full">
         <div className="bg-yellow-500/10 text-yellow-400 p-4 rounded-lg">
           No profile data available. Try logging out and back in.
         </div>
@@ -122,25 +120,25 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="fixed inset-0 min-h-screen bg-black">
-      <div className="max-w-md mx-auto h-full flex flex-col">
-        {/* Header with Settings */}
-        <div className="flex justify-between items-center p-6">
-          <h1 className="text-2xl font-bold text-white">Profile</h1>
-          <button 
-            onClick={() => setShowSettings(true)}
-            className="p-2 rounded-full bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
-          >
-            <Settings className="w-5 h-5 text-white" />
-          </button>
-        </div>
+    <div className="h-full bg-black flex flex-col">
+      {/* Header - Fixed at top */}
+      <div className="flex justify-between items-center p-4 border-b border-gray-800">
+        <h1 className="text-2xl font-bold text-white">Profile</h1>
+        <button 
+          onClick={() => setShowSettings(true)}
+          className="p-2 rounded-full bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
+        >
+          <Settings className="w-5 h-5 text-white" />
+        </button>
+      </div>
 
-        <div className="flex-1 px-6 pb-6 space-y-6 overflow-y-auto">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-md mx-auto px-4 py-6 space-y-6">
           {/* Profile Section */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative"
           >
             <div className="flex flex-col items-center space-y-4">
               <div className="relative">
@@ -165,7 +163,9 @@ const ProfilePage = () => {
                 {profileData.relationship?.anniversary && (
                   <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-blue-500/10">
                     <Calendar className="w-4 h-4 text-blue-400" />
-                    <span className="text-blue-400">Together since {new Date(profileData.relationship.anniversary).toLocaleDateString()}</span>
+                    <span className="text-blue-400">
+                      Together since {new Date(profileData.relationship.anniversary).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
                 {profileData.partnerInfo?.name && (
@@ -195,7 +195,7 @@ const ProfilePage = () => {
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 pb-4">
             {quickMetrics.map((metric, index) => (
               <motion.div
                 key={metric.label}
@@ -211,18 +211,20 @@ const ProfilePage = () => {
             ))}
           </div>
         </div>
-      </div> 
+      </div>
+
+      {/* Settings Modal */}
       {showSettings && (
         <SettingsPage 
           onClose={() => setShowSettings(false)} 
           profileData={{
             ...profileData,
-            onProfileUpdate: handleProfileUpdate  // Add this function
+            onProfileUpdate: handleProfileUpdate
           }}
         />
       )}
     </div>
-);
+  );
 };
 
 export default ProfilePage;
