@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import MessageActions from './MessageActions';
+import { useDarkMode } from '../context/DarkModeContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { 
@@ -84,11 +85,11 @@ const ChatRoom = () => {
   const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
   const [isVisible, setIsVisible] = useState(false);
   const { user } = useAuth();
+  const { darkMode } = useDarkMode();
   const [notificationSettings, setNotificationSettings] = useState({
     muted: false,
     mutedUntil: null
   });
-  const [darkMode, setDarkMode] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const searchHighlightStyles = `
@@ -680,13 +681,6 @@ useEffect(() => {
 
                     {/* Display Settings */}
                     <div className="py-1">
-                      <button
-                        onClick={() => {
-                          setDarkMode(!darkMode);
-                          setIsDropdownOpen(false);
-                        }}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                      >
                         <Moon className="mr-2 h-4 w-4" />
                         <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
                       </button>

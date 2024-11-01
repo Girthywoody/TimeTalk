@@ -8,6 +8,8 @@ import { Loader2 } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import WelcomePage from './components/WelcomePage';
 import SettingsPage from './components/profile/SettingsPage';  // if SettingsPage is in components/profile
+import { DarkModeProvider } from './context/DarkModeContext';
+
 
 
 const App = () => {
@@ -23,8 +25,8 @@ const App = () => {
   }
 
   return (
-    <div className="bg-black">
-
+    <DarkModeProvider>
+      <div className="bg-gradient-to-b from-gray-50 to-white dark:from-dark-900 dark:to-dark-800">
     <Routes>
       {/* Public route */}
       <Route 
@@ -63,8 +65,10 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-      </Routes>
-    </div>
+       </Routes>
+      </div>
+    </DarkModeProvider>
+
   );
 };
 

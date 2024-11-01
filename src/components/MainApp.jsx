@@ -14,6 +14,8 @@ import ChatRoom from './ChatRoom';
 import SharedCalendar from './SharedCalendar';
 import SecretPostModal from './SecretPostModal';
 import { auth } from '../firebase';  // Add this line with your other imports
+import { useDarkMode } from '../context/DarkModeContext';
+
 
 
 const MainApp = () => {
@@ -159,24 +161,24 @@ const MainApp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white pb-20">
+    <div className={`min-h-screen ${darkMode ? 'bg-dark-900' : 'bg-gradient-to-b from-blue-50 to-white'} pb-20`}>
       <div className="max-w-2xl mx-auto p-4 space-y-6">
         {currentPage === 'home' ? (
           <>
             {/* Header */}
-            <div className="bg-white/80 backdrop-blur-sm border-none shadow-lg rounded-lg">
+            <div className={`${darkMode ? 'bg-dark-800/80' : 'bg-white/80'} backdrop-blur-sm border-none shadow-lg rounded-lg`}>
               <div className="p-4 flex flex-row items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Heart className="text-rose-500" size={24} />
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
                     Our Timeline
                   </h1>
                 </div>
                 <div className="flex items-center gap-4">
-                  <Lock className="text-blue-500" size={24} />
+                  <Lock className={`${darkMode ? 'text-blue-400' : 'text-blue-500'}`} size={24} />
                   <button
                     onClick={logout}
-                    className="text-gray-600 hover:text-gray-800 transition-colors"
+                    className={`${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'} transition-colors`}
                   >
                     Logout
                   </button>
@@ -185,7 +187,7 @@ const MainApp = () => {
             </div>
 
             {/* Post Creation Card */}
-            <div className="relative bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none z-10">
+            <div className={`relative ${darkMode ? 'bg-dark-800/90' : 'bg-white/90'} backdrop-blur-sm shadow-lg rounded-lg border-none z-10`}>
               <div className="p-6 space-y-4">
                 {/* Media Type Selection */}
                 <div className="flex gap-4 justify-center">
@@ -263,8 +265,8 @@ const MainApp = () => {
 <Timeline posts={posts} />
 
 {/* Privacy Notice */}
-<div className="bg-blue-50 border-none shadow-md rounded-lg p-4">
-  <div className="text-blue-800 flex items-center gap-2">
+<div className={`${darkMode ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-800'} border-none shadow-md rounded-lg p-4`}>
+<div className="flex items-center gap-2">
     <Lock size={16} />
     Your private space: only visible to you and your partner
   </div>

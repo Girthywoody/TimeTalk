@@ -1,97 +1,67 @@
-// src/profile/SettingsPage.jsx
-import React, { useEffect } from 'react';
+// src/components/profile/SettingsPage.jsx
+import React from 'react';
+import { Moon, Sun, ArrowLeft } from 'lucide-react';
+import { useDarkMode } from '../../context/DarkModeContext';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, User, Lock, Bell, Palette, Sliders } from 'lucide-react';
 
 const SettingsPage = () => {
+  const { darkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
-  
-  // Prevent background scrolling when settings is open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
-  
-  const settingsItems = [
-    { icon: User, label: 'Account Details', route: '/settings/account' },
-    { icon: Lock, label: 'Change password', route: '/settings/password' },
-    { icon: Bell, label: 'Notifications', route: '/settings/notifications' },
-    { icon: Palette, label: 'Light / Dark mode', route: '/settings/theme', isToggle: true },
-    { icon: Sliders, label: 'Preferences', route: '/settings/preferences' },
-  ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-white">
-      <div 
-        className="min-h-screen overflow-y-auto"
-        style={{ 
-          animation: 'slideInRight 300ms ease-out',
-          WebkitOverflowScrolling: 'touch' // For iOS momentum scrolling
-        }}
-      >
-        <style>
-          {`
-            @keyframes slideInRight {
-              from {
-                transform: translateX(100%);
-              }
-              to {
-                transform: translateX(0);
-              }
-            }
-          `}
-        </style>
-        
-        {/* iOS Safe Area Top Spacing */}
-        <div className="safe-area-top h-[env(safe-area-inset-top)]" />
-        
-        <div className="max-w-md mx-auto p-6">
-          {/* Header - Fixed position */}
-          <div className="sticky top-0 z-10 bg-white pb-4">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => navigate(-1)}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <ChevronLeft className="w-6 h-6 text-gray-600" />
-              </button>
-              <h1 className="text-2xl font-semibold text-gray-800">Settings</h1>
-            </div>
-          </div>
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
+      {/* Header */}
+      <div className={`p-4 flex items-center justify-between border-b ${
+        darkMode ? 'border-gray-700' : 'border-gray-200'
+      }`}>
+        <button
+          onClick={() => navigate(-1)}
+          className={`p-2 rounded-full ${
+            darkMode 
+              ? 'hover:bg-gray-800 text-gray-300' 
+              : 'hover:bg-gray-100 text-gray-600'
+          }`}
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <h1 className="text-xl font-semibold">Settings</h1>
+        <div className="w-10" /> {/* Spacer for alignment */}
+      </div>
 
-          {/* Settings List */}
-          <div className="space-y-3 mt-4">
-            {settingsItems.map((item, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                onClick={() => !item.isToggle && navigate(item.route)}
-              >
-                <div className="flex items-center gap-4">
-                  <item.icon className="w-5 h-5 text-gray-600" />
-                  <span className="text-gray-700">{item.label}</span>
-                </div>
-                {item.isToggle ? (
-                  <div className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      value="" 
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </div>
-                ) : (
-                  <ChevronLeft className="w-5 h-5 text-gray-400 rotate-180" />
-                )}
+      {/* Settings Content */}
+      <div className="p-4 space-y-4">
+        {/* Dark Mode Toggle */}
+        <div className={`p-4 rounded-lg ${
+          darkMode ? 'bg-gray-800' : 'bg-gray-50'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {darkMode ? <Moon className="text-blue-400" /> : <Sun className="text-yellow-500" />}
+              <div>
+                <h3 className="font-medium">Appearance</h3>
+                <p className={`text-sm ${
+                  darkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  {darkMode ? 'Dark Mode' : 'Light Mode'}
+                </p>
               </div>
-            ))}
+            </div>
+            <button
+              onClick={toggleDarkMode}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                darkMode ? 'bg-blue-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  darkMode ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
         </div>
-        
-        {/* iOS Safe Area Bottom Spacing */}
-        <div className="safe-area-bottom h-[env(safe-area-inset-bottom)]" />
+
+        {/* Add more settings sections here */}
       </div>
     </div>
   );
