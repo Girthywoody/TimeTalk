@@ -535,7 +535,7 @@ const SharedCalendar = () => {
         darkMode 
           ? 'bg-gray-900 text-white' 
           : 'bg-white text-gray-900'
-      } rounded-3xl p-6 pb-2 w-full max-w-lg shadow-xl`}
+      } rounded-3xl p-6 pb-1 w-full max-w-lg shadow-xl`}
     >
       <div className="flex items-center justify-between mb-6">
         <h3 className={`text-2xl font-semibold ${
@@ -752,7 +752,7 @@ const SharedCalendar = () => {
                 type: "general"
               });
             }}
-            className={`flex-1 p-4 rounded-xl font-medium transition-colors ${
+            className={`flex-1 p-4w rounded-xl font-medium transition-colors ${
               darkMode 
                 ? 'bg-gray-800 hover:bg-gray-700 text-white' 
                 : 'border hover:bg-gray-50 text-gray-900'
