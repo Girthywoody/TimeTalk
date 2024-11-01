@@ -1,57 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
-import { useAuth } from '../../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Settings, MessageCircle, Heart, Calendar, Gift } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Settings, MessageCircle, Heart, Calendar, Gift, Loader2 } from 'lucide-react';
 
-const ProfilePage = () => {
-  const [profileData, setProfileData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { user } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchProfileData = async () => {
-      if (!user) {
-        console.log('No user found, stopping fetch');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const userRef = doc(db, 'users', user.uid);
-        const profileDoc = await getDoc(userRef);
-        
-        if (profileDoc.exists()) {
-          const data = profileDoc.data();
-          setProfileData(data);
-        } else {
-          setError('Profile not found');
-        }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-        setError('Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfileData();
-  }, [user]);
-
+const ModernProfile = ({ profileData }) => {
   const getDaysTogether = () => {
-    if (!profileData?.relationship?.anniversary) return 0;
+    if (!profileData.relationship?.anniversary) return 0;
     const anniversary = new Date(profileData.relationship.anniversary);
     const today = new Date();
     return Math.floor((today - anniversary) / (1000 * 60 * 60 * 24));
   };
 
   const stats = [
-    { label: 'Messages', value: profileData?.stats?.messages || 0, color: 'text-blue-500' },
-    { label: 'Moments', value: profileData?.stats?.moments || 0, color: 'text-purple-500' },
+    { label: 'Messages', value: profileData.stats?.messages || 0, color: 'text-blue-500' },
+    { label: 'Moments', value: profileData.stats?.moments || 0, color: 'text-purple-500' },
     { label: 'Days', value: getDaysTogether(), color: 'text-rose-500' }
   ];
 
@@ -86,44 +47,13 @@ const ProfilePage = () => {
     }
   ];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="bg-red-500/10 text-red-400 p-4 rounded-lg">
-          {error}
-        </div>
-      </div>
-    );
-  }
-
-  if (!profileData) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="bg-yellow-500/10 text-yellow-400 p-4 rounded-lg">
-          No profile data available. Try logging out and back in.
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-6">
       <div className="max-w-md mx-auto space-y-6">
         {/* Header with Settings */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Profile</h1>
-          <button 
-            onClick={() => navigate('/settings')}
-            className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
-          >
+          <button className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors">
             <Settings className="w-5 h-5" />
           </button>
         </div>
@@ -154,19 +84,14 @@ const ProfilePage = () => {
 
             {/* Relationship Info */}
             <div className="flex flex-col items-center gap-2 w-full">
-              {profileData.relationship?.anniversary && (
-                <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-blue-500/10 text-blue-400">
-                  <Calendar className="w-4 h-4" />
-                  <span>Together since {new Date(profileData.relationship.anniversary).toLocaleDateString()}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-blue-500/10 text-blue-400">
+                <Calendar className="w-4 h-4" />
+                <span>Together since {new Date(profileData.relationship?.anniversary).toLocaleDateString()}</span>
+              </div>
               {profileData.partnerInfo?.name && (
                 <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-rose-500/10 text-rose-400">
                   <Heart className="w-4 h-4" />
                   <span>With {profileData.partnerInfo.name}</span>
-                  {profileData.partnerInfo.nickname && (
-                    <span className="text-rose-400/70">({profileData.partnerInfo.nickname})</span>
-                  )}
                 </div>
               )}
             </div>
@@ -210,4 +135,4 @@ const ProfilePage = () => {
   );
 };
 
-export default ProfilePage;
+export default ModernProfile;
