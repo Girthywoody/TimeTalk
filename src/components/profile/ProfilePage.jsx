@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Settings, MessageCircle, Heart, Calendar, Gift, Loader2 } from 'lucide-react';
+import { useDarkMode } from '../../context/DarkModeContext';
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
