@@ -6,7 +6,7 @@ import ProfileSetupPage from './components/ProfileSetupPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
-import WelcomePage from './components/WelcomePage';
+// import WelcomePage from './components/WelcomePage';
 import SettingsPage from './components/profile/SettingsPage';
 import { DarkModeProvider } from './context/DarkModeContext';
 
@@ -60,7 +60,6 @@ const App = () => {
           element={
             <ProtectedRoute>
               <>
-                <WelcomePage />
                 <MainApp />
               </>
             </ProtectedRoute>
