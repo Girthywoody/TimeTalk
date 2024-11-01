@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import MessageActions from './MessageActions';
-import { useDarkMode } from '../components/DarkModeContext';
+import { DarkModeProvider } from './components/DarkModeContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { 
