@@ -29,7 +29,7 @@ const ProfilePage = () => {
         const userRef = doc(db, 'users', user.uid);
         const profileDoc = await getDoc(userRef);
         
-        if (profileDoc.exists()) {
+        if (profileDoc.exists()) {      
           const data = profileDoc.data();
           setProfileData(data);
         } else {
@@ -208,10 +208,13 @@ const ProfilePage = () => {
             ))}
           </div>
         </div>
-      </div>
-            {showSettings && (
-        <SettingsPage onClose={() => setShowSettings(false)} />
-      )}
+      </div> 
+              {showSettings && (
+          <SettingsPage 
+            onClose={() => setShowSettings(false)} 
+            profileData={profileData}
+          />
+        )}
     </div>
 );
 };
