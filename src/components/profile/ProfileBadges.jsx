@@ -67,5 +67,6 @@ return (
     </div>
   </div>
 );
+};
 
 export default ProfileBadges;
