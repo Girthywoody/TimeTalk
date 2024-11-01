@@ -14,7 +14,7 @@ import ChatRoom from './ChatRoom';
 import SharedCalendar from './SharedCalendar';
 import SecretPostModal from './SecretPostModal';
 import { auth } from '../firebase';  // Add this line with your other imports
-import { useDarkMode } from '../context/DarkModeContext';
+import { useDarkMode } from '../components/DarkModeContext';
 
 
 

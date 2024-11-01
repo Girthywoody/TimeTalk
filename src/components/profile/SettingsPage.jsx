@@ -1,7 +1,7 @@
 // src/components/profile/SettingsPage.jsx
 import React from 'react';
 import { Moon, Sun, ArrowLeft } from 'lucide-react';
-import { useDarkMode } from '../../context/DarkModeContext';
+import { useDarkMode } from '../../components/DarkModeContext';
 import { useNavigate } from 'react-router-dom';
 
 const SettingsPage = () => {
