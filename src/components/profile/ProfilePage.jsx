@@ -16,6 +16,9 @@ const ProfilePage = () => {
   const { user } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const navigate = useNavigate();
+  const handleProfileUpdate = (updatedData) => {
+    setProfileData(updatedData);
+  };
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -209,12 +212,15 @@ const ProfilePage = () => {
           </div>
         </div>
       </div> 
-              {showSettings && (
-          <SettingsPage 
-            onClose={() => setShowSettings(false)} 
-            profileData={profileData}
-          />
-        )}
+      {showSettings && (
+        <SettingsPage 
+          onClose={() => setShowSettings(false)} 
+          profileData={{
+            ...profileData,
+            onProfileUpdate: handleProfileUpdate  // Add this function
+          }}
+        />
+      )}
     </div>
 );
 };
