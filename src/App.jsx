@@ -7,7 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import WelcomePage from './components/WelcomePage';
-import SettingsPage from './profile/SettingsPage';
+import SettingsPage from './components/profile/SettingsPage';  // if SettingsPage is in components/profile
 
 
 const App = () => {
