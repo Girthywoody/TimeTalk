@@ -12,6 +12,10 @@ export function DarkModeProvider({ children }) {
     return false;
   });
 
+  const toggleDarkMode = () => {
+    setDarkMode(prev => !prev);
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('darkMode', darkMode);
@@ -24,7 +28,7 @@ export function DarkModeProvider({ children }) {
   }, [darkMode]);
 
   return (
-    <DarkModeContext.Provider value={{ darkMode, setDarkMode }}>
+    <DarkModeContext.Provider value={{ darkMode, setDarkMode, toggleDarkMode }}>
       {children}
     </DarkModeContext.Provider>
   );
