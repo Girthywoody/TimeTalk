@@ -237,28 +237,29 @@ const MainApp = () => {
                   className={`w-full p-4 border rounded-xl resize-none h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}                
                   />
 
-                {/* Date and Submit */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <CustomDateTimeSelector
-                      selectedDateTime={scheduledDateTime}
-                      onChange={setScheduledDateTime}
-                    />
-                  </div>
+                  {/* Date and Submit */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <CustomDateTimeSelector
+                        selectedDateTime={scheduledDateTime}
+                        onChange={setScheduledDateTime}
+                        darkMode={darkMode} // Pass the darkMode prop to CustomDateTimeSelector
+                      />
+                    </div>
 
-                  <button
-                    onClick={handlePost}
-                    className={`px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl 
-                              transition-all duration-200 hover:transform hover:scale-105
-                              ${(!message && !mediaPreview) || !scheduledDateTime || isUploading
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'}`}
-                    disabled={(!message && !mediaPreview) || !scheduledDateTime || isUploading}
-                  >
-                    <Send size={20} />
-                    Schedule Post
-                  </button>
-                </div>
+                    <button
+                      onClick={handlePost}
+                      className={`px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl 
+                                transition-all duration-200 hover:transform hover:scale-105
+                                ${(!message && !mediaPreview) || !scheduledDateTime || isUploading
+                                  ? `${darkMode ? 'bg-gray-700 text-gray-500' : 'bg-gray-100 text-gray-400'} cursor-not-allowed`
+                                  : `${darkMode ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white' : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'}`}`}
+                      disabled={(!message && !mediaPreview) || !scheduledDateTime || isUploading}
+                    >
+                      <Send size={20} />
+                      Schedule Post
+                    </button>
+                  </div>
               </div>
             </div>
 
