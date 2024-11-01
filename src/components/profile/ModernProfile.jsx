@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, MessageCircle, Heart, Calendar, Gift } from 'lucide-react';
+import { Settings, MessageCircle, Heart, Calendar, Gift, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const ModernProfile = ({ profileData }) => {
@@ -9,6 +9,7 @@ const ModernProfile = ({ profileData }) => {
     const today = new Date();
     return Math.floor((today - anniversary) / (1000 * 60 * 60 * 24));
   };
+  const [showSettings, setShowSettings] = useState(false);
 
   const stats = [
     { label: 'Messages', value: profileData.stats?.messages || 0, color: 'text-blue-500' },
@@ -53,8 +54,11 @@ const ModernProfile = ({ profileData }) => {
         {/* Header with Settings */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Profile</h1>
-          <button className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors">
-            <Settings className="w-5 h-5" />
+          <button 
+            onClick={() => setShowSettings(true)}
+            className="p-2 rounded-full bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
+          >
+            <Settings className="w-5 h-5 text-white" />
           </button>
         </div>
 
@@ -131,6 +135,9 @@ const ModernProfile = ({ profileData }) => {
           ))}
         </div>
       </div>
+      {showSettings && (
+        <SettingsPage onClose={() => setShowSettings(false)} />
+      )}
     </div>
   );
 };
