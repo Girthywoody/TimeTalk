@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -27,23 +27,28 @@
       body {
         margin: 0;
         padding: 0;
-        /* Prevent bounce effects and unwanted behaviors */
         overscroll-behavior: none;
         touch-action: manipulation;
         -webkit-user-select: none;
         user-select: none;
         -webkit-tap-highlight-color: transparent;
-        /* Remove fixed positioning to allow proper scrolling */
         height: 100vh;
         height: 100dvh;
       }
 
       #root {
         height: 100%;
-        padding-bottom: calc(64px + env(safe-area-inset-bottom));
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         position: relative;
+        background-color: white; /* Add this to prevent white flash */
+      }
+
+      /* Dark mode support */
+      @media (prefers-color-scheme: dark) {
+        #root {
+          background-color: #111827; /* dark:bg-gray-900 equivalent */
+        }
       }
     </style>
   </head>
