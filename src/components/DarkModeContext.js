@@ -1,13 +1,14 @@
-// src/components/DarkModeContext.js
+import * as React from 'react';
 import { createContext, useContext, useState, useEffect } from 'react';
 
-// Export the context so it can be imported directly if needed
-export const DarkModeContext = createContext({
+// Create the context
+const DarkModeContext = React.createContext({
   darkMode: false,
   toggleDarkMode: () => {}
 });
 
-export function DarkModeProvider({ children }) {
+// Provider component
+function DarkModeProvider({ children }) {
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('darkMode');
@@ -36,17 +37,20 @@ export function DarkModeProvider({ children }) {
     toggleDarkMode
   };
 
-  return (
-    <DarkModeContext.Provider value={value}>
-      {children}
-    </DarkModeContext.Provider>
+  return React.createElement(
+    DarkModeContext.Provider,
+    { value },
+    children
   );
 }
 
-export function useDarkMode() {
+// Hook for using the context
+function useDarkMode() {
   const context = useContext(DarkModeContext);
   if (context === undefined) {
     throw new Error('useDarkMode must be used within a DarkModeProvider');
   }
   return context;
 }
+
+export { DarkModeProvider, useDarkMode };
