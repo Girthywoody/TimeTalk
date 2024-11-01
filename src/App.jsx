@@ -23,31 +23,45 @@ const App = () => {
   }
 
   return (
-// In App.jsx, update the routes organization
-<Routes>
-  {/* Public route */}
-  <Route 
-    path="/login" 
-    element={user ? <Navigate to="/" /> : <LoginPage />} 
-  />
+    <Routes>
+      {/* Public route */}
+      <Route 
+        path="/login" 
+        element={user ? <Navigate to="/" /> : <LoginPage />} 
+      />
 
-  {/* Protected routes */}
-  <Route
-    element={<ProtectedRoute />}
-  >
-    <Route path="/setup" element={<ProfileSetupPage />} />
-    <Route path="/settings" element={<SettingsPage />} />
-    <Route
-      path="/*"
-      element={
-        <>
-          <WelcomePage />
-          <MainApp />
-        </>
-      }
-    />
-  </Route>
-</Routes>
+      {/* Protected route for profile setup */}
+      <Route
+        path="/setup"
+        element={
+          <ProtectedRoute>
+            <ProfileSetupPage />
+          </ProtectedRoute>
+        }
+      />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+
+      {/* Protected routes for main app */}
+      <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <>
+                <WelcomePage />
+                <MainApp />
+              </>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
   );
 };
 
