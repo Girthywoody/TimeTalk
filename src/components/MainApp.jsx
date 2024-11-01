@@ -29,6 +29,8 @@ const MainApp = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [pendingPost, setPendingPost] = useState(null);
+  const { darkMode } = useDarkMode();  // Add this line to get darkMode
+
 
   useEffect(() => {
     const postsRef = collection(db, 'posts');
