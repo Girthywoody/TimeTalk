@@ -23,6 +23,8 @@ const App = () => {
   }
 
   return (
+    <div className="bg-black">
+
     <Routes>
       {/* Public route */}
       <Route 
@@ -62,6 +64,7 @@ const App = () => {
           }
         />
       </Routes>
+    </div>
   );
 };
 

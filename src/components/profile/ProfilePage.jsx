@@ -115,99 +115,98 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 p-6">
-      <div className="max-w-md mx-auto space-y-6">
+    <div className="fixed inset-0 min-h-screen bg-black">
+      <div className="max-w-md mx-auto h-full flex flex-col">
         {/* Header with Settings */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Profile</h1>
+        <div className="flex justify-between items-center p-6">
+          <h1 className="text-2xl font-bold text-white">Profile</h1>
           <button 
             onClick={() => navigate('/settings')}
-            className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-full bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
           >
-            <Settings className="w-5 h-5" />
+            <Settings className="w-5 h-5 text-white" />
           </button>
         </div>
 
-        {/* Profile Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative"
-        >
-          <div className="flex flex-col items-center space-y-4">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 p-0.5">
-                <div className="w-full h-full rounded-full overflow-hidden">
-                  <img
-                    src={profileData.profilePhotoURL || "/api/placeholder/96/96"}
-                    alt={profileData.displayName}
-                    className="w-full h-full object-cover"
-                  />
+        <div className="flex-1 px-6 pb-6 space-y-6 overflow-y-auto">
+          {/* Profile Section */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative"
+          >
+            <div className="flex flex-col items-center space-y-4">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 p-0.5">
+                  <div className="w-full h-full rounded-full overflow-hidden">
+                    <img
+                      src={profileData.profilePhotoURL || "/api/placeholder/96/96"}
+                      alt={profileData.displayName}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="text-center">
-              <h2 className="text-xl font-bold">{profileData.displayName}</h2>
-              <p className="text-gray-400">@{profileData.username}</p>
-            </div>
+              
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-white">{profileData.displayName}</h2>
+                <p className="text-gray-400">@{profileData.username}</p>
+              </div>
 
-            {/* Relationship Info */}
-            <div className="flex flex-col items-center gap-2 w-full">
-              {profileData.relationship?.anniversary && (
-                <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-blue-500/10 text-blue-400">
-                  <Calendar className="w-4 h-4" />
-                  <span>Together since {new Date(profileData.relationship.anniversary).toLocaleDateString()}</span>
-                </div>
-              )}
-              {profileData.partnerInfo?.name && (
-                <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-rose-500/10 text-rose-400">
-                  <Heart className="w-4 h-4" />
-                  <span>With {profileData.partnerInfo.name}</span>
-                  {profileData.partnerInfo.nickname && (
-                    <span className="text-rose-400/70">({profileData.partnerInfo.nickname})</span>
-                  )}
-                </div>
-              )}
+              {/* Relationship Info */}
+              <div className="flex flex-col items-center gap-2 w-full">
+                {profileData.relationship?.anniversary && (
+                  <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-blue-500/10">
+                    <Calendar className="w-4 h-4 text-blue-400" />
+                    <span className="text-blue-400">Together since {new Date(profileData.relationship.anniversary).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {profileData.partnerInfo?.name && (
+                  <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-rose-500/10">
+                    <Heart className="w-4 h-4 text-rose-400" />
+                    <span className="text-rose-400">With {profileData.partnerInfo.name}</span>
+                  </div>
+                )}
+              </div>
             </div>
+          </motion.div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-4">
+            {stats.map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-gray-900/50 rounded-2xl p-4 text-center"
+              >
+                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className="text-sm text-gray-400">{stat.label}</p>
+              </motion.div>
+            ))}
           </div>
-        </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-4">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-gray-900/50 rounded-2xl p-4 text-center backdrop-blur-sm"
-            >
-              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-              <p className="text-sm text-gray-400">{stat.label}</p>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Quick Metrics */}
-        <div className="grid grid-cols-2 gap-4">
-          {quickMetrics.map((metric, index) => (
-            <motion.div
-              key={metric.label}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 }}
-              className={`${metric.bgColor} rounded-2xl p-4 backdrop-blur-sm`}
-            >
-              <metric.icon className={`w-6 h-6 ${metric.textColor} mb-2`} />
-              <p className={`text-lg font-bold ${metric.textColor}`}>{metric.value}</p>
-              <p className="text-sm text-gray-400">{metric.label}</p>
-            </motion.div>
-          ))}
+          {/* Quick Metrics */}
+          <div className="grid grid-cols-2 gap-4">
+            {quickMetrics.map((metric, index) => (
+              <motion.div
+                key={metric.label}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.1 }}
+                className={`${metric.bgColor} rounded-2xl p-4`}
+              >
+                <metric.icon className={`w-6 h-6 ${metric.textColor} mb-2`} />
+                <p className={`text-lg font-bold ${metric.textColor}`}>{metric.value}</p>
+                <p className="text-sm text-gray-400">{metric.label}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
-  );
+);
 };
 
 export default ProfilePage;
