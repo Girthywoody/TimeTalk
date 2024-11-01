@@ -772,6 +772,7 @@ const SharedCalendar = () => {
     </motion.div>
   </div>
 )}
+<form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-1 mb-12"></form>
     </div>
   );
 };
