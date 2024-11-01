@@ -419,22 +419,6 @@ const SharedCalendar = () => {
               </div>
             )}
           </div>
-
-          {/* Navigation */}
-          <div className={`sticky bottom-16 left-0 right-0 ${darkMode ? 'bg-gray-900' : 'bg-white'} border-t ${darkMode ? 'border-gray-800' : 'border-gray-100'} p-4 mt-8 flex justify-around`}>
-            <button className={`flex flex-col items-center ${darkMode ? 'text-blue-400' : 'text-blue-900'}`}>
-              <CalendarIcon size={24} />
-              <span className="text-xs mt-1">Home</span>
-            </button>
-            <button className={`flex flex-col items-center ${darkMode ? 'text-gray-500' : 'text-gray-400'} hover:text-blue-500 transition-colors`}>
-              <Calendar size={24} />
-              <span className="text-xs mt-1">Schedule</span>
-            </button>
-            <button className={`flex flex-col items-center ${darkMode ? 'text-gray-500' : 'text-gray-400'} hover:text-blue-500 transition-colors`}>
-              <Heart size={24} />
-              <span className="text-xs mt-1">Profile</span>
-            </button>
-          </div>
         </motion.div>
       </AnimatePresence>
 
