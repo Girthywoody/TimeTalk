@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Heart, Calendar, Lock } from 'lucide-react';
 
 const RelationshipMilestones = ({ anniversary, milestones = [] }) => {
