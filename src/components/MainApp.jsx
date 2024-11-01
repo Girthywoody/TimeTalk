@@ -234,8 +234,8 @@ const MainApp = () => {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Share a memory or future thought..."
-                  className="w-full p-4 border rounded-xl resize-none h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                />
+                  className={`w-full p-4 border rounded-xl resize-none h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}                
+                  />
 
                 {/* Date and Submit */}
                 <div className="flex items-center justify-between gap-4">
