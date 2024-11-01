@@ -86,8 +86,18 @@ const ProfilePage = () => {
   }
 
   return (
-    
+
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-4 space-y-6">
+    {/* Settings Button - Move it here, outside the profile header card */}
+    <div className="fixed top-4 right-4 z-50">
+      <button
+        onClick={() => navigate('/settings')}
+        className="p-2 hover:bg-gray-100 rounded-full transition-colors bg-white/90 shadow-md"
+      >
+        <Settings className="w-6 h-6 text-gray-600" />
+      </button>
+    </div>
+    
       {/* Profile Header */}
       <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border-none">
         <div className="p-6">
@@ -96,12 +106,6 @@ const ProfilePage = () => {
             onProfileUpdate={handleProfileUpdate}
           />
           <div className="absolute top-4 right-4">
-            <button
-              onClick={() => navigate('/settings')}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-            >
-              <Settings className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-            </button>
           </div>
         </div>
       </div>
