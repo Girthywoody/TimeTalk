@@ -1,56 +1,38 @@
-import * as React from 'react';
-import { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
-// Create the context
-const DarkModeContext = React.createContext({
-  darkMode: false,
-  toggleDarkMode: () => {}
-});
+const DarkModeContext = createContext();
 
-// Provider component
-function DarkModeProvider({ children }) {
+export function DarkModeProvider({ children }) {
   const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('darkMode');
-      return saved ? JSON.parse(saved) : false;
-    }
-    return false;
+    // Check if there's a saved preference in localStorage
+    const savedMode = localStorage.getItem('darkMode');
+    // Check if user prefers dark mode at system level
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return savedMode ? savedMode === 'true' : prefersDark;
   });
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('darkMode', JSON.stringify(darkMode));
-      if (darkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+    // Save preference to localStorage
+    localStorage.setItem('darkMode', darkMode);
+    // Update document class
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
 
-  const toggleDarkMode = () => {
-    setDarkMode(prev => !prev);
-  };
-
-  const value = {
-    darkMode,
-    toggleDarkMode
-  };
-
-  return React.createElement(
-    DarkModeContext.Provider,
-    { value },
-    children
+  return (
+    <DarkModeContext.Provider value={{ darkMode, setDarkMode }}>
+      {children}
+    </DarkModeContext.Provider>
   );
 }
 
-// Hook for using the context
-function useDarkMode() {
+export function useDarkMode() {
   const context = useContext(DarkModeContext);
   if (context === undefined) {
     throw new Error('useDarkMode must be used within a DarkModeProvider');
   }
   return context;
 }
-
-export { DarkModeProvider, useDarkMode };

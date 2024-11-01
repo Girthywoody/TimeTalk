@@ -3,7 +3,7 @@ import { Heart, Clock, Video, Image, MessageSquare, Mic, Lock, MoreVertical, Tra
 import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import CustomDateTimeSelector from './CustomDateTimeSelector';
-import { DarkModeProvider } from './components/DarkModeContext';
+import { useDarkMode } from '../context/DarkModeContext';
 
 
 

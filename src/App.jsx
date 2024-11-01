@@ -8,7 +8,8 @@ import { Loader2 } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import WelcomePage from './components/WelcomePage';
 import SettingsPage from './components/profile/SettingsPage';  // if SettingsPage is in components/profile
-import { DarkModeProvider } from './components/DarkModeContext';
+import { DarkModeProvider } from './context/DarkModeContext';
+
 
 
 
