@@ -5,13 +5,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Settings, MessageCircle, Heart, Calendar, Gift, Loader2 } from 'lucide-react';
-import { useDarkMode } from '../../context/DarkModeContext';
+
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user } = useAuth();
+  const [showSettings, setShowSettings] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -122,7 +123,7 @@ const ProfilePage = () => {
         <div className="flex justify-between items-center p-6">
           <h1 className="text-2xl font-bold text-white">Profile</h1>
           <button 
-            onClick={() => navigate('/settings')}
+            onClick={() => setShowSettings(true)}
             className="p-2 rounded-full bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
           >
             <Settings className="w-5 h-5 text-white" />
@@ -206,6 +207,9 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
+            {showSettings && (
+        <SettingsPage onClose={() => setShowSettings(false)} />
+      )}
     </div>
 );
 };

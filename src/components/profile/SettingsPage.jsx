@@ -10,11 +10,9 @@ import {
   Sliders
 } from 'lucide-react';
 import { useDarkMode } from '../../context/DarkModeContext';
-import { useNavigate } from 'react-router-dom';
 
-const SettingsPage = () => {
+const SettingsPage = ({ onClose }) => {
   const { darkMode, toggleDarkMode } = useDarkMode();
-  const navigate = useNavigate();
 
   const menuItems = [
     { icon: User, label: 'Account Details' },
@@ -24,12 +22,12 @@ const SettingsPage = () => {
   ];
 
   return (
-    <div className="fixed inset-0 flex flex-col min-h-screen">
-      <div className={`flex-1 ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
+    <div className="fixed inset-0 z-50 min-h-screen">
+      <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
         {/* Header */}
         <div className="px-4 py-4 flex items-center justify-between">
           <button
-            onClick={() => navigate(-1)}
+            onClick={onClose}
             className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />

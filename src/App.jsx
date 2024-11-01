@@ -45,15 +45,6 @@ const App = () => {
         }
       />
 
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          }
-        />
-
       {/* Protected routes for main app */}
       <Route
           path="/*"
