@@ -1,29 +1,29 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    
+
     <!-- iOS specific meta tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-title" content="Time Talk">
-    
+
     <!-- iOS icons -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    
+
     <!-- Theme color -->
     <meta name="theme-color" content="#ffffff">
-    
+
     <title>Time Talk</title>
-    
+
     <style>
       /* Prevent iOS Safari behaviors */
       html {
         -webkit-text-size-adjust: 100%;
       }
-      
+
       body {
         margin: 0;
         padding: 0;
@@ -38,17 +38,10 @@
 
       #root {
         height: 100%;
+        padding-bottom: calc(64px + env(safe-area-inset-bottom));
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         position: relative;
-        background-color: white; /* Add this to prevent white flash */
-      }
-
-      /* Dark mode support */
-      @media (prefers-color-scheme: dark) {
-        #root {
-          background-color: #111827; /* dark:bg-gray-900 equivalent */
-        }
       }
     </style>
   </head>

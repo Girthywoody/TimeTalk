@@ -16,9 +16,10 @@ import { DarkModeProvider } from './context/DarkModeContext';
 const App = () => {
   const { user, loading } = useAuth();
 
+
   if (loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="animate-spin text-blue-500" size={40} />
       </div>
     );
@@ -26,7 +27,7 @@ const App = () => {
 
   return (
     <DarkModeProvider>
-      <div className="fixed inset-0 bg-white dark:bg-gray-900 overflow-hidden">
+      <div className="min-h-screen bg-white dark:bg-gray-900">
     <Routes>
       {/* Public route */}
       <Route 

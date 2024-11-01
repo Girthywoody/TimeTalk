@@ -162,149 +162,147 @@ const MainApp = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto p-4 space-y-6 pb-20">
-          {currentPage === 'home' ? (
-            <>
-              {/* Header */}
-              <div className={`${darkMode ? 'bg-dark-800/80' : 'bg-white/80'} backdrop-blur-sm border-none shadow-lg rounded-lg sticky top-0 z-20`}>
-                <div className="p-4 flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Heart className="text-rose-500" size={24} />
-                    <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
-                      Our Timeline
-                    </h1>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Lock className={`${darkMode ? 'text-blue-400' : 'text-blue-500'}`} size={24} />
-                    <button
-                      onClick={logout}
-                      className={`${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'} transition-colors`}
-                    >
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              </div>
-  
-              {/* Post Creation Card */}
-              <div className={`relative ${darkMode ? 'bg-dark-800/90' : 'bg-white/90'} backdrop-blur-sm shadow-lg rounded-lg border-none z-10`}>
-                <div className="p-6 space-y-4">
-                  {/* Media Type Selection */}
-                  <div className="flex gap-4 justify-center">
-                    {[
-                      { type: 'text', icon: MessageSquare },
-                      { type: 'image', icon: Image },
-                      { type: 'video', icon: Video },
-                      { type: 'audio', icon: Mic }
-                    ].map(({ type, icon: Icon }) => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          setMediaType(type);
-                          setMediaPreview(null);
-                        }}
-                        className={`p-3 rounded-full transition-all duration-200 transform hover:scale-110
-                          ${mediaType === type 
-                            ? 'bg-blue-500 text-white shadow-lg' 
-                            : 'bg-white text-gray-600 hover:bg-blue-100'}`}
-                      >
-                        <Icon size={24} />
-                      </button>
-                    ))}
-                  </div>
-  
-                  {/* Media Capture/Preview */}
-                  {mediaType !== 'text' && !mediaPreview && (
-                    <MediaCapture 
-                      mediaType={mediaType} 
-                      onMediaCapture={setMediaPreview} 
-                    />
-                  )}
-                  {mediaPreview && (
-                    <MediaPreview 
-                      mediaType={mediaType} 
-                      mediaUrl={mediaPreview} 
-                      onClear={clearMediaPreview} 
-                    />
-                  )}
-  
-                  {/* Message Input */}
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Share a memory or future thought..."
-                    className={`w-full p-4 border rounded-xl resize-none h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}                
-                  />
-  
-                  {/* Date and Submit */}
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <CustomDateTimeSelector
-                        selectedDateTime={scheduledDateTime}
-                        onChange={setScheduledDateTime}
-                      />
-                    </div>
-  
-                    <button
-                      onClick={handlePost}
-                      className={`px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl 
-                                transition-all duration-200 hover:transform hover:scale-105
-                                ${(!message && !mediaPreview) || !scheduledDateTime || isUploading
-                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                  : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'}`}
-                      disabled={(!message && !mediaPreview) || !scheduledDateTime || isUploading}
-                    >
-                      <Send size={20} />
-                      Schedule Post
-                    </button>
-                  </div>
-                </div>
-              </div>
-  
-              {/* Timeline */}
-              <Timeline posts={posts} />
-  
-              {/* Privacy Notice */}
-              <div className={`${darkMode ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-800'} border-none shadow-md rounded-lg p-4`}>
+    <div className={`min-h-screen ${darkMode ? 'bg-dark-900' : 'bg-gradient-to-b from-blue-50 to-white'} pb-20`}>
+      <div className="max-w-2xl mx-auto p-4 space-y-6">
+        {currentPage === 'home' ? (
+          <>
+            {/* Header */}
+            <div className={`${darkMode ? 'bg-dark-800/80' : 'bg-white/80'} backdrop-blur-sm border-none shadow-lg rounded-lg`}>
+              <div className="p-4 flex flex-row items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Lock size={16} />
-                  Your private space: only visible to you and your partner
+                  <Heart className="text-rose-500" size={24} />
+                  <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
+                    Our Timeline
+                  </h1>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Lock className={`${darkMode ? 'text-blue-400' : 'text-blue-500'}`} size={24} />
+                  <button
+                    onClick={logout}
+                    className={`${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'} transition-colors`}
+                  >
+                    Logout
+                  </button>
                 </div>
               </div>
-            </>
-          ) : currentPage === 'profile' ? (
-            <ProfilePage />
-          ) : currentPage === 'chat' ? (
-            <ChatRoom />
-          ) : currentPage === 'calendar' ? (
-            <SharedCalendar />
-          ) : (
-            <div className="flex flex-col items-center justify-center min-h-[80vh]">
-              <div className="text-2xl font-bold text-gray-800 mb-4">
-                {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
-              </div>
-              <p className="text-gray-600">Coming Soon</p>
             </div>
-          )}
-        </div>
-      </main>
-  
-      {/* Secret Post Modal */}
-      <SecretPostModal 
-        isOpen={showSecretModal}
-        onClose={() => {
-          setShowSecretModal(false);
-          setIsUploading(false);
-          setPendingPost(null);
-        }}
-        onConfirm={handleSecretChoice}
-      />
-  
-      <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
-    </div>
-  );
+
+            {/* Post Creation Card */}
+            <div className={`relative ${darkMode ? 'bg-dark-800/90' : 'bg-white/90'} backdrop-blur-sm shadow-lg rounded-lg border-none z-10`}>
+              <div className="p-6 space-y-4">
+                {/* Media Type Selection */}
+                <div className="flex gap-4 justify-center">
+                  {[
+                    { type: 'text', icon: MessageSquare },
+                    { type: 'image', icon: Image },
+                    { type: 'video', icon: Video },
+                    { type: 'audio', icon: Mic }
+                  ].map(({ type, icon: Icon }) => (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        setMediaType(type);
+                        setMediaPreview(null);
+                      }}
+                      className={`p-3 rounded-full transition-all duration-200 transform hover:scale-110
+                        ${mediaType === type 
+                          ? 'bg-blue-500 text-white shadow-lg' 
+                          : 'bg-white text-gray-600 hover:bg-blue-100'}`}
+                    >
+                      <Icon size={24} />
+                    </button>
+                  ))}
+                </div>
+
+                {/* Media Capture/Preview */}
+                {mediaType !== 'text' && !mediaPreview && (
+                  <MediaCapture 
+                    mediaType={mediaType} 
+                    onMediaCapture={setMediaPreview} 
+                  />
+                )}
+                {mediaPreview && (
+                  <MediaPreview 
+                    mediaType={mediaType} 
+                    mediaUrl={mediaPreview} 
+                    onClear={clearMediaPreview} 
+                  />
+                )}
+
+                {/* Message Input */}
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Share a memory or future thought..."
+                  className={`w-full p-4 border rounded-xl resize-none h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}                
+                  />
+
+                {/* Date and Submit */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <CustomDateTimeSelector
+                      selectedDateTime={scheduledDateTime}
+                      onChange={setScheduledDateTime}
+                    />
+                  </div>
+
+                  <button
+                    onClick={handlePost}
+                    className={`px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl 
+                              transition-all duration-200 hover:transform hover:scale-105
+                              ${(!message && !mediaPreview) || !scheduledDateTime || isUploading
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'}`}
+                    disabled={(!message && !mediaPreview) || !scheduledDateTime || isUploading}
+                  >
+                    <Send size={20} />
+                    Schedule Post
+                  </button>
+                </div>
+              </div>
+            </div>
+
+{/* Timeline */}
+<Timeline posts={posts} />
+
+{/* Privacy Notice */}
+<div className={`${darkMode ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-800'} border-none shadow-md rounded-lg p-4`}>
+<div className="flex items-center gap-2">
+    <Lock size={16} />
+    Your private space: only visible to you and your partner
+  </div>
+</div>
+</>
+) : currentPage === 'profile' ? (
+<ProfilePage />
+) : currentPage === 'chat' ? (
+<ChatRoom />
+) : currentPage === 'calendar' ? (
+<SharedCalendar />
+) : (
+<div className="flex flex-col items-center justify-center min-h-[80vh]">
+<div className="text-2xl font-bold text-gray-800 mb-4">
+  {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
+</div>
+<p className="text-gray-600">Coming Soon</p>
+</div>
+)}
+</div>
+
+{/* Secret Post Modal */}
+<SecretPostModal 
+isOpen={showSecretModal}
+onClose={() => {
+setShowSecretModal(false);
+setIsUploading(false);
+setPendingPost(null);
+}}
+onConfirm={handleSecretChoice}
+/>
+
+<Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
+</div>
+);
 };
 
 export default MainApp;
