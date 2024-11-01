@@ -238,15 +238,15 @@ const SharedCalendar = () => {
   };
   
   return (
-    <div className={`h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white'} overflow-hidden flex flex-col`}>
+    <div className={`h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white'} overflow-x-hidden overflow-y-auto flex flex-col pb-16`}>
       <AnimatePresence mode="wait">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="p-4 flex-1 overflow-y-auto pb-24"
-        >
+         <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="p-4 flex-1 overflow-y-auto pb-32" // Increased bottom padding
+          >
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-4">
@@ -298,7 +298,7 @@ const SharedCalendar = () => {
           </div>
 
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-2 mb-8"> {/* Added larger margin bottom */}
             {generateCalendarDays().map((date, index) => {
               const dayEvents = date ? getDayEvents(date) : [];
               const isToday = date?.toDateString() === new Date().toDateString();
@@ -340,6 +340,8 @@ const SharedCalendar = () => {
               );
             })}
           </div>
+          <div className={`w-full h-px ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} my-8`} />
+
 
           {/* Selected Date Meetings */}
           <div className="max-h-[calc(100vh-460px)] overflow-y-auto">
@@ -376,10 +378,12 @@ const SharedCalendar = () => {
                 {getDayEvents(selectedDate).map((event) => (
                   <div
                     key={event.id}
-                    className="bg-blue-900 text-white p-4 rounded-xl"
+                    className={`${darkMode ? 'bg-gray-800' : 'bg-blue-900'} text-white p-4 rounded-xl`}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-semibold">{event.title}</h4>
+                    <h4 className={`font-semibold text-white`}> 
+                      {event.title}
+                    </h4>
                       <div className="flex gap-2">
                         <Edit2 
                           size={18} 
@@ -417,16 +421,16 @@ const SharedCalendar = () => {
           </div>
 
           {/* Navigation */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-around z-10">
-              <button className="flex flex-col items-center text-blue-900">
+          <div className={`sticky bottom-16 left-0 right-0 ${darkMode ? 'bg-gray-900' : 'bg-white'} border-t ${darkMode ? 'border-gray-800' : 'border-gray-100'} p-4 mt-8 flex justify-around`}>
+            <button className={`flex flex-col items-center ${darkMode ? 'text-blue-400' : 'text-blue-900'}`}>
               <CalendarIcon size={24} />
               <span className="text-xs mt-1">Home</span>
             </button>
-            <button className="flex flex-col items-center text-gray-400">
+            <button className={`flex flex-col items-center ${darkMode ? 'text-gray-500' : 'text-gray-400'} hover:text-blue-500 transition-colors`}>
               <Calendar size={24} />
               <span className="text-xs mt-1">Schedule</span>
             </button>
-            <button className="flex flex-col items-center text-gray-400">
+            <button className={`flex flex-col items-center ${darkMode ? 'text-gray-500' : 'text-gray-400'} hover:text-blue-500 transition-colors`}>
               <Heart size={24} />
               <span className="text-xs mt-1">Profile</span>
             </button>
@@ -442,10 +446,10 @@ const SharedCalendar = () => {
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.95, opacity: 0 }}
       transition={{ type: "spring", duration: 0.3 }}
-      className="bg-white rounded-3xl p-4 w-full max-w-lg shadow-xl"
-    >
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-2xl font-semibold text-blue-900">
+      className={`${darkMode ? 'bg-gray-900' : 'bg-white'} rounded-3xl p-4 w-full max-w-lg shadow-xl`}
+      >
+    <div className="flex items-center justify-between mb-6">
+      <h3 className={`text-2xl font-semibold ${darkMode ? 'text-white' : 'text-blue-900'}`}>
           {selectedDate.toLocaleDateString('en-US', { 
             month: 'long',
             day: 'numeric',
@@ -454,23 +458,27 @@ const SharedCalendar = () => {
         </h3>
         <button
           onClick={() => setShowDayView(false)}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <X size={24} />
+          className={`p-2 ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} rounded-full transition-colors`}
+          >
+           <X size={24} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
         </button>
       </div>
 
       <div className="space-y-4">
         {getDayEvents(selectedDate).length === 0 ? (
-          <p className="text-gray-500 text-center py-4">No events scheduled for this day</p>
+          <p className={`text-center py-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            No events scheduled for this day
+          </p>
         ) : (
           getDayEvents(selectedDate).map((event) => (
-            <div
-              key={event.id}
-              className="bg-blue-50 p-4 rounded-xl"
-            >
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-semibold text-blue-900">{event.title}</h4>
+              <div
+                key={event.id}
+                className={`${darkMode ? 'bg-gray-800' : 'bg-blue-50'} p-4 rounded-xl`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-blue-900'}`}>
+                {event.title}
+              </h4>
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
@@ -479,29 +487,29 @@ const SharedCalendar = () => {
                       setShowDayView(false);
                       setShowEventForm(true);
                     }}
-                    className="p-1.5 hover:bg-blue-100 rounded-full transition-colors"
-                  >
-                    <Edit2 size={16} className="text-blue-700" />
+                    className={`p-1.5 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-blue-100'} rounded-full transition-colors`}
+                    >
+        <Edit2 size={16} className={darkMode ? 'text-gray-300' : 'text-blue-700'} />
                   </button>
                   <button
-                    onClick={() => handleDeleteEvent(event.id)}
-                    className="p-1.5 hover:bg-blue-100 rounded-full transition-colors"
-                  >
-                    <Trash2 size={16} className="text-blue-700" />
-                  </button>
+                      onClick={() => handleDeleteEvent(event.id)}
+                      className={`p-1.5 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-blue-100'} rounded-full transition-colors`}
+                    >
+                      <Trash2 size={16} className={darkMode ? 'text-gray-300' : 'text-blue-700'} />
+                    </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-blue-700">
+              <div className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-300' : 'text-blue-700'}`}>
                 <Clock size={14} />
                   <span>{formatTime(event)}</span>
               </div>
               {event.location && (
-                <div className="flex items-center gap-2 text-sm mt-1 text-blue-700">
+                <div className={`flex items-center gap-2 text-sm mt-1 ${darkMode ? 'text-gray-300' : 'text-blue-700'}`}>
                   <MapPin size={14} />
                   <span>{event.location}</span>
                 </div>
               )}
-              <div className="mt-2 text-sm text-blue-600">
+              <div className={`mt-2 text-sm ${darkMode ? 'text-gray-300' : 'text-blue-600'}`}>
                 Type: {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
               </div>
             </div>
@@ -530,7 +538,7 @@ const SharedCalendar = () => {
   </div>
 )}
 
-      {/* Event Form Modal */}
+
 {/* Event Form Modal */}
 {showEventForm && (
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -539,10 +547,16 @@ const SharedCalendar = () => {
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.95, opacity: 0 }}
       transition={{ type: "spring", duration: 0.3 }}
-      className="bg-white rounded-3xl p-6 pb-6 w-full max-w-lg shadow-xl"
+      className={`${
+        darkMode 
+          ? 'bg-gray-900 text-white' 
+          : 'bg-white text-gray-900'
+      } rounded-3xl p-6 pb-6 w-full max-w-lg shadow-xl`}
     >
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-2xl font-semibold text-blue-900">
+        <h3 className={`text-2xl font-semibold ${
+          darkMode ? 'text-white' : 'text-blue-900'
+        }`}>
           {isEditing ? 'Edit Event' : 'New Event'}
         </h3>
         <button
@@ -559,114 +573,176 @@ const SharedCalendar = () => {
               type: "general"
             });
           }}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className={`p-2 rounded-full transition-colors ${
+            darkMode 
+              ? 'hover:bg-gray-800 text-gray-400 hover:text-gray-300' 
+              : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+          }`}
         >
           <X size={24} />
         </button>
       </div>
       
-      <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-1">
+      <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-4">
         {/* Title Input */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Title</label>
+          <label className={`block text-sm font-medium ${
+            darkMode ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            Title
+          </label>
           <input
             type="text"
             value={newEvent.title}
             onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-            className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+            className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
+              darkMode 
+                ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' 
+                : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+            } border`}
             placeholder="Enter event title"
           />
         </div>
 
-        <div className="space-y-4">
-          {/* All Day Switch */}
-          <div className="flex items-center justify-between bg-gray-50 p-2 rounded-xl">
-            <label className="text-sm font-medium text-gray-700">All Day</label>
-            <button
-              type="button"
-              onClick={() => setNewEvent(prev => ({
-                ...prev,
-                isAllDay: !prev.isAllDay,
-                startTime: "",
-                endTime: ""
-              }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                ${newEvent.isAllDay ? 'bg-blue-900' : 'bg-gray-200'}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                  ${newEvent.isAllDay ? 'translate-x-6' : 'translate-x-1'}`}
-              />
-            </button>
-          </div>
-
-          {/* Date Input */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Date</label>
-            <input
-              type="date"
-              value={newEvent.date}
-              onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
-              className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+        {/* All Day Switch */}
+        <div className={`flex items-center justify-between p-2 rounded-xl ${
+          darkMode ? 'bg-gray-800' : 'bg-gray-50'
+        }`}>
+          <label className={`text-sm font-medium ${
+            darkMode ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            All Day
+          </label>
+          <button
+            type="button"
+            onClick={() => setNewEvent(prev => ({
+              ...prev,
+              isAllDay: !prev.isAllDay,
+              startTime: "",
+              endTime: ""
+            }))}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+              ${newEvent.isAllDay 
+                ? 'bg-blue-600' 
+                : darkMode ? 'bg-gray-700' : 'bg-gray-200'
+              }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                ${newEvent.isAllDay ? 'translate-x-6' : 'translate-x-1'}`}
             />
-          </div>
+          </button>
+        </div>
 
-          {/* Time Range (hidden if All Day is selected) */}
-          {!newEvent.isAllDay && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Time</label>
-              <div className="grid grid-cols-2 gap-1">
-                <div className="space-y-2">
-                  <label className="block text-xs text-gray-500">From</label>
-                  <input
-                    type="time"
-                    value={newEvent.startTime}
-                    onChange={e => {
-                      const newStartTime = e.target.value;
-                      setNewEvent(prev => ({
-                        ...prev,
-                        startTime: newStartTime,
-                        // If end time is earlier than start time, update it
-                        endTime: prev.endTime && newStartTime > prev.endTime ? newStartTime : prev.endTime
-                      }));
-                    }}
-                    className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-xs text-gray-500">To</label>
-                  <input
-                    type="time"
-                    value={newEvent.endTime}
-                    min={newEvent.startTime}
-                    onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
-                    className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                  />
-                </div>
+        {/* Date Input */}
+        <div className="space-y-2">
+          <label className={`block text-sm font-medium ${
+            darkMode ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            Date
+          </label>
+          <input
+            type="date"
+            value={newEvent.date}
+            onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+            className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
+              darkMode 
+                ? 'bg-gray-800 border-gray-700 text-white' 
+                : 'bg-gray-50 border-gray-200 text-gray-900'
+            } border`}
+          />
+        </div>
+
+        {/* Time Range */}
+        {!newEvent.isAllDay && (
+          <div className="space-y-2">
+            <label className={`block text-sm font-medium ${
+              darkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
+              Time
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className={`block text-xs ${
+                  darkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  From
+                </label>
+                <input
+                  type="time"
+                  value={newEvent.startTime}
+                  onChange={e => {
+                    const newStartTime = e.target.value;
+                    setNewEvent(prev => ({
+                      ...prev,
+                      startTime: newStartTime,
+                      endTime: prev.endTime && newStartTime > prev.endTime ? newStartTime : prev.endTime
+                    }));
+                  }}
+                  className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
+                    darkMode 
+                      ? 'bg-gray-800 border-gray-700 text-white' 
+                      : 'bg-gray-50 border-gray-200 text-gray-900'
+                  } border`}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className={`block text-xs ${
+                  darkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  To
+                </label>
+                <input
+                  type="time"
+                  value={newEvent.endTime}
+                  min={newEvent.startTime}
+                  onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
+                  className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
+                    darkMode 
+                      ? 'bg-gray-800 border-gray-700 text-white' 
+                      : 'bg-gray-50 border-gray-200 text-gray-900'
+                  } border`}
+                />
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Location Input */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Location</label>
+          <label className={`block text-sm font-medium ${
+            darkMode ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            Location
+          </label>
           <input
             type="text"
             value={newEvent.location}
             onChange={e => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
-            className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+            className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
+              darkMode 
+                ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' 
+                : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+            } border`}
             placeholder="Enter location"
           />
         </div>
 
         {/* Event Type Select */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Event Type</label>
+          <label className={`block text-sm font-medium ${
+            darkMode ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            Event Type
+          </label>
           <select
             value={newEvent.type}
             onChange={e => setNewEvent(prev => ({ ...prev, type: e.target.value }))}
-            className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+            className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
+              darkMode 
+                ? 'bg-gray-800 border-gray-700 text-white' 
+                : 'bg-gray-50 border-gray-200 text-gray-900'
+            } border`}
           >
             <option value="general">General</option>
             <option value="meeting">Meeting</option>
@@ -692,14 +768,18 @@ const SharedCalendar = () => {
                 type: "general"
               });
             }}
-            className="flex-1 p-4 border rounded-xl hover:bg-gray-50 font-medium transition-colors"
+            className={`flex-1 p-4 rounded-xl font-medium transition-colors ${
+              darkMode 
+                ? 'bg-gray-800 hover:bg-gray-700 text-white' 
+                : 'border hover:bg-gray-50 text-gray-900'
+            }`}
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 p-4 bg-blue-900 text-white rounded-xl hover:bg-blue-800 font-medium transition-colors disabled:opacity-50"
+            className="flex-1 p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition-colors disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : (isEditing ? 'Update' : 'Add Event')}
           </button>
