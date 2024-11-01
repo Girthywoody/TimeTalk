@@ -16,6 +16,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapsh
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon, Sunrise, Sunset } from 'lucide-react';
+import { useDarkMode } from '../context/DarkModeContext';
 
 
 const SharedCalendar = () => {
@@ -26,6 +27,7 @@ const SharedCalendar = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [profileData, setProfileData] = useState(null);
   const [showDayView, setShowDayView] = useState(false);  
+  const { darkMode } = useDarkMode();
   const [selectedDate, setSelectedDate] = useState(new Date());  // Default to today
   const [newEvent, setNewEvent] = useState({
     title: "",
@@ -236,32 +238,31 @@ const SharedCalendar = () => {
   };
   
   return (
-    <div className="h-screen bg-white overflow-hidden flex flex-col"> {/* Root div */}
+    <div className={`h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white'} overflow-hidden flex flex-col`}>
       <AnimatePresence mode="wait">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="p-4 flex-1 overflow-y-auto pb-24" // Changed this line
+          className="p-4 flex-1 overflow-y-auto pb-24"
         >
-
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl">
+              <div className={`p-3 ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-blue-50 to-purple-50'} rounded-xl`}>
                 {getGreeting().icon}
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
                   {getGreeting().text}
                 </h1>
-                <h2 className="text-lg text-gray-600">
+                <h2 className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   {profileData?.displayName}
                 </h2>
               </div>
             </div>
-            <Bell className="text-gray-600 hover:text-blue-600 transition-colors" size={24} />
+            <Bell className={`${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-blue-600'} transition-colors`} size={24} />
           </div>
 
           {/* Month Selector */}
@@ -275,52 +276,69 @@ const SharedCalendar = () => {
                 }}
                 className={`px-4 py-2 rounded-full text-sm whitespace-nowrap
                   ${currentDate.getMonth() === index 
-                    ? 'bg-blue-900 text-white' 
-                    : 'bg-gray-100 text-gray-600'}`}
+                    ? 'bg-blue-600 text-white' 
+                    : darkMode 
+                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
               >
                 {month}
               </button>
             ))}
           </div>
 
-          {/* Calendar Grid */}
-            <div className="mb-4 min-h-fit">
-              <div className="grid grid-cols-7 mb-2">
-              {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(day => (
-                <div key={day} className="text-center text-xs font-medium text-gray-500">
-                  {day}
-                </div>
-              ))}
-            </div>
+          {/* Calendar Days */}
+          <div className="grid grid-cols-7 mb-2">
+            {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(day => (
+              <div key={day} className={`text-center text-xs font-medium ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                {day}
+              </div>
+            ))}
+          </div>
 
-            <div className="grid grid-cols-7 gap-2">
-              {generateCalendarDays().map((date, index) => {
-                const dayEvents = date ? getDayEvents(date) : [];
-                const isToday = date?.toDateString() === new Date().toDateString();
-                
-                return (
-                  <div
-                    key={index}
-                    onClick={() => handleDateClick(date)}
-                    className={`aspect-square p-2 rounded-xl flex flex-col items-center justify-center
-                      ${date ? 'cursor-pointer hover:bg-gray-50' : ''}
-                      ${isToday ? 'bg-blue-100' : ''}
-                      ${dayEvents.length > 0 ? 'ring-2 ring-blue-200' : ''}`}
-                  >
-                    {date && (
-                      <>
-                        <span className={`text-sm ${isToday ? 'text-blue-600 font-bold' : ''}`}>
-                          {date.getDate()}
-                        </span>
-                        {dayEvents.length > 0 && (
-                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1" />
-                        )}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-2">
+            {generateCalendarDays().map((date, index) => {
+              const dayEvents = date ? getDayEvents(date) : [];
+              const isToday = date?.toDateString() === new Date().toDateString();
+              
+              return (
+                <div
+                  key={index}
+                  onClick={() => handleDateClick(date)}
+                  className={`aspect-square p-2 rounded-xl flex flex-col items-center justify-center
+                    ${date ? darkMode 
+                      ? 'cursor-pointer hover:bg-gray-800' 
+                      : 'cursor-pointer hover:bg-gray-50' 
+                      : ''
+                    }
+                    ${isToday ? darkMode 
+                      ? 'bg-blue-900/50' 
+                      : 'bg-blue-100' 
+                      : ''
+                    }
+                    ${dayEvents.length > 0 ? 'ring-2 ring-blue-500/50' : ''}`}
+                >
+                  {date && (
+                    <>
+                      <span className={`text-sm ${
+                        isToday 
+                          ? 'text-blue-400 font-bold' 
+                          : darkMode 
+                            ? 'text-gray-300' 
+                            : 'text-gray-700'
+                      }`}>
+                        {date.getDate()}
+                      </span>
+                      {dayEvents.length > 0 && (
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1" />
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Selected Date Meetings */}

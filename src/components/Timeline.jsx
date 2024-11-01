@@ -182,89 +182,82 @@ const Timeline = ({ posts }) => {
     }
   };
 
-  const renderPost = (post) => {
-    if (post.isScheduled) {
-      return (
-        <div className="relative group">
-          <div className={`absolute inset-0 ${
-            darkMode 
-              ? 'bg-gradient-to-b from-dark-700/80 to-dark-800/80' 
-              : 'bg-gradient-to-b from-gray-100/80 to-gray-200/80'
-            } backdrop-blur-sm rounded-lg flex items-center justify-center z-10`}>
-            <div className="text-center p-6 transform transition-all duration-300 group-hover:scale-105">
-              <Clock size={32} className={`mx-auto mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-              <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} font-medium`}>
-                Scheduled for: {post.scheduledForFormatted}
-              </p>
-              <div className="mt-2 flex items-center justify-center gap-2 text-gray-400">
-                <Lock size={14} />
-                <span className="text-sm">Content hidden</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="filter blur-sm pointer-events-none">
-            <div className="p-6">
-              <div className={`h-6 ${darkMode ? 'bg-dark-700' : 'bg-gray-200'} rounded w-1/3 mb-4`}></div>
-              <div className="space-y-2">
-                <div className={`h-4 ${darkMode ? 'bg-dark-700' : 'bg-gray-200'} rounded w-full`}></div>
-                <div className={`h-4 ${darkMode ? 'bg-dark-700' : 'bg-gray-200'} rounded w-2/3`}></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
+// In your Timeline component, update the message rendering:
 
+const renderPost = (post) => {
+  if (post.isScheduled) {
     return (
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-              {post.author}
-            </h3>
-            <div className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
-              <Clock size={16} />
-              <span>Scheduled for: {post.scheduledForFormatted}</span>
+      <div className="relative group">
+        <div className={`absolute inset-0 ${
+          darkMode 
+            ? 'bg-gradient-to-b from-gray-800/80 to-gray-900/80' 
+            : 'bg-gradient-to-b from-gray-100/80 to-gray-200/80'
+          } backdrop-blur-sm rounded-lg flex items-center justify-center z-10`}>
+          <div className="text-center p-6 transform transition-all duration-300 group-hover:scale-105">
+            <Clock size={32} className={`mx-auto mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} font-medium`}>
+              Scheduled for: {post.scheduledForFormatted}
+            </p>
+            <div className="mt-2 flex items-center justify-center gap-2 text-gray-400">
+              <Lock size={14} />
+              <span className="text-sm">Content hidden</span>
             </div>
-          </div>
-          <div className="relative">
-            <button
-              onClick={(e) => handleMenuClick(e, post.id)}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <MoreVertical size={20} className="text-gray-500" />
-            </button>
-            <PostMenu
-              isOpen={activeMenu === post.id}
-              setIsOpen={setActiveMenu}
-              position={menuPosition}
-              onEdit={() => handleEdit(post)}
-              onDelete={() => handleDelete(post.id)}
-            />
-          </div>
-        </div>
-        
-        {post.content && (
-          <p className="text-gray-700 leading-relaxed mb-4">{post.content}</p>
-        )}
-        
-        {post.mediaUrl && renderMedia(post)}
-        
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          <div className="flex items-center gap-4 text-sm text-gray-500">
-            <span>Posted: {new Date(post.createdAt).toLocaleDateString()}</span>
-            {post.likes > 0 && (
-              <span className="flex items-center gap-1">
-                <Heart size={14} className="text-rose-500" fill="currentColor" />
-                {post.likes}
-              </span>
-            )}
           </div>
         </div>
       </div>
     );
-  };
+  }
+
+  return (
+    <div className={`p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg`}>
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+            {post.author}
+          </h3>
+          <div className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+            <Clock size={16} />
+            <span>Scheduled for: {post.scheduledForFormatted}</span>
+          </div>
+        </div>
+        <div className="relative">
+          <button
+            onClick={(e) => handleMenuClick(e, post.id)}
+            className={`p-2 rounded-full ${
+              darkMode 
+                ? 'hover:bg-gray-700' 
+                : 'hover:bg-gray-100'
+            } transition-colors`}
+          >
+            <MoreVertical size={20} className={darkMode ? 'text-gray-400' : 'text-gray-500'} />
+          </button>
+        </div>
+      </div>
+      
+      {post.content && (
+        <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'} leading-relaxed mb-4`}>
+          {post.content}
+        </p>
+      )}
+      
+      {post.mediaUrl && renderMedia(post)}
+      
+      <div className={`mt-4 pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+        <div className="flex items-center gap-4 text-sm text-gray-500">
+          <span className={darkMode ? 'text-gray-400' : ''}>
+            Posted: {new Date(post.createdAt).toLocaleDateString()}
+          </span>
+          {post.likes > 0 && (
+            <span className="flex items-center gap-1">
+              <Heart size={14} className="text-rose-500" fill="currentColor" />
+              {post.likes}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
   if (!posts || posts.length === 0) {
     return (
