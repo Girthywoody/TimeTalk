@@ -26,7 +26,7 @@ const App = () => {
 
   return (
     <DarkModeProvider>
-      <div className="bg-gradient-to-b from-gray-50 to-white dark:from-dark-900 dark:to-dark-800">
+      <div className="min-h-screen bg-white dark:bg-gray-900">
     <Routes>
       {/* Public route */}
       <Route 
