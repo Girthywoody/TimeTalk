@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import { Heart, Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
-const LoginPage = () => {
+const LoginPage = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -13,7 +12,6 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, signup } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,10 +26,10 @@ const LoginPage = () => {
           return;
         }
         await signup(email, password);
-        navigate('/'); // Go directly to app instead of login
+        onLoginSuccess(); // Use callback instead of navigation
       } else {
         await login(email, password);
-        navigate('/');
+        onLoginSuccess(); // Use callback instead of navigation
       }
     } catch (err) {
       console.error('Auth error:', err);
@@ -65,9 +63,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4">
-      {/* ... your existing header ... */}
-      
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4 overflow-y-auto">
       <div className="w-full max-w-md">
         <div className="bg-white/80 backdrop-blur-xl shadow-xl rounded-2xl p-8">
           {error && (
@@ -178,6 +174,7 @@ const LoginPage = () => {
                 setError('');
                 setEmail('');
                 setPassword('');
+                setConfirmPassword('');
               }}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors"
             >
