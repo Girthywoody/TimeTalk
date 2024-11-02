@@ -3,7 +3,6 @@ import { Calendar, Clock, Image, MessageSquare, Mic, Video, Lock, Send, Heart, X
 import { collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
-import { useAuth } from '../hooks/useAuth';
 import MediaCapture from './MediaCapture';
 import MediaPreview from './MediaPreview';
 import Navigation from './Navigation';
@@ -19,7 +18,6 @@ import PostButton from './PostButton';  // Add this line
 
 
 const MainApp = () => {
-  const { logout } = useAuth();
   const [message, setMessage] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [mediaType, setMediaType] = useState('text');
@@ -245,12 +243,6 @@ const MainApp = () => {
                 </div>
                 <div className="flex items-center gap-4">
                   <Lock className={`${darkMode ? 'text-blue-400' : 'text-blue-500'}`} size={24} />
-                  <button
-                    onClick={logout}
-                    className={`${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'} transition-colors`}
-                  >
-                    Logout
-                  </button>
                 </div>
               </div>
             </div>
