@@ -9,7 +9,8 @@ import {
   Palette,
   Sliders,
   Camera,
-  Loader2
+  Loader2,
+  LogOut // Add LogOut icon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDarkMode } from '../../context/DarkModeContext';
@@ -17,8 +18,11 @@ import { storage, db, auth } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, updateDoc } from 'firebase/firestore';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { useAuth } from '../../hooks/useAuth'; // Add useAuth import
+
 
 const SettingsPage = ({ onClose, profileData }) => {
+  const { logout } = useAuth(); // Add logout from useAuth
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -37,6 +41,16 @@ const SettingsPage = ({ onClose, profileData }) => {
     username: profileData?.username || '',
   });
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // The useAuth hook should handle navigation after logout
+    } catch (error) {
+      setError('Failed to log out');
+      console.error('Logout error:', error);
+    }
+  };
+  
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -286,7 +300,6 @@ const SettingsPage = ({ onClose, profileData }) => {
                   </button>
                 ))}
                 
-                {/* Theme Mode Toggle */}
                 <div className={`w-full flex items-center justify-between p-4 rounded-xl`}>
                   <div className="flex items-center gap-3">
                     <Palette className="w-5 h-5 text-gray-400" />
@@ -307,6 +320,19 @@ const SettingsPage = ({ onClose, profileData }) => {
                     />
                   </button>
                 </div>
+
+                {/* Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className={`w-full flex items-center justify-between p-4 rounded-xl ${
+                    darkMode ? 'hover:bg-gray-800 text-red-400' : 'hover:bg-gray-50 text-red-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <LogOut className="w-5 h-5" />
+                    <span>Log out</span>
+                  </div>
+                </button>
               </>
             )}
   
