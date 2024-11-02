@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
@@ -15,6 +15,13 @@ const LoginPage = () => {
   const { login, signup } = useAuth();
   const navigate = useNavigate();
 
+  // Add standalone check
+  useEffect(() => {
+    if (navigator.standalone) {
+      document.documentElement.style.height = '100vh';
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -28,11 +35,9 @@ const LoginPage = () => {
           return;
         }
         await signup(email, password);
-        // Use replace instead of push to prevent browser history
         navigate('/', { replace: true });
       } else {
         await login(email, password);
-        // Use replace instead of push to prevent browser history
         navigate('/', { replace: true });
       }
     } catch (err) {
@@ -67,7 +72,11 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4">
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4" 
+         style={{ 
+           height: navigator.standalone ? '100vh' : '-webkit-fill-available',
+           minHeight: '-webkit-fill-available'
+         }}>
       <div className="w-full max-w-md">
         <div className="bg-white/80 backdrop-blur-xl shadow-xl rounded-2xl p-8">
           {error && (
