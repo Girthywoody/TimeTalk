@@ -20,8 +20,8 @@ const SecretPostModal = ({ isOpen, onClose, onConfirm, darkMode }) => {
             <X size={20} />
             <span>Back</span>
           </button>
-          <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Scheduling Options
+          <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            How would you like to schedule this?
           </h2>
         </div>
 
@@ -31,8 +31,8 @@ const SecretPostModal = ({ isOpen, onClose, onConfirm, darkMode }) => {
             onClick={() => onConfirm(true, true)}
             className={`w-full p-4 rounded-xl text-left transition-all duration-200 ${
               darkMode 
-                ? 'bg-gray-800 hover:bg-gray-750 border-gray-700 hover:border-blue-500' 
-                : 'bg-gray-50 hover:bg-gray-100 border-gray-200 hover:border-blue-500'
+                ? 'bg-gray-800 hover:bg-gray-750 border-gray-700 hover:border-purple-500' 
+                : 'bg-gray-50 hover:bg-gray-100 border-gray-200 hover:border-purple-500'
             } border`}
           >
             <div className="flex items-center gap-3">

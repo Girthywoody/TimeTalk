@@ -308,21 +308,39 @@ const MainApp = () => {
                 {/* Date and Submit */}
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1">
-                    {isScheduleMode && (
-                      <CustomDateTimeSelector
-                        selectedDateTime={scheduledDateTime}
-                        onChange={setScheduledDateTime}
-                      />
-                    )}
+                    <CustomDateTimeSelector
+                      selectedDateTime={scheduledDateTime}
+                      onChange={setScheduledDateTime}
+                    />
                   </div>
 
-                  <PostButton
-                    isScheduleMode={isScheduleMode}
-                    onScheduleModeChange={setIsScheduleMode}
-                    onPost={handlePostClick}
-                    isDisabled={(!message && !mediaPreview) || (isScheduleMode && !scheduledDateTime) || isUploading}
-                    darkMode={darkMode}
-                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (!scheduledDateTime) {
+                          handlePostClick(false); // Post immediately
+                        } else {
+                          handlePost(); // Show scheduling modal
+                        }
+                      }}
+                      disabled={(!message && !mediaPreview) || isUploading}
+                      className={`px-6 py-3 rounded-xl flex items-center gap-2 
+                        transition-all duration-200 hover:transform hover:scale-105
+                        ${(!message && !mediaPreview) || isUploading
+                          ? `${darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-400'} cursor-not-allowed`
+                          : scheduledDateTime
+                            ? `${darkMode 
+                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
+                                : 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'}`
+                            : `${darkMode 
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'}`
+                        }`}
+                    >
+                      <Send size={20} />
+                      {scheduledDateTime ? 'Schedule Post' : 'Post Now'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
