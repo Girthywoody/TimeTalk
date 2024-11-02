@@ -3,8 +3,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { Settings, MessageCircle, Heart, Calendar, Gift, Camera, Loader2 } from 'lucide-react';
-import SettingsPage from '../profile/SettingsPage'; // Add this line
-
+import SettingsPage from '../profile/SettingsPage';
+import QuickActions from '../profile/QuickActions'; // Add this import
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
@@ -58,37 +58,6 @@ const ProfilePage = () => {
     { label: 'Days', value: getDaysTogether(), Icon: Calendar, color: 'text-rose-500' }
   ];
 
-  const quickMetrics = [
-    { 
-      icon: MessageCircle,
-      value: profileData?.stats?.newMessages || '0',
-      label: 'New Messages',
-      bgColor: 'bg-blue-500/10 dark:bg-blue-500/20',
-      textColor: 'text-blue-600 dark:text-blue-400'
-    },
-    { 
-      icon: Heart,
-      value: profileData?.stats?.sharedMoments || '0',
-      label: 'Shared Moments',
-      bgColor: 'bg-rose-500/10 dark:bg-rose-500/20',
-      textColor: 'text-rose-600 dark:text-rose-400'
-    },
-    { 
-      icon: Calendar,
-      value: profileData?.stats?.upcomingDates || '0',
-      label: 'Upcoming Dates',
-      bgColor: 'bg-purple-500/10 dark:bg-purple-500/20',
-      textColor: 'text-purple-600 dark:text-purple-400'
-    },
-    { 
-      icon: Gift,
-      value: profileData?.stats?.wishListItems || '0',
-      label: 'Wish List Items',
-      bgColor: 'bg-emerald-500/10 dark:bg-emerald-500/20',
-      textColor: 'text-emerald-600 dark:text-emerald-400'
-    }
-  ];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-950">
@@ -107,15 +76,15 @@ const ProfilePage = () => {
     );
   }
 
-  if (!profileData) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-950">
-        <div className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 p-4 rounded-lg">
-          No profile data available. Try logging out and back in.
-        </div>
-      </div>
-    );
-  }
+  // if (!profileData) {
+  //   return (
+  //     <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-950">
+  //       <div className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 p-4 rounded-lg">
+  //         No profile data available. Try logging out and back in.
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -191,16 +160,8 @@ const ProfilePage = () => {
           ))}
         </div>
 
-        {/* Quick Metrics */}
-        <div className="grid grid-cols-2 gap-4">
-          {quickMetrics.map((metric) => (
-            <div key={metric.label} className={`${metric.bgColor} rounded-xl p-6`}>
-              <metric.icon className={`w-6 h-6 ${metric.textColor} mb-2`} />
-              <p className={`text-lg font-bold ${metric.textColor}`}>{metric.value}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{metric.label}</p>
-            </div>
-          ))}
-        </div>
+        {/* Quick Actions - Replaced the old metrics with new QuickActions component */}
+        <QuickActions />
       </div>
 
       {/* Settings Modal */}
