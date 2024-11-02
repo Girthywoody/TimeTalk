@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import { Heart, Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 const LoginPage = () => {
@@ -13,13 +12,22 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, signup } = useAuth();
-  const navigate = useNavigate();
 
-  // Add standalone check
+  // Handle viewport height for iOS
   useEffect(() => {
-    if (navigator.standalone) {
-      document.documentElement.style.height = '100vh';
-    }
+    const setViewHeight = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    setViewHeight();
+    window.addEventListener('resize', setViewHeight);
+    window.addEventListener('orientationchange', setViewHeight);
+
+    return () => {
+      window.removeEventListener('resize', setViewHeight);
+      window.removeEventListener('orientationchange', setViewHeight);
+    };
   }, []);
 
   const handleSubmit = async (e) => {
@@ -35,10 +43,10 @@ const LoginPage = () => {
           return;
         }
         await signup(email, password);
-        navigate('/', { replace: true });
+        // Auth state change will automatically redirect
       } else {
         await login(email, password);
-        navigate('/', { replace: true });
+        // Auth state change will automatically redirect
       }
     } catch (err) {
       console.error('Auth error:', err);
@@ -72,11 +80,16 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4" 
-         style={{ 
-           height: navigator.standalone ? '100vh' : '-webkit-fill-available',
-           minHeight: '-webkit-fill-available'
-         }}>
+    <div 
+      className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4" 
+      style={{ 
+        height: 'calc(var(--vh, 1vh) * 100)',
+        minHeight: '-webkit-fill-available',
+        WebkitBackfaceVisibility: 'hidden',
+        WebkitPerspective: 1000,
+        WebkitOverflowScrolling: 'touch'
+      }}
+    >
       <div className="w-full max-w-md">
         <div className="bg-white/80 backdrop-blur-xl shadow-xl rounded-2xl p-8">
           {error && (
@@ -103,6 +116,7 @@ const LoginPage = () => {
                     className="w-full pl-10 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your email"
                     required
+                    enterKeyHint="next"
                   />
                 </div>
               </div>
@@ -122,6 +136,7 @@ const LoginPage = () => {
                     className="w-full pl-10 pr-10 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your password"
                     required
+                    enterKeyHint={isSignUp ? "next" : "done"}
                   />
                   <button
                     type="button"
@@ -149,6 +164,7 @@ const LoginPage = () => {
                       className="w-full pl-10 pr-10 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Confirm your password"
                       required
+                      enterKeyHint="done"
                     />
                     <button
                       type="button"
