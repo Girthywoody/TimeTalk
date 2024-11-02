@@ -105,20 +105,21 @@ const ProfilePage = () => {
         {/* Profile Section */}
         <div className="flex flex-col items-center space-y-6">
           {/* Profile Photo */}
-          <div className="relative">
-            <div className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 p-1">
-              <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-900">
-                <img
-                  src={profileData.profilePhotoURL || "/api/placeholder/128/128"}
-                  alt={profileData.displayName}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-            <button className="absolute bottom-0 right-0 p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
-              <Camera className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            </button>
-          </div>
+{/* Profile Photo */}
+<div className="relative">
+  <div className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 p-1">
+    <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-900">
+      <img
+        src={profileData?.profilePhotoURL || "/api/placeholder/128/128"}
+        alt={profileData?.displayName || "Profile"}
+        className="w-full h-full object-cover"
+      />
+    </div>
+  </div>
+  <button className="absolute bottom-0 right-0 p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+    <Camera className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+  </button>
+</div>
 
           {/* Profile Info */}
           <div className="text-center space-y-4">
