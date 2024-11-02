@@ -15,6 +15,7 @@ import SharedCalendar from './SharedCalendar';
 import SecretPostModal from './SecretPostModal';
 import { auth } from '../firebase';  // Add this line with your other imports
 import { useDarkMode } from '../context/DarkModeContext';
+import PostButton from './PostButton';  // Add this line
 
 
 const MainApp = () => {
@@ -100,6 +101,28 @@ const MainApp = () => {
         setIsUploading(false);
       }
     }
+  };
+  
+  const uploadMedia = async (mediaPreview, mediaType) => {
+    const storageRef = ref(storage, `posts/${Date.now()}-${mediaType}`);
+    
+    if (mediaType === 'image') {
+      const base64Content = mediaPreview.split(',')[1];
+      await uploadString(storageRef, base64Content, 'base64');
+    } else {
+      const response = await fetch(mediaPreview);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      await new Promise((resolve) => {
+        reader.onloadend = () => {
+          const base64Content = reader.result.split(',')[1];
+          resolve(uploadString(storageRef, base64Content, 'base64'));
+        };
+      });
+    }
+    
+    return await getDownloadURL(storageRef);
   };
 
   const handlePost = async () => {
