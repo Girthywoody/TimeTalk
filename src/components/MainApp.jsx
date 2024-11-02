@@ -30,6 +30,7 @@ const MainApp = () => {
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [pendingPost, setPendingPost] = useState(null);
   const { darkMode } = useDarkMode();  // Add this line to get darkMode
+  const [isScheduleMode, setIsScheduleMode] = useState(false);
 
 
   useEffect(() => {
@@ -56,6 +57,50 @@ const MainApp = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const handlePostClick = async (isScheduled) => {
+    if (!message && !mediaPreview) return;
+    
+    if (isScheduled) {
+      if (!scheduledDateTime) return;
+      handlePost(); // This will show the secret modal
+    } else {
+      // Post immediately
+      try {
+        setIsUploading(true);
+        const postData = {
+          type: mediaType,
+          content: message,
+          scheduledFor: new Date().toISOString(),
+          mediaUrl: null,
+          createdAt: new Date().toISOString(),
+          author: 'Partner 1',
+          authorId: auth.currentUser.uid,
+          likes: 0,
+          isScheduled: false,
+          completelySecret: false
+        };
+  
+        if (mediaPreview && mediaType !== 'text') {
+          const mediaUrl = await uploadMedia(mediaPreview, mediaType);
+          postData.mediaUrl = mediaUrl;
+        }
+  
+        await addDoc(collection(db, 'posts'), postData);
+        
+        // Reset form
+        setMessage('');
+        setScheduledDateTime(null);
+        setMediaPreview(null);
+        setMediaType('text');
+        setIsUploading(false);
+      } catch (error) {
+        console.error('Error creating post:', error);
+        alert('Failed to create post. Please try again.');
+        setIsUploading(false);
+      }
+    }
+  };
 
   const handlePost = async () => {
     console.log('Post button clicked', { message, mediaPreview, scheduledDateTime, isUploading });
@@ -240,24 +285,21 @@ const MainApp = () => {
                 {/* Date and Submit */}
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1">
-                    <CustomDateTimeSelector
-                      selectedDateTime={scheduledDateTime}
-                      onChange={setScheduledDateTime}
-                    />
+                    {isScheduleMode && (
+                      <CustomDateTimeSelector
+                        selectedDateTime={scheduledDateTime}
+                        onChange={setScheduledDateTime}
+                      />
+                    )}
                   </div>
 
-                  <button
-                    onClick={handlePost}
-                    className={`px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl 
-                              transition-all duration-200 hover:transform hover:scale-105
-                              ${(!message && !mediaPreview) || !scheduledDateTime || isUploading
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'}`}
-                    disabled={(!message && !mediaPreview) || !scheduledDateTime || isUploading}
-                  >
-                    <Send size={20} />
-                    Schedule Post
-                  </button>
+                  <PostButton
+                    isScheduleMode={isScheduleMode}
+                    onScheduleModeChange={setIsScheduleMode}
+                    onPost={handlePostClick}
+                    isDisabled={(!message && !mediaPreview) || (isScheduleMode && !scheduledDateTime) || isUploading}
+                    darkMode={darkMode}
+                  />
                 </div>
               </div>
             </div>
