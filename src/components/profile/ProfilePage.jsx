@@ -3,6 +3,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { Settings, MessageCircle, Heart, Calendar, Gift, Camera, Loader2 } from 'lucide-react';
+import SettingsPage from '../profile/SettingsPage'; // Add this line
+
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
