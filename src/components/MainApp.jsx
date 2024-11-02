@@ -298,42 +298,35 @@ const MainApp = () => {
 
                   {/* Date and Submit */}
                   <div className="flex items-center justify-between gap-4">
-                    <button
-                      onClick={() => setScheduledDateTime(scheduledDateTime ? null : new Date())}
-                      className={`px-6 py-3 rounded-xl flex items-center gap-2 flex-1
-                        transition-all duration-200 hover:scale-[1.02]
-                        ${darkMode 
-                          ? scheduledDateTime 
-                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
-                            : 'bg-gray-800 hover:bg-gray-750 text-gray-300' 
-                          : scheduledDateTime
-                            ? 'bg-indigo-500 hover:bg-indigo-600 text-white'
-                            : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
-                    >
-                      <Clock size={20} />
-                      Schedule For Later
-                    </button>
+                    <div className="flex-1">
+                      <CustomDateTimeSelector
+                        selectedDateTime={scheduledDateTime}
+                        onChange={setScheduledDateTime}
+                      />
+                    </div>
 
-                    <button
-                      onClick={() => {
-                        if (!scheduledDateTime) {
-                          handlePostClick(false); // Post immediately
-                        } else {
-                          handlePost(); // Show scheduling modal
-                        }
-                      }}
-                      disabled={(!message && !mediaPreview) || isUploading}
-                      className={`px-6 py-3 rounded-xl flex items-center gap-2 flex-1 justify-center
-                        transition-all duration-200 hover:scale-[1.02]
-                        ${(!message && !mediaPreview) || isUploading
-                          ? `${darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-400'} cursor-not-allowed`
-                          : darkMode
-                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                            : 'bg-indigo-500 hover:bg-indigo-600 text-white'}`}
-                    >
-                      <Send size={20} />
-                      {scheduledDateTime ? 'Schedule Post' : 'Post Now'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (!scheduledDateTime) {
+                            handlePostClick(false); // Post immediately
+                          } else {
+                            handlePost(); // Show scheduling modal
+                          }
+                        }}
+                        disabled={(!message && !mediaPreview) || isUploading}
+                        className={`px-6 py-3 rounded-xl flex items-center gap-2 min-w-[180px] justify-center
+                          transition-all duration-200 hover:transform hover:scale-105
+                          ${(!message && !mediaPreview) || isUploading
+                            ? `${darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-400'} cursor-not-allowed`
+                            : darkMode
+                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                              : 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'}`}
+                      >
+                        <Send size={20} />
+                        {scheduledDateTime ? 'Schedule Post' : 'Post Now'}
+                      </button>
+                    </div>
                   </div>
 
                   {scheduledDateTime && (
