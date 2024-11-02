@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Heart, Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { Heart, Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
-const LoginPage = ({ onLoginSuccess }) => {
+const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -12,6 +13,7 @@ const LoginPage = ({ onLoginSuccess }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, signup } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,10 +28,12 @@ const LoginPage = ({ onLoginSuccess }) => {
           return;
         }
         await signup(email, password);
-        onLoginSuccess(); // Use callback instead of navigation
+        // Use replace instead of push to prevent browser history
+        navigate('/', { replace: true });
       } else {
         await login(email, password);
-        onLoginSuccess(); // Use callback instead of navigation
+        // Use replace instead of push to prevent browser history
+        navigate('/', { replace: true });
       }
     } catch (err) {
       console.error('Auth error:', err);
@@ -63,7 +67,7 @@ const LoginPage = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white/80 backdrop-blur-xl shadow-xl rounded-2xl p-8">
           {error && (
