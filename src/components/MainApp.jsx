@@ -295,32 +295,24 @@ const MainApp = () => {
                   placeholder="Share a memory or future thought..."
                   className={`w-full p-4 border rounded-xl resize-none h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}                
                   />
-                  
+
                   {/* Date and Submit */}
                   <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <button
-                        onClick={() => setScheduledDateTime(scheduledDateTime ? null : new Date())}
-                        className={`px-6 py-3 rounded-xl flex items-center gap-2 w-full
-                          transition-all duration-200 hover:scale-[1.02]
-                          ${darkMode 
-                            ? scheduledDateTime 
-                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
-                              : 'bg-gray-800 hover:bg-gray-750 text-gray-300' 
-                            : scheduledDateTime
-                              ? 'bg-indigo-500 hover:bg-indigo-600 text-white'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
-                      >
-                        <Clock size={20} />
-                        Schedule For Later
-                      </button>
-                      {scheduledDateTime && (
-                        <CustomDateTimeSelector
-                          selectedDateTime={scheduledDateTime}
-                          onChange={setScheduledDateTime}
-                        />
-                      )}
-                    </div>
+                    <button
+                      onClick={() => setScheduledDateTime(scheduledDateTime ? null : new Date())}
+                      className={`px-6 py-3 rounded-xl flex items-center gap-2 flex-1
+                        transition-all duration-200 hover:scale-[1.02]
+                        ${darkMode 
+                          ? scheduledDateTime 
+                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
+                            : 'bg-gray-800 hover:bg-gray-750 text-gray-300' 
+                          : scheduledDateTime
+                            ? 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+                    >
+                      <Clock size={20} />
+                      Schedule For Later
+                    </button>
 
                     <button
                       onClick={() => {
@@ -331,7 +323,7 @@ const MainApp = () => {
                         }
                       }}
                       disabled={(!message && !mediaPreview) || isUploading}
-                      className={`px-6 py-3 rounded-xl flex items-center gap-2 min-w-[140px] justify-center
+                      className={`px-6 py-3 rounded-xl flex items-center gap-2 flex-1 justify-center
                         transition-all duration-200 hover:scale-[1.02]
                         ${(!message && !mediaPreview) || isUploading
                           ? `${darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-400'} cursor-not-allowed`
@@ -344,16 +336,14 @@ const MainApp = () => {
                     </button>
                   </div>
 
-                  {/* Message Input - Updated styling */}
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Share a memory or future thought..."
-                    className={`w-full p-4 border rounded-xl resize-none h-32 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 
-                      ${darkMode 
-                        ? 'bg-gray-800 text-gray-300 border-gray-700 placeholder-gray-500' 
-                        : 'bg-white text-gray-800 border-gray-300 placeholder-gray-400'}`}
-                  />
+                  {scheduledDateTime && (
+                    <div className="mt-4">
+                      <CustomDateTimeSelector
+                        selectedDateTime={scheduledDateTime}
+                        onChange={setScheduledDateTime}
+                      />
+                    </div>
+                  )}
               </div>
             </div>
 
