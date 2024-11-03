@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import MessageActions from './MessageActions';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useDarkMode } from '../context/DarkModeContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -172,15 +173,14 @@ const ChatRoom = () => {
         const functions = getFunctions();
         const sendNotification = httpsCallable(functions, 'sendNotification');
         
-        await sendNotification({
-            userId: user.uid, // The recipient's user ID
+        const result = await sendNotification({
+            userId: user.uid,
             notification: {
                 title: 'Test Notification',
                 body: 'This is a test notification. If you see this, notifications are working!'
             }
         });
-        
-        console.log('Test notification sent successfully');
+        console.log('Notification sent:', result);
     } catch (error) {
         console.error('Error sending test notification:', error);
     }
@@ -610,12 +610,20 @@ useEffect(() => {
         <div className={`px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b z-10 relative`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
+            <button 
+                onClick={testNotification}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title="Test Notification"
+            >
+                <Bell size={20} className="text-blue-500" />
+            </button>
               {userProfile?.profilePhotoURL ? (
                 <img 
                   src={userProfile.profilePhotoURL} 
                   alt="Profile" 
                   className="w-10 h-10 rounded-full object-cover"
                 />
+                
               ) : (
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                   <span className="text-blue-500 font-medium">
@@ -834,12 +842,6 @@ useEffect(() => {
               }
             }}
           >
-            <button 
-                onClick={testNotification}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg"
-            >
-                Test Notification
-            </button>
             {loading ? (
               <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />

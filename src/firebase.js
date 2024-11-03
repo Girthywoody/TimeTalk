@@ -3,6 +3,7 @@ import { getAuth, indexedDBLocalPersistence, initializeAuth } from 'firebase/aut
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging'; // Add this import
+import { getFunctions } from 'firebase/functions';
 
 const firebaseConfig = {
     apiKey: "AIzaSyDdFtxNbwQSYGfO3pUKG8hkkxlwhlikvQQ",
@@ -38,6 +39,7 @@ const auth = (() => {
 const db = getFirestore(app);
 const storage = getStorage(app);
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null; // Add this
+const functions = getFunctions(app);
 
 export const requestNotificationPermission = async () => {
     try {
@@ -63,6 +65,9 @@ export const requestNotificationPermission = async () => {
         return null;
     }
 };
+
+export { auth, db, storage, messaging, functions };
+
 
 // Add this function to handle foreground messages
 export const onMessageListener = () => {
