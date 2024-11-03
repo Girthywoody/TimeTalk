@@ -15,9 +15,7 @@ import SecretPostModal from './SecretPostModal';
 import { auth } from '../firebase';  // Add this line with your other imports
 import { useDarkMode } from '../context/DarkModeContext';
 import PostButton from './PostButton';  // Add this line
-import NotificationButton from './components/NotificationButton';
-
-
+import NotificationButton from './NotificationButton';
 
 const MainApp = () => {
   const [message, setMessage] = useState('');
