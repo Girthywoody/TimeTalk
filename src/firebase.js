@@ -66,7 +66,6 @@ export const requestNotificationPermission = async () => {
     }
 };
 
-export { auth, db, storage, messaging, functions };
 
 
 // Add this function to handle foreground messages
@@ -80,4 +79,4 @@ export const onMessageListener = () => {
     });
 };
 
-export { auth, db, storage, messaging }; // Add messaging to exports
+export { auth, db, storage, messaging, functions }; // Add messaging to exports
