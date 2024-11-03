@@ -45,11 +45,11 @@ const AudioRecorder = ({ onMediaCapture }) => {
       animationFrameRef.current = requestAnimationFrame(draw);
       analyserRef.current.getByteTimeDomainData(dataArray);
 
-      canvasCtx.fillStyle = 'rgb(255, 192, 203, 0.1)'; // Light pink background
+      canvasCtx.fillStyle = '#1e1b4b'; // Dark indigo background
       canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
+      
       canvasCtx.lineWidth = 2;
-      canvasCtx.strokeStyle = '#ff69b4'; // Hot pink for the waveform
+      canvasCtx.strokeStyle = '#818cf8'; // Indigo waveform
       canvasCtx.beginPath();
 
       const sliceWidth = canvas.width / bufferLength;
@@ -123,8 +123,8 @@ const AudioRecorder = ({ onMediaCapture }) => {
   };
 
   return (
-    <div className="relative mt-4 rounded-xl overflow-hidden bg-pink-50/90 backdrop-blur-sm p-6">
-      <div className="flex flex-col items-center gap-4">
+    <div className="relative flex flex-col items-center justify-center h-full bg-indigo-950 p-6">
+      <div className="flex flex-col items-center gap-4 w-full max-w-md">
         <div className="text-2xl font-medium text-pink-900">
           {formatTime(duration)}
         </div>
@@ -133,10 +133,10 @@ const AudioRecorder = ({ onMediaCapture }) => {
         </div>
         
         <canvas
-          ref={canvasRef}
-          className="w-full h-24 rounded-lg"
-          width={800}
-          height={100}
+        ref={canvasRef}
+        className="w-full h-24 rounded-lg bg-indigo-900/50"
+        width={800}
+        height={100}
         />
 
         <div className="flex items-center gap-4">
@@ -149,10 +149,10 @@ const AudioRecorder = ({ onMediaCapture }) => {
             </button>
           ) : (
             <button
-              onClick={startRecording}
-              className="p-4 bg-pink-600 rounded-full text-white hover:bg-pink-700 transition-colors"
+            onClick={isRecording ? stopRecording : startRecording}
+            className="p-4 bg-indigo-500 rounded-full text-white hover:bg-indigo-600 transition-colors"
             >
-              <Mic size={24} />
+            {isRecording ? <StopCircle size={24} /> : <Mic size={24} />}
             </button>
           )}
         </div>
