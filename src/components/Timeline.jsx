@@ -47,6 +47,13 @@ const PostMenu = ({ onEdit, onDelete, isOpen, setIsOpen, position }) => {
   );
 };
 
+const isPostVisible = (scheduledFor) => {
+  if (!scheduledFor) return true;
+  const now = new Date();
+  const scheduledDate = new Date(scheduledFor);
+  return now >= scheduledDate;
+};
+
 const EditPostModal = ({ post, isOpen, onClose, onSave }) => {
   const [editedContent, setEditedContent] = useState('');
   const [editedDateTime, setEditedDateTime] = useState(null);
@@ -183,7 +190,7 @@ const Timeline = ({ posts }) => {
   };
 
   const renderPost = (post) => {
-    if (post.isScheduled) {
+    if (post.isScheduled && !isPostVisible(post.scheduledFor)) {
       return (
         <div className="relative group">
           <div className={`absolute inset-0 ${
@@ -279,7 +286,27 @@ const Timeline = ({ posts }) => {
   return (
     <>
       <div className="space-y-4" onClick={handleClickOutside}>
-        {posts.filter(post => !post.completelySecret).map((post) => (
+        {[...posts]
+    .filter(post => !post.completelySecret)
+    .sort((a, b) => {
+      const aDate = new Date(a.scheduledFor);
+      const bDate = new Date(b.scheduledFor);
+      const now = new Date();
+      
+      // If both posts are past their scheduled time, show most recent first
+      if (aDate <= now && bDate <= now) {
+        return bDate - aDate;
+      }
+      
+      // If both are scheduled for the future, show earliest first
+      if (aDate > now && bDate > now) {
+        return aDate - bDate;
+      }
+      
+      // If one is past and one is future, show past first
+      return aDate <= now ? -1 : 1;
+    })
+    .map((post) => (
           <div 
             key={post.id} 
             className={`${
