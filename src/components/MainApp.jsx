@@ -15,6 +15,8 @@ import SecretPostModal from './SecretPostModal';
 import { auth } from '../firebase';  // Add this line with your other imports
 import { useDarkMode } from '../context/DarkModeContext';
 import PostButton from './PostButton';  // Add this line
+import NotificationButton from './components/NotificationButton';
+
 
 
 const MainApp = () => {
@@ -243,6 +245,9 @@ const MainApp = () => {
                 </div>
                 <div className="flex items-center gap-4">
                   <Lock className={`${darkMode ? 'text-blue-400' : 'text-blue-500'}`} size={24} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <NotificationButton />
                 </div>
               </div>
             </div>

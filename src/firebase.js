@@ -2,6 +2,7 @@ import { initializeApp, getApps, deleteApp } from 'firebase/app';
 import { getAuth, indexedDBLocalPersistence, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging'; // Add this import
 
 const firebaseConfig = {
     apiKey: "AIzaSyDdFtxNbwQSYGfO3pUKG8hkkxlwhlikvQQ",
@@ -24,25 +25,48 @@ const app = initializeApp(firebaseConfig);
 // Initialize auth with custom settings for iOS
 const auth = (() => {
     try {
-        // Try to initialize with IndexedDB
         return initializeAuth(app, {
             persistence: indexedDBLocalPersistence,
             popupRedirectResolver: undefined
         });
     } catch (error) {
         console.error("Auth initialization error:", error);
-        // Fallback to default auth if initialization fails
         return getAuth(app);
     }
 })();
 
 const db = getFirestore(app);
 const storage = getStorage(app);
+const messaging = typeof window !== 'undefined' ? getMessaging(app) : null; // Add this
 
-// Clear cached credentials on auth state change
-auth.onAuthStateChanged(() => {
-    // Force token refresh
-    auth.currentUser?.getIdToken(true).catch(console.error);
-});
+// Add this function to request notification permission and get FCM token
+export const requestNotificationPermission = async () => {
+    try {
+        if (!messaging) return null;
+        
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            const token = await getToken(messaging, {
+                vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc'
+            });
+            return token;
+        }
+        return null;
+    } catch (error) {
+        console.error('Notification permission error:', error);
+        return null;
+    }
+};
 
-export { auth, db, storage };
+// Add this function to handle foreground messages
+export const onMessageListener = () => {
+    return new Promise((resolve) => {
+        if (!messaging) return resolve(null);
+        
+        onMessage(messaging, (payload) => {
+            resolve(payload);
+        });
+    });
+};
+
+export { auth, db, storage, messaging }; // Add messaging to exports
