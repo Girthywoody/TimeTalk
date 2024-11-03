@@ -819,28 +819,27 @@ useEffect(() => {
 
       {/* Messages Container */}
       <div className="flex-1 overflow-hidden relative">
-          <div 
-            ref={scrollContainerRef}
-            className="absolute inset-0 overflow-y-scroll px-4 z-0 overscroll-contain"
-            style={{
-              paddingBottom: '90px',
-              paddingTop: '16px',
-              WebkitOverflowScrolling: 'touch',
-              scrollBehavior: 'smooth',
-              minHeight: '101%' // This ensures scrollability even with few messages
-            }}
-            onScroll={handleScroll}
-          >
-            {/* Add a spacer div at the top to allow overscroll */}
-            <div className="h-8" />
-            
-            {loading ? (
-              <div className="flex-1 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-              </div>
-            ) : (
-              <div className="min-h-[calc(100vh-250px)] flex flex-col justify-end">
-                {messages.map((message, index) => (
+        <div 
+          ref={scrollContainerRef}
+          className="absolute inset-0 overflow-y-scroll px-4 z-0 overscroll-contain"
+          style={{
+            paddingBottom: '90px',
+            paddingTop: '16px',
+            WebkitOverflowScrolling: 'touch',
+            scrollBehavior: 'smooth',
+            minHeight: '101%'
+          }}
+          onScroll={handleScroll}
+        >
+          <div className="h-8" />
+          
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <div className="min-h-[calc(100vh-250px)] flex flex-col justify-end">
+              {messages.map((message, index) => (
                   <div
                     id={`message-${message.id}`}
                     key={message.id}
@@ -997,8 +996,9 @@ useEffect(() => {
                   </div>
                 ))}
                 <div ref={messagesEndRef} />
-              </>
+              </div>
             )}
+            <div className="h-8" />
           </div>
         </div>
 
