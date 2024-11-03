@@ -137,27 +137,7 @@ const ChatRoom = () => {
       });
     }
   }, [searchQuery]);
-
-  const handleScroll = (e) => {
-    const container = e.target;
-    const scrollTop = container.scrollTop;
-    const maxScroll = container.scrollHeight - container.clientHeight;
-    
-    // If scrolled past bottom edge
-    if (scrollTop > maxScroll) {
-      // Calculate how far past the bottom edge we've scrolled
-      const overscroll = scrollTop - maxScroll;
-      // Apply resistance to the overscroll
-      const resistance = 0.3;
-      container.scrollTop = maxScroll + (overscroll * resistance);
-    }
-    // If scrolled past top edge
-    else if (scrollTop < 0) {
-      // Apply resistance to the overscroll
-      const resistance = 0.3;
-      container.scrollTop = scrollTop * resistance;
-    }
-  };
+  
 
   const handleMuteNotifications = (duration) => {
     const now = new Date();
@@ -820,26 +800,28 @@ useEffect(() => {
       {/* Messages Container */}
       <div className="flex-1 overflow-hidden relative">
         <div 
-          ref={scrollContainerRef}
-          className="absolute inset-0 overflow-y-scroll px-4 z-0 overscroll-contain"
-          style={{
-            paddingBottom: '90px',
-            paddingTop: '16px',
-            WebkitOverflowScrolling: 'touch',
-            scrollBehavior: 'smooth',
-            minHeight: '101%'
-          }}
-          onScroll={handleScroll}
-        >
-          <div className="h-8" />
-          
-          {loading ? (
-            <div className="flex-1 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-            </div>
-          ) : (
-            <div className="min-h-[calc(100vh-250px)] flex flex-col justify-end">
-              {messages.map((message, index) => (
+            ref={scrollContainerRef}
+            className="absolute inset-0 overflow-y-auto px-4 z-0"
+            style={{
+              paddingBottom: '90px',
+              paddingTop: '16px',
+              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch',
+              scrollBehavior: 'smooth' // Add smooth scrolling
+            }}
+            onLoad={() => {
+              if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+              }
+            }}
+          >
+            {loading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              </div>
+            ) : (
+              <>
+                {messages.map((message, index) => (
                   <div
                     id={`message-${message.id}`}
                     key={message.id}
@@ -996,9 +978,8 @@ useEffect(() => {
                   </div>
                 ))}
                 <div ref={messagesEndRef} />
-              </div>
+              </>
             )}
-            <div className="h-8" />
           </div>
         </div>
 
