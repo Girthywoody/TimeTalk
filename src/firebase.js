@@ -39,16 +39,22 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null; // Add this
 
-// Add this function to request notification permission and get FCM token
 export const requestNotificationPermission = async () => {
     try {
         if (!messaging) return null;
-        
+
+        // First, check if service worker is registered
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        console.log('Service Worker registered:', registration);
+
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
+            // Get token only after permission is granted
             const token = await getToken(messaging, {
-                vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc'
+                vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc',
+                serviceWorkerRegistration: registration
             });
+            console.log('FCM Token:', token);
             return token;
         }
         return null;

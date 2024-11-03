@@ -13,6 +13,15 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Handle service worker installation
+self.addEventListener('install', (event) => {
+    console.log('Service Worker installing.');
+});
+
+self.addEventListener('activate', (event) => {
+    console.log('Service Worker activating.');
+});
+
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
     console.log('Received background message:', payload);
@@ -33,4 +42,13 @@ messaging.onBackgroundMessage((payload) => {
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    
+    if (event.action === 'open') {
+        clients.openWindow('/chat');
+    }
 });
