@@ -167,6 +167,25 @@ const ChatRoom = () => {
     setIsDropdownOpen(false);
   };
 
+  const testNotification = async () => {
+    try {
+        const functions = getFunctions();
+        const sendNotification = httpsCallable(functions, 'sendNotification');
+        
+        await sendNotification({
+            userId: user.uid, // The recipient's user ID
+            notification: {
+                title: 'Test Notification',
+                body: 'This is a test notification. If you see this, notifications are working!'
+            }
+        });
+        
+        console.log('Test notification sent successfully');
+    } catch (error) {
+        console.error('Error sending test notification:', error);
+    }
+};
+
   useEffect(() => {
     // Add styles to head
     const styleSheet = document.createElement("style");
@@ -815,6 +834,12 @@ useEffect(() => {
               }
             }}
           >
+            <button 
+                onClick={testNotification}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+            >
+                Test Notification
+            </button>
             {loading ? (
               <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
