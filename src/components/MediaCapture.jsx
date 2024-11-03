@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { X, Camera, AlertCircle, Repeat, Timer, Settings } from 'lucide-react';
+import { X, Camera, AlertCircle, Repeat, Timer, Settings, Mic, StopCircle } from 'lucide-react';
+import AudioRecorder from './AudioRecorder';
+
 
 export default function MediaCapture({ mediaType, onMediaCapture }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -15,13 +17,14 @@ export default function MediaCapture({ mediaType, onMediaCapture }) {
   const [selectedDevices, setSelectedDevices] = useState({ video: '', audio: '' });
   const [showDeviceSelect, setShowDeviceSelect] = useState(false);
   const [countdownTime, setCountdownTime] = useState(selectedTimer);
-
+  const [facingMode, setFacingMode] = useState('user');
   const deviceSelectorRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const videoRef = useRef(null);
   const timerRef = useRef(null);
   const streamRef = useRef(null);
   const countdownRef = useRef(null);
+
 
 
   // Get available cameras and devices on mount
@@ -104,12 +107,9 @@ export default function MediaCapture({ mediaType, onMediaCapture }) {
   
       const constraints = {
         video: {
-          deviceId: selectedDevices.video ? { exact: selectedDevices.video } : undefined,
-          facingMode: currentCameraIndex === 0 ? 'user' : 'environment'
+          facingMode: facingMode
         },
-        audio: mediaType === 'video' ? {
-          deviceId: selectedDevices.audio ? { exact: selectedDevices.audio } : undefined
-        } : false
+        audio: mediaType === 'video' ? true : false
       };
   
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -117,8 +117,7 @@ export default function MediaCapture({ mediaType, onMediaCapture }) {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        // Only mirror if using front camera
-        videoRef.current.style.transform = currentCameraIndex === 0 ? 'scaleX(-1)' : 'none';
+        videoRef.current.style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'none';
         videoRef.current.play();
       }
     } catch (err) {
@@ -150,11 +149,12 @@ export default function MediaCapture({ mediaType, onMediaCapture }) {
     }
   };
 
-
   const flipCamera = async () => {
-    const nextIndex = (currentCameraIndex + 1) % cameras.length;
-    setCurrentCameraIndex(nextIndex);
-    setSelectedDevices(prev => ({ ...prev, video: cameras[nextIndex].deviceId }));
+    setFacingMode(facingMode === 'user' ? 'environment' : 'user');
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    startPreview();
   };
 
   const startCountdown = () => {
@@ -175,27 +175,45 @@ export default function MediaCapture({ mediaType, onMediaCapture }) {
     }, 1000);
   };
 
-  const startRecording = () => {
+// Replace the startRecording function
+const startRecording = () => {
+  try {
+    if (!streamRef.current) return;
+    
+    // Specify MIME type for better mobile compatibility
+    const options = { mimeType: 'video/webm;codecs=vp8,opus' };
+    
     try {
-      if (!streamRef.current) return;
-      
-      mediaRecorderRef.current = new MediaRecorder(streamRef.current);
-      const chunks = [];
-
-      mediaRecorderRef.current.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        onMediaCapture(URL.createObjectURL(blob));
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-      startTimer();
-    } catch (err) {
-      console.error('Recording error:', err);
-      setError(getErrorMessage(err));
+      mediaRecorderRef.current = new MediaRecorder(streamRef.current, options);
+    } catch (e) {
+      // Fallback for iOS
+      mediaRecorderRef.current = new MediaRecorder(streamRef.current, { mimeType: 'video/mp4' });
     }
-  };
+    
+    const chunks = [];
+
+    mediaRecorderRef.current.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        chunks.push(e.data);
+      }
+    };
+
+    mediaRecorderRef.current.onstop = () => {
+      const blob = new Blob(chunks, { 
+        type: mediaRecorderRef.current.mimeType 
+      });
+      onMediaCapture(URL.createObjectURL(blob));
+    };
+
+    // Request data more frequently on mobile
+    mediaRecorderRef.current.start(1000); // collect data every second
+    setIsRecording(true);
+    startTimer();
+  } catch (err) {
+    console.error('Recording error:', err);
+    setError(getErrorMessage(err));
+  }
+};
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -314,26 +332,25 @@ export default function MediaCapture({ mediaType, onMediaCapture }) {
   }
 
   return (
-    <div className="relative mt-4 rounded-xl overflow-hidden bg-gray-900 aspect-square"> {/* Added aspect-square here */}
+    <div className="relative mt-4 rounded-xl overflow-hidden bg-gray-900 aspect-square">
       {(mediaType === 'video' || mediaType === 'image') && (
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          playsInline
-        />
+          <video
+            ref={videoRef}
+            className="w-full h-full object-cover"
+            autoPlay
+            muted
+            playsInline
+          />
       )}
 
       {showDeviceSelect && <DeviceSelector />}
       
-      {/* Recording Timer */}
       {isRecording && (
-        <div className="absolute top-4 left-4 bg-red-500 px-3 py-1 rounded-full text-white flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-          {formatTime(recordingTime)}
-        </div>
-      )}
+            <div className="absolute top-4 left-4 bg-red-500 px-3 py-1 rounded-full text-white flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              {formatTime(recordingTime)}
+            </div>
+          )}
 
       {/* Photo Countdown */}
       {isCountingDown && (
@@ -432,6 +449,9 @@ export default function MediaCapture({ mediaType, onMediaCapture }) {
           </button>
         )}
       </div>
+      {mediaType === 'audio' && (
+        <AudioRecorder onMediaCapture={onMediaCapture} />
+      )}
     </div>
   );
 }
