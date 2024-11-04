@@ -18,6 +18,7 @@ import MessageActions from './MessageActions';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useDarkMode } from '../context/DarkModeContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 import { db, storage } from '../firebase';
 import { 
   Send, 
@@ -170,26 +171,32 @@ const ChatRoom = () => {
 
   const testNotification = async () => {
     try {
-        const functions = getFunctions();
-        // Set the region if you're not using us-central1
-        // const functions = getFunctions(getApp(), 'us-central1');
-        
-        const sendNotification = httpsCallable(functions, 'sendNotification');
-        
-        console.log('Sending notification to user:', user.uid);
-        
-        const result = await sendNotification({
-            userId: user.uid,
-            notification: {
-                title: 'Test Notification',
-                body: 'This is a test notification!'
-            }
+        const auth = getAuth();
+        const idToken = await auth.currentUser.getIdToken();
+
+        const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({
+                userId: user.uid,
+                notification: {
+                    title: 'Test Notification',
+                    body: 'This is a test notification!'
+                }
+            })
         });
-        
-        console.log('Notification result:', result.data);
+
+        const result = await response.json();
+        console.log('Notification result:', result);
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to send notification');
+        }
     } catch (error) {
-        console.error('Error sending test notification:', error.message);
-        // Show error to user
+        console.error('Error sending test notification:', error);
         alert('Failed to send notification: ' + error.message);
     }
 };
