@@ -5,6 +5,8 @@ import { getStorage } from 'firebase/storage';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging'; // Add this import
 import { getFunctions } from 'firebase/functions';
 
+
+
 const firebaseConfig = {
     apiKey: "AIzaSyDdFtxNbwQSYGfO3pUKG8hkkxlwhlikvQQ",
     authDomain: "timetalk-13a75.firebaseapp.com",

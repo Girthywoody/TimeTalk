@@ -1,8 +1,14 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const cors = require('cors')({ 
+    origin: true, 
+    credentials: true 
+});
+
 admin.initializeApp();
 
 exports.sendNotification = functions.https.onCall(async (data, context) => {
+    // Remove the manual CORS check since onCall handles it automatically
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
@@ -31,83 +37,19 @@ exports.sendNotification = functions.https.onCall(async (data, context) => {
                         badge: '/ios-icon-192.png',
                         vibrate: [100, 50, 100],
                         requireInteraction: true,
-                        renotify: true,
-                        actions: [
-                            {
-                                action: 'open',
-                                title: 'Open Chat'
-                            }
-                        ]
+                        renotify: true
                     },
                     fcmOptions: {
                         link: 'https://time-talk.vercel.app/chat'
                     }
-                },
-                android: {
-                    priority: 'high',
-                    notification: {
-                        clickAction: 'FLUTTER_NOTIFICATION_CLICK',
-                        priority: 'max',
-                        sound: 'default',
-                        sticky: true
-                    }
-                },
-                apns: {
-                    payload: {
-                        aps: {
-                            'content-available': 1,
-                            'mutable-content': 1,
-                            sound: 'default',
-                            badge: 1,
-                            'alert': {
-                                title: notification.title,
-                                body: notification.body
-                            }
-                        }
-                    },
-                    fcmOptions: {
-                        imageUrl: '/ios-icon-192.png'
-                    }
-                },
-                data: {
-                    url: 'https://time-talk.vercel.app/chat',
-                    click_action: 'FLUTTER_NOTIFICATION_CLICK',
-                    messageId: Date.now().toString()
                 }
             };
 
             await admin.messaging().send(message);
-            
-            // Log successful notification send
-            await admin.firestore().collection('notificationLogs').add({
-                userId: userId,
-                token: userData.fcmToken,
-                notification: notification,
-                timestamp: admin.firestore.FieldValue.serverTimestamp(),
-                success: true
-            });
-
             return { success: true };
         }
-
-        // Log failed notification (no token)
-        await admin.firestore().collection('notificationLogs').add({
-            userId: userId,
-            error: 'No FCM token found for user',
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
-            success: false
-        });
-
         return { success: false, error: 'No FCM token found for user' };
     } catch (error) {
-        // Log error
-        await admin.firestore().collection('notificationLogs').add({
-            userId: userId,
-            error: error.message,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
-            success: false
-        });
-
         console.error('Error sending notification:', error);
         throw new functions.https.HttpsError('internal', error.message);
     }

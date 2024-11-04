@@ -171,18 +171,26 @@ const ChatRoom = () => {
   const testNotification = async () => {
     try {
         const functions = getFunctions();
+        // Set the region if you're not using us-central1
+        // const functions = getFunctions(getApp(), 'us-central1');
+        
         const sendNotification = httpsCallable(functions, 'sendNotification');
+        
+        console.log('Sending notification to user:', user.uid);
         
         const result = await sendNotification({
             userId: user.uid,
             notification: {
                 title: 'Test Notification',
-                body: 'This is a test notification. If you see this, notifications are working!'
+                body: 'This is a test notification!'
             }
         });
-        console.log('Notification sent:', result);
+        
+        console.log('Notification result:', result.data);
     } catch (error) {
-        console.error('Error sending test notification:', error);
+        console.error('Error sending test notification:', error.message);
+        // Show error to user
+        alert('Failed to send notification: ' + error.message);
     }
 };
 
