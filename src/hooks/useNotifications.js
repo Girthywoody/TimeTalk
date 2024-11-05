@@ -1,13 +1,14 @@
-// src/hooks/useNotifications.js
 import { useState, useEffect } from 'react';
 import { doc, setDoc, updateDoc, getDoc } from 'firebase/firestore';
-import { db, auth, requestNotificationPermission, onMessageListener } from '../firebase';
+import { db, auth, requestNotificationPermission } from '../firebase';
 
 export const useNotifications = () => {
     const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
     const [fcmToken, setFcmToken] = useState(null);
 
     useEffect(() => {
+        let unsubscribe = () => {};
+
         const initializeNotifications = async () => {
             if (!auth.currentUser) return;
 
@@ -41,24 +42,7 @@ export const useNotifications = () => {
         };
 
         initializeNotifications();
-    }, []);
-
-    // Handle foreground messages
-    useEffect(() => {
-        const unsubscribe = onMessageListener().then(payload => {
-            if (payload && "Notification" in window) {
-                const { title, body } = payload.notification;
-                
-                // Show notification even when app is in foreground
-                new Notification(title, {
-                    body: body,
-                    icon: '/ios-icon-192.png',
-                    badge: '/ios-icon-192.png',
-                });
-            }
-        });
-
-        return () => unsubscribe;
+        return () => unsubscribe();
     }, []);
 
     return {

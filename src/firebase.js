@@ -2,10 +2,8 @@ import { initializeApp, getApps, deleteApp } from 'firebase/app';
 import { getAuth, indexedDBLocalPersistence, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging'; // Add this import
+import { getMessaging, getToken } from 'firebase/messaging';
 import { getFunctions } from 'firebase/functions';
-
-
 
 const firebaseConfig = {
     apiKey: "AIzaSyDdFtxNbwQSYGfO3pUKG8hkkxlwhlikvQQ",
@@ -40,7 +38,7 @@ const auth = (() => {
 
 const db = getFirestore(app);
 const storage = getStorage(app);
-const messaging = typeof window !== 'undefined' ? getMessaging(app) : null; // Add this
+const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 const functions = getFunctions(app);
 
 export const requestNotificationPermission = async () => {
@@ -68,17 +66,4 @@ export const requestNotificationPermission = async () => {
     }
 };
 
-
-
-// Add this function to handle foreground messages
-export const onMessageListener = () => {
-    return new Promise((resolve) => {
-        if (!messaging) return resolve(null);
-        
-        onMessage(messaging, (payload) => {
-            resolve(payload);
-        });
-    });
-};
-
-export { auth, db, storage, messaging, functions }; // Add messaging to exports
+export { auth, db, storage, messaging, functions };
