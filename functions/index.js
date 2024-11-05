@@ -14,8 +14,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Single notification sending function
-async function sendNotificationToUser(userId, notification) {
+async function sendNotificationToUser(userId, { senderName, messageContent, messageId, messageType }) {
     const userDoc = await admin.firestore().collection('users').doc(userId).get();
     const userData = userDoc.data();
     
@@ -24,25 +23,48 @@ async function sendNotificationToUser(userId, notification) {
         return { success: false, error: 'No FCM token found for user' };
     }
 
+    // Format notification content based on message type
+    let title = `Message from ${senderName}`;
+    let body = messageContent;
+
+    if (messageType === 'image') {
+        body = '📷 Sent you an image';
+    } else if (messageType === 'file') {
+        body = '📎 Sent you a file';
+    } else if (!messageContent) {
+        body = 'Sent you a message';
+    }
+
     const message = {
         token: userData.fcmToken,
         notification: {
-            title: notification.title,
-            body: notification.body,
+            title,
+            body,
         },
         webpush: {
             headers: {
                 Urgency: 'high'
             },
             notification: {
-                title: notification.title,
-                body: notification.body,
+                title,
+                body,
                 icon: '/ios-icon-192.png',
                 badge: '/ios-icon-192.png',
                 vibrate: [100, 50, 100],
                 requireInteraction: true,
-                renotify: false, // Change to false to prevent duplicate notifications
-                tag: notification.messageId || 'default' // Use messageId as tag
+                renotify: false,
+                tag: messageId || 'default',
+                actions: [
+                    {
+                        action: 'reply',
+                        title: 'Reply'
+                    },
+                    {
+                        action: 'mark-read',
+                        title: 'Mark as Read'
+                    }
+                ],
+                silent: false
             },
             fcmOptions: {
                 link: 'https://time-talk.vercel.app/chat'
@@ -77,9 +99,10 @@ app.post('/sendNotification', async (req, res) => {
         const { userId } = req.body;
         
         const result = await sendNotificationToUser(userId, {
-            title: 'Test Notification',
-            body: 'This is a test notification',
-            messageId: 'test-' + Date.now() // Unique ID for test notification
+            senderName: 'Test',
+            messageContent: 'This is a test notification',
+            messageId: 'test-' + Date.now(),
+            messageType: 'text'
         });
 
         return res.json(result);
@@ -107,17 +130,8 @@ exports.onNewMessage = functions.firestore
             // Get sender's profile
             const senderDoc = await admin.firestore().collection('users').doc(message.senderId).get();
             const senderData = senderDoc.data();
+            const senderName = senderData?.username || senderData?.displayName || 'Someone';
             
-            // Prepare notification message
-            let notificationBody = '';
-            if (message.type === 'text' || message.type === 'mixed') {
-                notificationBody = message.text || 'Sent you a message';
-            } else if (message.type === 'image') {
-                notificationBody = 'Sent you an image';
-            } else if (message.type === 'file') {
-                notificationBody = 'Sent you a file';
-            }
-
             // Get all users except sender
             const usersSnapshot = await admin.firestore().collection('users').get();
             const notifications = [];
@@ -128,9 +142,10 @@ exports.onNewMessage = functions.firestore
                     // Send notification
                     notifications.push(
                         sendNotificationToUser(userDoc.id, {
-                            title: `${senderData?.username || 'New Message'}`,
-                            body: notificationBody,
-                            messageId // Use messageId as tag
+                            senderName,
+                            messageContent: message.text,
+                            messageId,
+                            messageType: message.type
                         })
                     );
                 }
@@ -145,7 +160,8 @@ exports.onNewMessage = functions.firestore
                         .filter(doc => doc.id !== message.senderId)
                         .map(doc => ({
                             userId: doc.id,
-                            status: 'sent'
+                            status: 'sent',
+                            sentAt: admin.firestore.FieldValue.serverTimestamp()
                         }))
                 }
             });

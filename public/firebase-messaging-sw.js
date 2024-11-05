@@ -21,32 +21,61 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim());
 });
 
-// Handle background messages
-messaging.onBackgroundMessage((payload) => {
-    console.log('Received background message:', payload);
-    
-    if (!payload.notification) {
-        return;
+// Remove the onBackgroundMessage handler and use only push event
+self.addEventListener('push', (event) => {
+    if (!event.data) return;
+
+    try {
+        const data = event.data.json();
+        if (!data.notification) return;
+
+        const notificationOptions = {
+            ...data.notification,
+            icon: '/ios-icon-192.png',
+            badge: '/ios-icon-192.png',
+            tag: data.data?.messageId || 'default',
+            data: data.data || {},
+            requireInteraction: true,
+            actions: [
+                {
+                    action: 'reply',
+                    title: 'Reply'
+                },
+                {
+                    action: 'mark-read',
+                    title: 'Mark as Read'
+                }
+            ]
+        };
+
+        event.waitUntil(
+            self.registration.showNotification(
+                data.notification.title,
+                notificationOptions
+            )
+        );
+    } catch (error) {
+        console.error('Error showing notification:', error);
     }
-
-    const notificationOptions = {
-        ...payload.notification,
-        icon: '/ios-icon-192.png',
-        badge: '/ios-icon-192.png',
-        tag: payload.data?.messageId || 'default', // Use messageId as tag
-        data: payload.data || {},
-        requireInteraction: true
-    };
-
-    return self.registration.showNotification(
-        payload.notification.title,
-        notificationOptions
-    );
 });
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
+    // Handle notification actions
+    if (event.action === 'reply') {
+        // Open chat in reply mode
+        const urlToOpen = new URL('/chat?action=reply', self.location.origin).href;
+        event.waitUntil(clients.openWindow(urlToOpen));
+        return;
+    }
+
+    if (event.action === 'mark-read') {
+        // Mark message as read and close notification
+        return;
+    }
+
+    // Default click behavior
     const urlToOpen = new URL('/chat', self.location.origin).href;
 
     const promiseChain = clients.matchAll({
