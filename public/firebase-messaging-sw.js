@@ -1,11 +1,7 @@
-import { initializeApp, getApps, deleteApp } from 'firebase/app';
-import { getAuth, indexedDBLocalPersistence, initializeAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-import { getMessaging, getToken } from 'firebase/messaging';
-import { getFunctions } from 'firebase/functions';
+importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
-const firebaseConfig = {
+firebase.initializeApp({
     apiKey: "AIzaSyDdFtxNbwQSYGfO3pUKG8hkkxlwhlikvQQ",
     authDomain: "timetalk-13a75.firebaseapp.com",
     projectId: "timetalk-13a75",
@@ -13,68 +9,77 @@ const firebaseConfig = {
     messagingSenderId: "676555846687",
     appId: "1:676555846687:web:918431d0810a41980b512a",
     measurementId: "G-4JRNMJ99HS"
-};
+});
 
-// Clear existing apps
-const apps = getApps();
-if (apps.length) {
-    apps.forEach(app => deleteApp(app));
-}
+const messaging = firebase.messaging();
 
-const app = initializeApp(firebaseConfig);
+self.addEventListener('install', (event) => {
+    event.waitUntil(
+        Promise.all([
+            self.skipWaiting(),
+            // Clean up old caches here if needed
+        ])
+    );
+});
 
-// Initialize auth with custom settings for iOS
-const auth = (() => {
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        Promise.all([
+            self.clients.claim(),
+            // Clean up old caches here if needed
+        ])
+    );
+});
+
+self.addEventListener('push', (event) => {
+    if (!event.data) return;
+
     try {
-        return initializeAuth(app, {
-            persistence: indexedDBLocalPersistence,
-            popupRedirectResolver: undefined
-        });
+        const data = event.data.json();
+        if (!data.notification) return;
+
+        // Create a unique tag based on messageId and timestamp
+        const tag = `${data.data?.messageId || 'default'}-${Date.now()}`;
+
+        const notificationOptions = {
+            ...data.notification,
+            icon: '/ios-icon-192.png',
+            badge: '/ios-icon-192.png',
+            tag: tag,
+            data: data.data || {},
+            renotify: false,
+            requireInteraction: true,
+            silent: false
+        };
+
+        event.waitUntil(
+            self.registration.showNotification(
+                data.notification.title,
+                notificationOptions
+            )
+        );
     } catch (error) {
-        console.error("Auth initialization error:", error);
-        return getAuth(app);
+        console.error('Error showing notification:', error);
     }
-})();
+});
 
-const db = getFirestore(app);
-const storage = getStorage(app);
-const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
-const functions = getFunctions(app);
-
-let serviceWorkerRegistration = null;
-
-export const requestNotificationPermission = async () => {
-    try {
-        if (!messaging) return null;
-
-        // Check for existing service worker registration
-        const existingRegistrations = await navigator.serviceWorker.getRegistrations();
-        if (existingRegistrations.length > 0) {
-            // Use the existing registration
-            serviceWorkerRegistration = existingRegistrations[0];
-            console.log('Using existing service worker registration');
-        } else {
-            // Register new service worker only if none exists
-            serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                scope: '/'
-            });
-            console.log('New service worker registered');
-        }
-
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            const token = await getToken(messaging, {
-                vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc',
-                serviceWorkerRegistration
-            });
-            console.log('FCM Token:', token);
-            return token;
-        }
-        return null;
-    } catch (error) {
-        console.error('Notification permission error:', error);
-        return null;
-    }
-};
-
-export { auth, db, storage, messaging, functions };
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    
+    const urlToOpen = new URL('/chat', self.location.origin).href;
+    event.waitUntil(
+        clients.matchAll({
+            type: 'window',
+            includeUncontrolled: true
+        })
+        .then((windowClients) => {
+            for (let i = 0; i < windowClients.length; i++) {
+                const client = windowClients[i];
+                if (client.url === urlToOpen && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            return clients.openWindow(urlToOpen);
+        })
+    );
+});

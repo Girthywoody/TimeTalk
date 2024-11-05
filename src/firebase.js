@@ -22,41 +22,49 @@ if (apps.length) {
 }
 
 const app = initializeApp(firebaseConfig);
-
-// Initialize auth with custom settings for iOS
-const auth = (() => {
-    try {
-        return initializeAuth(app, {
-            persistence: indexedDBLocalPersistence,
-            popupRedirectResolver: undefined
-        });
-    } catch (error) {
-        console.error("Auth initialization error:", error);
-        return getAuth(app);
-    }
-})();
-
+const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 const functions = getFunctions(app);
 
+// Function to clean up old service workers
+async function cleanupServiceWorkers() {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (let registration of registrations) {
+        await registration.unregister();
+    }
+    console.log('Cleaned up old service workers');
+}
+
 export const requestNotificationPermission = async () => {
     try {
         if (!messaging) return null;
 
-        // First, check if service worker is registered
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        console.log('Service Worker registered:', registration);
+        // Clean up old service workers
+        await cleanupServiceWorkers();
+
+        // Register new service worker
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+            scope: '/',
+            updateViaCache: 'none'
+        });
 
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-            // Get token only after permission is granted
             const token = await getToken(messaging, {
                 vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc',
                 serviceWorkerRegistration: registration
             });
-            console.log('FCM Token:', token);
+            
+            // Store token in user document
+            if (auth.currentUser && token) {
+                await db.collection('users').doc(auth.currentUser.uid).update({
+                    fcmToken: token,
+                    lastTokenUpdate: new Date()
+                });
+            }
+            
             return token;
         }
         return null;
