@@ -41,17 +41,12 @@ async function sendNotificationToUser(userId, notification) {
                 badge: '/ios-icon-192.png',
                 vibrate: [100, 50, 100],
                 requireInteraction: true,
-                renotify: true,
-                tag: notification.tag || 'chat' // Add tag to prevent duplicate notifications
+                renotify: false, // Change to false to prevent duplicate notifications
+                tag: notification.messageId || 'default' // Use messageId as tag
             },
             fcmOptions: {
                 link: 'https://time-talk.vercel.app/chat'
             }
-        },
-        data: {
-            url: 'https://time-talk.vercel.app/chat',
-            type: notification.type || 'chat',
-            messageId: notification.messageId || ''
         }
     };
 
@@ -64,7 +59,7 @@ async function sendNotificationToUser(userId, notification) {
     }
 }
 
-// HTTP endpoint for test notifications
+// Test notification endpoint
 app.post('/sendNotification', async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
@@ -79,10 +74,12 @@ app.post('/sendNotification', async (req, res) => {
             return res.status(401).json({ error: 'Invalid token' });
         }
 
-        const { userId, notification } = req.body;
+        const { userId } = req.body;
+        
         const result = await sendNotificationToUser(userId, {
-            ...notification,
-            tag: 'test-notification' // Prevent duplicate test notifications
+            title: 'Test Notification',
+            body: 'This is a test notification',
+            messageId: 'test-' + Date.now() // Unique ID for test notification
         });
 
         return res.json(result);
@@ -99,17 +96,19 @@ exports.onNewMessage = functions.firestore
     .document('messages/{messageId}')
     .onCreate(async (snap, context) => {
         const message = snap.data();
-        
+        const messageId = context.params.messageId;
+
         // Don't send notification for deleted or system messages
         if (message.deleted || message.type === 'system') {
             return null;
         }
 
         try {
-            // Get sender's profile for the notification
+            // Get sender's profile
             const senderDoc = await admin.firestore().collection('users').doc(message.senderId).get();
             const senderData = senderDoc.data();
             
+            // Prepare notification message
             let notificationBody = '';
             if (message.type === 'text' || message.type === 'mixed') {
                 notificationBody = message.text || 'Sent you a message';
@@ -119,22 +118,42 @@ exports.onNewMessage = functions.firestore
                 notificationBody = 'Sent you a file';
             }
 
-            // Send notification to all other users
+            // Get all users except sender
             const usersSnapshot = await admin.firestore().collection('users').get();
-            const notifications = usersSnapshot.docs
-                .filter(doc => doc.id !== message.senderId) // Don't notify sender
-                .map(doc => sendNotificationToUser(doc.id, {
-                    title: `${senderData?.username || 'Someone'}`,
-                    body: notificationBody,
-                    type: 'chat',
-                    messageId: context.params.messageId,
-                    tag: `chat-${context.params.messageId}` // Prevent duplicate message notifications
-                }));
+            const notifications = [];
+            
+            // Send notification to each user and update message
+            for (const userDoc of usersSnapshot.docs) {
+                if (userDoc.id !== message.senderId) {
+                    // Send notification
+                    notifications.push(
+                        sendNotificationToUser(userDoc.id, {
+                            title: `${senderData?.username || 'New Message'}`,
+                            body: notificationBody,
+                            messageId // Use messageId as tag
+                        })
+                    );
+                }
+            }
+
+            // Update message with notification status
+            await admin.firestore().collection('messages').doc(messageId).update({
+                notifications: {
+                    sent: true,
+                    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                    recipients: usersSnapshot.docs
+                        .filter(doc => doc.id !== message.senderId)
+                        .map(doc => ({
+                            userId: doc.id,
+                            status: 'sent'
+                        }))
+                }
+            });
 
             await Promise.all(notifications);
             return null;
         } catch (error) {
-            console.error('Error sending chat notification:', error);
+            console.error('Error in onNewMessage:', error);
             return null;
         }
     });
