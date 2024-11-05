@@ -1026,7 +1026,7 @@ useEffect(() => {
         </div>
 
         {/* Message Input */}
-        <div className={`fixed bottom-[78px] left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t z-20`}>
+        <div className={`fixed bottom-[80px] left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t z-20`}>
           <div className="max-w-2xl mx-auto px-4 py-3">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
