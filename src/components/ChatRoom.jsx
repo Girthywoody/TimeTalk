@@ -841,15 +841,15 @@ useEffect(() => {
 
       {/* Messages Container */}
       <div className="flex-1 overflow-hidden relative">
-        <div 
+          <div 
             ref={scrollContainerRef}
             className="absolute inset-0 overflow-y-auto px-4 z-0"
             style={{
-              paddingBottom: '90px',
+              paddingBottom: '140px', // Increased to account for input + nav height
               paddingTop: '16px',
               overscrollBehavior: 'contain',
               WebkitOverflowScrolling: 'touch',
-              scrollBehavior: 'smooth' // Add smooth scrolling
+              scrollBehavior: 'smooth'
             }}
             onLoad={() => {
               if (scrollContainerRef.current) {
@@ -1026,7 +1026,7 @@ useEffect(() => {
         </div>
 
         {/* Message Input */}
-        <div className={`sticky bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t z-20 pb-safe`}>
+        <div className={`fixed bottom-[56px] left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t z-20`}>
           <div className="max-w-2xl mx-auto px-4 py-3">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
@@ -1087,7 +1087,7 @@ useEffect(() => {
             </div>
           </div>
         </div>
-
+        
         {/* Hidden file input */}
         <input
           type="file"
