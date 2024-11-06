@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { X, Camera, AlertCircle, Repeat, Timer, Settings, Mic, StopCircle } from 'lucide-react';
-import AudioRecorder from './AudioRecorder';
+import { X, Camera, AlertCircle, Repeat, Timer, Settings } from 'lucide-react';
 
 
 export default function MediaCapture({ mediaType, onMediaCapture }) {
@@ -13,8 +12,8 @@ export default function MediaCapture({ mediaType, onMediaCapture }) {
   const [showCountdownSelect, setShowCountdownSelect] = useState(false);
   const [selectedTimer, setSelectedTimer] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(false);
-  const [devices, setDevices] = useState({ video: [], audio: [] });
-  const [selectedDevices, setSelectedDevices] = useState({ video: '', audio: '' });
+  const [devices, setDevices] = useState({ video: [] });
+  const [selectedDevices, setSelectedDevices] = useState({ video: '' });
   const [showDeviceSelect, setShowDeviceSelect] = useState(false);
   const [countdownTime, setCountdownTime] = useState(selectedTimer);
   const [facingMode, setFacingMode] = useState('user');
@@ -71,8 +70,8 @@ export default function MediaCapture({ mediaType, onMediaCapture }) {
 
   const getDevices = async () => {
     try {
-      // Request permissions first to ensure we can access device labels
-      await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      // Only request video permissions now
+      await navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
           stream.getTracks().forEach(track => track.stop());
         });
@@ -80,17 +79,13 @@ export default function MediaCapture({ mediaType, onMediaCapture }) {
       const deviceList = await navigator.mediaDevices.enumerateDevices();
       
       const videoDevices = deviceList.filter(device => device.kind === 'videoinput');
-      const audioDevices = deviceList.filter(device => device.kind === 'audioinput');
 
-      setDevices({ video: videoDevices, audio: audioDevices });
+      setDevices({ video: videoDevices });
       setCameras(videoDevices);
       
-      // Set default devices
+      // Set default video device
       if (!selectedDevices.video && videoDevices.length) {
         setSelectedDevices(prev => ({ ...prev, video: videoDevices[0].deviceId }));
-      }
-      if (!selectedDevices.audio && audioDevices.length) {
-        setSelectedDevices(prev => ({ ...prev, audio: audioDevices[0].deviceId }));
       }
     } catch (err) {
       console.error('Error getting devices:', err);
@@ -240,11 +235,8 @@ const startRecording = () => {
   const DeviceSelector = () => (
     <div className="absolute top-4 left-4 z-10">
       <div className="bg-white rounded-lg shadow-lg p-4 space-y-4">
-        {mediaType !== 'audio' && devices.video.length > 0 && (
+        {devices.video.length > 0 && (
           <div>
-              <div ref={deviceSelectorRef} className="absolute top-4 left-4 z-10">
-              {/* Rest of the DeviceSelector content stays the same */}
-              </div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Camera
             </label>
@@ -259,28 +251,6 @@ const startRecording = () => {
               {devices.video.map(device => (
                 <option key={device.deviceId} value={device.deviceId}>
                   {device.label || `Camera ${devices.video.indexOf(device) + 1}`}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {mediaType !== 'image' && devices.audio.length > 0 && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Microphone
-            </label>
-            <select
-              value={selectedDevices.audio}
-              onChange={(e) => {
-                setSelectedDevices(prev => ({ ...prev, audio: e.target.value }));
-                if (!isRecording) startPreview();
-              }}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-            >
-              {devices.audio.map(device => (
-                <option key={device.deviceId} value={device.deviceId}>
-                  {device.label || `Microphone ${devices.audio.indexOf(device) + 1}`}
                 </option>
               ))}
             </select>
@@ -449,9 +419,6 @@ const startRecording = () => {
           </button>
         )}
       </div>
-      {mediaType === 'audio' && (
-        <AudioRecorder onMediaCapture={onMediaCapture} />
-      )}
     </div>
   );
 }
