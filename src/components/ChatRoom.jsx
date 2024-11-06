@@ -1482,7 +1482,6 @@ useEffect(() => {
           )}
       </div>
     </div>
-    <ToastContainer />
   );
 };
 
