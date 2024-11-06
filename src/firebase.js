@@ -41,6 +41,40 @@ const storage = getStorage(app);
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 const functions = getFunctions(app);
 
-// Remove the requestNotificationPermission function from here as it's now handled in useNotifications
+// Restore the original function but with a scope check
+export const requestNotificationPermission = async () => {
+    try {
+        if (!messaging) return null;
+
+        // Get existing registration if any
+        const existingRegistration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+        
+        let registration;
+        if (existingRegistration) {
+            registration = existingRegistration;
+            console.log('Using existing Service Worker:', registration);
+        } else {
+            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                scope: '/'
+            });
+            console.log('Service Worker registered:', registration);
+        }
+
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            // Get token only after permission is granted
+            const token = await getToken(messaging, {
+                vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc',
+                serviceWorkerRegistration: registration
+            });
+            console.log('FCM Token:', token);
+            return token;
+        }
+        return null;
+    } catch (error) {
+        console.error('Notification permission error:', error);
+        return null;
+    }
+};
 
 export { auth, db, storage, messaging, functions };

@@ -14,23 +14,36 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // Keep track of displayed notifications to prevent duplicates
-const displayedNotifications = new Set();
+const displayedNotifications = new Map();
 
 self.addEventListener('install', (event) => {
     event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        Promise.all([
-            self.clients.claim(),
-            // Clear old displayed notifications on activation
-            displayedNotifications.clear()
-        ])
-    );
+    event.waitUntil(self.clients.claim());
 });
 
-// Handle push notifications
+// Helper function to prevent duplicate notifications
+const isDuplicateNotification = (data) => {
+    const now = Date.now();
+    const notificationKey = `${data.notification.title}-${data.notification.body}`;
+    
+    // Clean up old entries
+    for (const [key, timestamp] of displayedNotifications.entries()) {
+        if (now - timestamp > 2000) { // 2 seconds threshold
+            displayedNotifications.delete(key);
+        }
+    }
+    
+    if (displayedNotifications.has(notificationKey)) {
+        return true;
+    }
+    
+    displayedNotifications.set(notificationKey, now);
+    return false;
+};
+
 self.addEventListener('push', (event) => {
     if (!event.data) return;
 
@@ -38,30 +51,20 @@ self.addEventListener('push', (event) => {
         const data = event.data.json();
         if (!data.notification) return;
 
-        // Generate a unique ID for the notification
-        const notificationId = `${data.data?.messageId || Date.now()}-${data.notification.title}`;
-        
-        // Check if this notification has already been displayed
-        if (displayedNotifications.has(notificationId)) {
-            console.log('Duplicate notification prevented:', notificationId);
+        // Check for duplicate notification
+        if (isDuplicateNotification(data)) {
+            console.log('Preventing duplicate notification');
             return;
         }
-
-        // Add to displayed notifications set
-        displayedNotifications.add(notificationId);
-
-        // Clear old notifications after 1 minute
-        setTimeout(() => {
-            displayedNotifications.delete(notificationId);
-        }, 60000);
 
         const notificationOptions = {
             ...data.notification,
             icon: '/ios-icon-192.png',
             badge: '/ios-icon-192.png',
-            tag: notificationId,
+            tag: data.data?.messageId || 'message',
             data: data.data || {},
             requireInteraction: true,
+            renotify: false, // Prevent duplicate notification sounds
             actions: [
                 {
                     action: 'reply',
@@ -85,7 +88,6 @@ self.addEventListener('push', (event) => {
     }
 });
 
-// Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
@@ -96,7 +98,6 @@ self.addEventListener('notificationclick', (event) => {
     }
 
     if (event.action === 'mark-read') {
-        // Mark message as read and close notification
         return;
     }
 
