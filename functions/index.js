@@ -19,9 +19,9 @@ async function sendNotificationToUser(userId, notification) {
         const userDoc = await admin.firestore().collection('users').doc(userId).get();
         const userData = userDoc.data();
         
-        if (!userData?.fcmToken) {
-            console.log('No FCM token found for user:', userId);
-            return { success: false, error: 'No FCM token found for user' };
+        if (!userData?.fcmToken || !userData?.notificationsEnabled) {
+            console.log('No FCM token or notifications disabled for user:', userId);
+            return { success: false, error: 'Notifications not available' };
         }
 
         const message = {
@@ -42,10 +42,20 @@ async function sendNotificationToUser(userId, notification) {
                     tag: notification.tag || 'default',
                     vibrate: [100, 50, 100],
                     requireInteraction: true,
-                    renotify: true
+                    renotify: true,
+                    actions: [
+                        {
+                            action: 'view',
+                            title: 'View Event'
+                        },
+                        {
+                            action: 'dismiss',
+                            title: 'Dismiss'
+                        }
+                    ]
                 },
                 fcmOptions: {
-                    link: notification.link || 'https://time-talk.vercel.app/'
+                    link: notification.link || 'https://time-talk.vercel.app/calendar'
                 }
             }
         };
@@ -66,46 +76,59 @@ async function sendNotificationToUser(userId, notification) {
 
 // Function to send notifications for calendar events
 exports.checkCalendarNotifications = functions.pubsub
-    .schedule('every 5 minutes')
+    .schedule('every 1 minutes')
     .onRun(async (context) => {
         const now = admin.firestore.Timestamp.now();
-        const fiveMinutesLater = new Date(now.toMillis() + 5 * 60 * 1000);
+        const oneMinuteLater = new Date(now.toMillis() + 60 * 1000);
 
         try {
             const eventsSnapshot = await admin.firestore()
                 .collection('events')
+                .where('notificationTimes', 'array-contains-any', [
+                    now.toDate().toISOString(),
+                    oneMinuteLater.toISOString()
+                ])
                 .get();
 
             for (const eventDoc of eventsSnapshot.docs) {
                 const event = eventDoc.data();
                 
                 // Check each notification time
-                if (event.notificationTimes) {
-                    for (const notificationTime of event.notificationTimes) {
-                        const notificationDate = new Date(notificationTime);
+                for (const notificationTime of event.notificationTimes) {
+                    const notificationDate = new Date(notificationTime);
+                    
+                    // If notification time is now and hasn't been sent
+                    if (notificationDate <= oneMinuteLater && 
+                        (!event.sentNotifications || !event.sentNotifications.includes(notificationTime))) {
                         
-                        // If notification time falls within next 5 minutes and hasn't been sent
-                        if (notificationDate > now.toDate() && notificationDate <= fiveMinutesLater &&
-                            (!event.sentNotifications || !event.sentNotifications.includes(notificationTime))) {
-                            
-                            // Send notification
-                            await sendNotificationToUser(event.userId, {
-                                title: 'Event Reminder',
-                                body: `Upcoming: ${event.title}`,
-                                tag: `event-${eventDoc.id}`,
-                                link: 'https://time-talk.vercel.app/calendar'
-                            });
+                        // Format the event time for the notification
+                        const eventTime = event.isAllDay 
+                            ? 'all day'
+                            : `at ${new Date(`2000-01-01T${event.startTime}`).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}`;
 
-                            // Mark notification as sent
-                            await eventDoc.ref.update({
-                                sentNotifications: admin.firestore.FieldValue.arrayUnion(notificationTime)
-                            });
-                        }
+                        // Send notification
+                        await sendNotificationToUser(event.userId, {
+                            title: event.title,
+                            body: `Event reminder: ${event.title} starts ${eventTime}${event.location ? ` at ${event.location}` : ''}`,
+                            tag: `event-${eventDoc.id}`,
+                            link: 'https://time-talk.vercel.app/calendar'
+                        });
+
+                        // Mark notification as sent
+                        await eventDoc.ref.update({
+                            sentNotifications: admin.firestore.FieldValue.arrayUnion(notificationTime)
+                        });
                     }
                 }
             }
+
+            return null;
         } catch (error) {
             console.error('Error checking calendar notifications:', error);
+            return null;
         }
 });
 

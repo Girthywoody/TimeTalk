@@ -158,11 +158,18 @@ const SharedCalendar = () => {
     
     setIsSubmitting(true);
     try {
+      const notificationTimes = newEvent.notifications.map(minutes => {
+        const eventDate = new Date(`${newEvent.date}T${newEvent.startTime || '00:00'}`);
+        return new Date(eventDate.getTime() - (parseInt(minutes) * 60 * 1000)).toISOString();
+      });
+
       const eventData = {
         ...newEvent,
         userId: auth.currentUser.uid,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        notificationTimes,
+        sentNotifications: [],
         repeatConfig: newEvent.repeat !== 'never' ? {
           type: newEvent.repeat,
           startDate: newEvent.date
