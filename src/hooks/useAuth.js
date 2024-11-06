@@ -77,6 +77,7 @@ export const useAuth = () => {
     hasProfile,
     login,
     signup,
-    logout
+    logout,
+    auth
   };
 };

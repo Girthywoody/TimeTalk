@@ -48,13 +48,19 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
 
+    if (!email) {
+      setError('Please enter an email address');
+      setLoading(false);
+      return;
+    }
+
     try {
       await sendPasswordResetEmail(auth, email);
       setError('Password reset email sent! Please check your inbox.');
       setIsResetPassword(false);
     } catch (err) {
       console.error('Reset error:', err);
-      setError(getReadableErrorMessage(err));
+      setError(getReadableErrorMessage(err.code) || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
