@@ -237,4 +237,78 @@ app.post('/sendNotification', async (req, res) => {
     }
 });
 
+app.post('/sendNudge', async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const token = authHeader.split('Bearer ')[1];
+        const decodedToken = await admin.auth().verifyIdToken(token);
+
+        if (!decodedToken.uid) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+
+        const { userId } = req.body;
+        
+        // Get sender's info
+        const senderDoc = await admin.firestore()
+            .collection('users')
+            .doc(decodedToken.uid)
+            .get();
+        
+        const senderName = senderDoc.data()?.username || senderDoc.data()?.displayName || 'Someone';
+
+        // Get recipient's FCM token
+        const userDoc = await admin.firestore()
+            .collection('users')
+            .doc(userId)
+            .get();
+
+        if (!userDoc.exists) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const fcmToken = userDoc.data()?.fcmToken;
+        if (!fcmToken) {
+            return res.status(400).json({ error: 'User has no FCM token' });
+        }
+
+        // Send the nudge notification
+        const message = {
+            token: fcmToken,
+            notification: {
+                title: 'TimeTalk Nudge',
+                body: `${senderName} nudged you to check your phone!`
+            },
+            data: {
+                type: 'nudge',
+                senderId: decodedToken.uid,
+                timestamp: new Date().toISOString()
+            },
+            android: {
+                notification: {
+                    vibrate: [200, 100, 200]  // Vibration pattern
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: 'default'
+                    }
+                }
+            }
+        };
+
+        await admin.messaging().send(message);
+
+        return res.json({ success: true });
+    } catch (error) {
+        console.error('Error in sendNudge endpoint:', error);
+        return res.status(500).json({ error: error.message });
+    }
+});
+
 exports.api = functions.https.onRequest(app);

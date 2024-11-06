@@ -6,18 +6,13 @@ import ProfileSetupPage from './components/ProfileSetupPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
-// import WelcomePage from './components/WelcomePage';
 import SettingsPage from './components/profile/SettingsPage';
 import { DarkModeProvider } from './context/DarkModeContext';
-
-
-
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const App = () => {
   const { user, loading } = useAuth();
-
-  
-
 
   if (loading) {
     return (
@@ -30,38 +25,50 @@ const App = () => {
   return (
     <DarkModeProvider>
       <div className="min-h-screen bg-white dark:bg-gray-900">
-    <Routes>
-      {/* Public route */}
-      <Route 
-        path="/login" 
-        element={user ? <Navigate to="/" /> : <LoginPage />} 
-      />
+        <Routes>
+          {/* Public route */}
+          <Route 
+            path="/login" 
+            element={user ? <Navigate to="/" /> : <LoginPage />} 
+          />
 
-      {/* Protected route for profile setup */}
-      <Route
-        path="/setup"
-        element={
-          <ProtectedRoute>
-            <ProfileSetupPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Protected route for profile setup */}
+          <Route
+            path="/setup"
+            element={
+              <ProtectedRoute>
+                <ProfileSetupPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Protected routes for main app */}
-      <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
-              <>
-                <MainApp />
-              </>
-            </ProtectedRoute>
-          }
+          {/* Protected routes for main app */}
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MainApp />
+                </>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+        
+        <ToastContainer
+          position="bottom-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
         />
-       </Routes>
       </div>
     </DarkModeProvider>
-
   );
 };
 

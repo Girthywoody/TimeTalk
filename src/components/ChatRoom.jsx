@@ -45,6 +45,7 @@ import {
   Vibrate,
   BellRing
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 
 const MESSAGES_LIMIT = 100;
@@ -881,45 +882,50 @@ useEffect(() => {
 
   const handleNudge = async () => {
     if (!otherUser?.uid) {
-      console.error('Other user not found');
-      return;
+        console.error('Other user not found');
+        return;
     }
 
     try {
-      const auth = getAuth();
-      const idToken = await auth.currentUser.getIdToken();
-      const senderName = user?.displayName || user?.username || 'Someone';
+        const auth = getAuth();
+        const idToken = await auth.currentUser.getIdToken();
 
-      const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({
-          userId: otherUser.uid,
-          notification: {
-            title: 'TimeTalk Nudge',
-            body: `${senderName} nudged you to check your phone!`,
-            data: {
-              type: 'nudge',
-              senderId: user.uid
-            }
-          }
-        })
-      });
+        const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNudge', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({
+                userId: otherUser.uid
+            })
+        });
 
-      const result = await response.json();
-      console.log('Nudge result:', result);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to send nudge');
+        }
 
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to send nudge');
-      }
+        // Add visual feedback
+        toast.success('Nudge sent!', {
+            position: 'bottom-center',
+            autoClose: 2000,
+            hideProgressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+        });
+
     } catch (error) {
-      console.error('Error sending nudge:', error);
-      alert('Failed to send nudge. Please try again.');
+        console.error('Error sending nudge:', error);
+        toast.error('Failed to send nudge. Please try again.', {
+            position: 'bottom-center',
+            autoClose: 3000,
+        });
     }
-  };
+};
 
   return (
     <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
@@ -1476,6 +1482,7 @@ useEffect(() => {
           )}
       </div>
     </div>
+    <ToastContainer />
   );
 };
 
