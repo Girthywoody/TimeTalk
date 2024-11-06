@@ -83,11 +83,11 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4">
-      {/* Logo Section */}
+      {/* Logo Section - Updated with transparent logo */}
       <div className="mb-8 text-center">
         <img
-          src="/path-to-your-logo.svg"
-          alt="Logo"
+          src="/time talk transparent.png"
+          alt="Time Talk"
           className="w-32 h-32 mx-auto mb-4"
         />
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
