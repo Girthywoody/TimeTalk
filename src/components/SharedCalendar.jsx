@@ -469,38 +469,10 @@ const SharedCalendar = () => {
         <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 p-4 overflow-y-auto">
           <div className={`w-full max-w-md ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl my-8`}>
             {/* Header */}
-            <div className={`flex items-center justify-between p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'} border-b sticky top-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} z-10`}>
-              <button 
-                onClick={() => {
-                  setShowEventForm(false);
-                  setIsEditing(false);
-                  setNewEvent({
-                    title: "",
-                    date: "",
-                    isAllDay: false,
-                    startTime: "",
-                    endTime: "",
-                    location: "",
-                    type: "general",
-                    notifications: [],
-                    repeat: 'never',
-                    description: ""
-                  });
-                }}
-                className="text-red-500 font-semibold hover:text-red-600"
-              >
-                Cancel
-              </button>
-              <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            <div className={`p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'} border-b sticky top-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} z-10`}>
+              <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} text-center`}>
                 {isEditing ? 'Edit Event' : 'New Event'}
               </h2>
-              <button
-                onClick={isEditing ? handleUpdateEvent : handleAddEvent}
-                disabled={isSubmitting}
-                className="text-blue-500 font-semibold disabled:opacity-50 hover:text-blue-600"
-              >
-                {isSubmitting ? 'Saving...' : 'Save'}
-              </button>
             </div>
 
             <form className="p-4 space-y-4">
@@ -510,49 +482,69 @@ const SharedCalendar = () => {
                 placeholder="Event Title"
                 value={newEvent.title}
                 onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-                className={`w-full p-3 text-lg font-semibold placeholder:text-gray-400 focus:outline-none ${
-                  darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+                className={`w-full p-3 rounded-xl text-lg font-semibold placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  darkMode ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900'
                 }`}
               />
 
               {/* Time Selection */}
-              <div className={`flex items-center gap-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-xl`}>
-                <div className="flex items-center gap-2 flex-1">
-                  <Clock size={20} className="text-gray-400" />
-                  <input
-                    type="time"
-                    value={newEvent.startTime}
-                    onChange={e => setNewEvent(prev => ({ ...prev, startTime: e.target.value }))}
-                    className={`bg-transparent p-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}
-                  />
-                </div>
-                <div className="text-gray-400">→</div>
-                <div className="flex items-center gap-2 flex-1">
-                  <input
-                    type="time"
-                    value={newEvent.endTime}
-                    onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
-                    className={`bg-transparent p-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}
-                  />
+              <div className={`space-y-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <label className="text-sm font-medium">Time</label>
+                <div className={`flex items-center gap-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-xl`}>
+                  <div className="flex items-center gap-2 flex-1">
+                    <Clock size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                    <input
+                      type="time"
+                      value={newEvent.startTime}
+                      onChange={e => {
+                        const startTime = e.target.value;
+                        // Calculate end time (1 hour later)
+                        const [hours, minutes] = startTime.split(':');
+                        const endDate = new Date();
+                        endDate.setHours(parseInt(hours) + 1);
+                        endDate.setMinutes(parseInt(minutes));
+                        const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+                        
+                        setNewEvent(prev => ({ 
+                          ...prev, 
+                          startTime,
+                          endTime
+                        }));
+                      }}
+                      className={`bg-transparent p-1 rounded ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                    />
+                  </div>
+                  <div className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>→</div>
+                  <div className="flex items-center gap-2 flex-1">
+                    <input
+                      type="time"
+                      value={newEvent.endTime}
+                      onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
+                      className={`bg-transparent p-1 rounded ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Date Selection */}
-              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                <CalendarDays size={20} className="text-gray-400" />
-                <input
-                  type="date"
-                  value={newEvent.date}
-                  onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
-                  className="bg-transparent flex-1"
-                />
+              <div className="space-y-2">
+                <label className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Date</label>
+                <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                  <CalendarDays size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <input
+                    type="date"
+                    value={newEvent.date}
+                    onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                    className={`bg-transparent flex-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                  />
+                </div>
               </div>
 
               {/* All Day Toggle */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div className={`flex items-center justify-between p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
                 <div className="flex items-center gap-3">
-                  <Clock size={20} className="text-gray-400" />
-                  <span className="text-gray-600">All day</span>
+                  <Clock size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <span className={`${darkMode ? 'text-white' : 'text-gray-900'}`}>All day</span>
                 </div>
                 <button
                   type="button"
@@ -563,7 +555,7 @@ const SharedCalendar = () => {
                     endTime: ""
                   }))}
                   className={`w-12 h-7 rounded-full transition-colors ${
-                    newEvent.isAllDay ? 'bg-blue-500' : 'bg-gray-200'
+                    newEvent.isAllDay ? 'bg-blue-500' : darkMode ? 'bg-gray-600' : 'bg-gray-300'
                   } relative`}
                 >
                   <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
@@ -573,23 +565,30 @@ const SharedCalendar = () => {
               </div>
 
               {/* Notifications */}
-              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                <Bell size={20} className="text-gray-400" />
-                <select 
-                  value={newEvent.notifications[0] || ''} 
-                  onChange={e => setNewEvent(prev => ({ 
-                    ...prev, 
-                    notifications: e.target.value ? [e.target.value] : [] 
-                  }))}
-                  className="flex-1 bg-transparent"
-                >
-                  <option value="">No Alert</option>
-                  {NOTIFICATION_OPTIONS.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-2">
+                <label className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Notification</label>
+                <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                  <Bell size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <select 
+                    value={newEvent.notifications[0] || ''} 
+                    onChange={e => setNewEvent(prev => ({ 
+                      ...prev, 
+                      notifications: e.target.value ? [e.target.value] : [] 
+                    }))}
+                    className={`flex-1 bg-transparent ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                  >
+                    <option value="" className={darkMode ? 'bg-gray-700' : 'bg-white'}>No Alert</option>
+                    {NOTIFICATION_OPTIONS.map(option => (
+                      <option 
+                        key={option.value} 
+                        value={option.value}
+                        className={darkMode ? 'bg-gray-700' : 'bg-white'}
+                      >
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Repeat */}
@@ -641,6 +640,44 @@ const SharedCalendar = () => {
                   onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
                   className="flex-1 bg-transparent placeholder:text-gray-600"
                 />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-4 mt-8 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEventForm(false);
+                    setIsEditing(false);
+                    setNewEvent({
+                      title: "",
+                      date: "",
+                      isAllDay: false,
+                      startTime: "",
+                      endTime: "",
+                      location: "",
+                      type: "general",
+                      notifications: [],
+                      repeat: 'never',
+                      description: ""
+                    });
+                  }}
+                  className={`flex-1 py-3 rounded-xl ${
+                    darkMode 
+                      ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  } transition-colors`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={isEditing ? handleUpdateEvent : handleAddEvent}
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
+                >
+                  {isSubmitting ? 'Saving...' : 'Save'}
+                </button>
               </div>
             </form>
           </div>
