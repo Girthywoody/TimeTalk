@@ -623,30 +623,48 @@ useEffect(() => {
   useEffect(() => {
     if (!user) return;
 
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('uid', '!=', user.uid));
+    // Get messages to find the other user's ID
+    const messagesRef = collection(db, 'messages');
+    const messagesQuery = query(
+      messagesRef,
+      orderBy('timestamp', 'desc'),
+      limit(1)
+    );
 
-    // Get the other user's profile
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(messagesQuery, async (snapshot) => {
       if (!snapshot.empty) {
-        const otherUserData = snapshot.docs[0].data();
-        setOtherUser(otherUserData);
-        
-        // If the other user has a lastActive field, use it for status
-        if (otherUserData.lastActive) {
-          const lastActive = otherUserData.lastActive.toDate();
-          const now = new Date();
-          const diffInMinutes = Math.floor((now - lastActive) / (1000 * 60));
-          
-          if (diffInMinutes < 2) { // Consider online if active in last 2 minutes
-            setOtherUserStatus({ isOnline: true });
-          } else {
-            setOtherUserStatus({
-              isOnline: false,
-              lastSeen: lastActive
-            });
+        const message = snapshot.docs[0].data();
+        // Get the ID of the other user (either sender or receiver)
+        const otherUserId = message.senderId === user.uid 
+          ? message.receiverId  // If you have this field
+          : message.senderId;   // If current user is receiver
+
+        // Get and listen to the other user's document
+        const otherUserRef = doc(db, 'users', otherUserId);
+        const unsubscribeUser = onSnapshot(otherUserRef, (userDoc) => {
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setOtherUser(userData);
+            
+            // Check online status
+            if (userData.lastActive) {
+              const lastActive = userData.lastActive.toDate();
+              const now = new Date();
+              const diffInMinutes = Math.floor((now - lastActive) / (1000 * 60));
+              
+              if (diffInMinutes < 2) {
+                setOtherUserStatus({ isOnline: true });
+              } else {
+                setOtherUserStatus({
+                  isOnline: false,
+                  lastSeen: lastActive
+                });
+              }
+            }
           }
-        }
+        });
+
+        return () => unsubscribeUser();
       }
     });
 
@@ -665,7 +683,6 @@ useEffect(() => {
     return () => {
       unsubscribe();
       clearInterval(intervalId);
-      // Update lastActive when leaving
       updateUserStatus();
     };
   }, [user]);
