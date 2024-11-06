@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -20,10 +20,15 @@ export default {
         'highlight-message': {
           '0%, 100%': { backgroundColor: 'transparent' },
           '50%': { backgroundColor: 'rgb(147 197 253 / 0.3)' }
-        }
+        },
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(-10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
-        'highlight-message': 'highlight-message 2s ease-in-out'
+        'highlight-message': 'highlight-message 2s ease-in-out',
+        'fadeIn': 'fadeIn 0.2s ease-in',
       }
     },
   },
