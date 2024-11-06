@@ -13,15 +13,24 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Keep track of displayed notifications to prevent duplicates
+const displayedNotifications = new Set();
+
 self.addEventListener('install', (event) => {
     event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(
+        Promise.all([
+            self.clients.claim(),
+            // Clear old displayed notifications on activation
+            displayedNotifications.clear()
+        ])
+    );
 });
 
-// Remove the onBackgroundMessage handler and use only push event
+// Handle push notifications
 self.addEventListener('push', (event) => {
     if (!event.data) return;
 
@@ -29,11 +38,28 @@ self.addEventListener('push', (event) => {
         const data = event.data.json();
         if (!data.notification) return;
 
+        // Generate a unique ID for the notification
+        const notificationId = `${data.data?.messageId || Date.now()}-${data.notification.title}`;
+        
+        // Check if this notification has already been displayed
+        if (displayedNotifications.has(notificationId)) {
+            console.log('Duplicate notification prevented:', notificationId);
+            return;
+        }
+
+        // Add to displayed notifications set
+        displayedNotifications.add(notificationId);
+
+        // Clear old notifications after 1 minute
+        setTimeout(() => {
+            displayedNotifications.delete(notificationId);
+        }, 60000);
+
         const notificationOptions = {
             ...data.notification,
             icon: '/ios-icon-192.png',
             badge: '/ios-icon-192.png',
-            tag: data.data?.messageId || 'default',
+            tag: notificationId,
             data: data.data || {},
             requireInteraction: true,
             actions: [
@@ -59,12 +85,11 @@ self.addEventListener('push', (event) => {
     }
 });
 
+// Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
-    // Handle notification actions
     if (event.action === 'reply') {
-        // Open chat in reply mode
         const urlToOpen = new URL('/chat?action=reply', self.location.origin).href;
         event.waitUntil(clients.openWindow(urlToOpen));
         return;
@@ -75,7 +100,6 @@ self.addEventListener('notificationclick', (event) => {
         return;
     }
 
-    // Default click behavior
     const urlToOpen = new URL('/chat', self.location.origin).href;
 
     const promiseChain = clients.matchAll({
