@@ -23,26 +23,37 @@ async function sendNotificationToUser(userId, { senderName, messageContent, mess
         return { success: false, error: 'No FCM token found for user' };
     }
 
+    // Format notification content based on message type
+    let title = `Message from ${senderName}`;
+    let body = messageContent;
+
+    if (messageType === 'image') {
+        body = '📷 Sent you an image';
+    } else if (messageType === 'file') {
+        body = '📎 Sent you a file';
+    } else if (!messageContent) {
+        body = 'Sent you a message';
+    }
+
     const message = {
         token: userData.fcmToken,
         notification: {
-            title: senderName,
-            body: messageContent,
+            title,
+            body,
         },
         webpush: {
             headers: {
                 Urgency: 'high'
             },
             notification: {
-                title: senderName,
-                body: messageContent,
+                title,
+                body,
                 icon: '/ios-icon-192.png',
                 badge: '/ios-icon-192.png',
-                tag: messageId, // Use messageId as tag
-                renotify: false,
+                vibrate: [100, 50, 100],
                 requireInteraction: true,
-                silent: false, // Prevent duplicate sounds
-                timestamp: Date.now(), // Add timestamp to ensure uniqueness
+                renotify: false,
+                tag: messageId || 'default',
                 actions: [
                     {
                         action: 'reply',
@@ -52,27 +63,12 @@ async function sendNotificationToUser(userId, { senderName, messageContent, mess
                         action: 'mark-read',
                         title: 'Mark as Read'
                     }
-                ]
+                ],
+                silent: false
             },
-            fcm_options: {
+            fcmOptions: {
                 link: 'https://time-talk.vercel.app/chat'
             }
-        },
-        android: {
-            notification: {
-                tag: messageId // Use same tag for Android
-            }
-        },
-        apns: {
-            payload: {
-                aps: {
-                    'thread-id': messageId // Use messageId for iOS thread grouping
-                }
-            }
-        },
-        data: {
-            messageId: messageId,
-            type: messageType || 'message'
         }
     };
 
@@ -85,7 +81,7 @@ async function sendNotificationToUser(userId, { senderName, messageContent, mess
     }
 }
 
-// HTTP endpoint for test notifications
+// Test notification endpoint
 app.post('/sendNotification', async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
@@ -103,10 +99,10 @@ app.post('/sendNotification', async (req, res) => {
         const { userId } = req.body;
         
         const result = await sendNotificationToUser(userId, {
-            senderName: 'Test Message',
+            senderName: 'Test',
             messageContent: 'This is a test notification',
             messageId: 'test-' + Date.now(),
-            messageType: 'test'
+            messageType: 'text'
         });
 
         return res.json(result);
@@ -125,24 +121,29 @@ exports.onNewMessage = functions.firestore
         const message = snap.data();
         const messageId = context.params.messageId;
 
+        // Don't send notification for deleted or system messages
         if (message.deleted || message.type === 'system') {
             return null;
         }
 
         try {
+            // Get sender's profile
             const senderDoc = await admin.firestore().collection('users').doc(message.senderId).get();
             const senderData = senderDoc.data();
             const senderName = senderData?.username || senderData?.displayName || 'Someone';
-
+            
+            // Get all users except sender
             const usersSnapshot = await admin.firestore().collection('users').get();
             const notifications = [];
             
+            // Send notification to each user and update message
             for (const userDoc of usersSnapshot.docs) {
                 if (userDoc.id !== message.senderId) {
+                    // Send notification
                     notifications.push(
                         sendNotificationToUser(userDoc.id, {
                             senderName,
-                            messageContent: message.text || 'Sent you a message',
+                            messageContent: message.text,
                             messageId,
                             messageType: message.type
                         })
@@ -150,6 +151,7 @@ exports.onNewMessage = functions.firestore
                 }
             }
 
+            // Update message with notification status
             await admin.firestore().collection('messages').doc(messageId).update({
                 notifications: {
                     sent: true,
