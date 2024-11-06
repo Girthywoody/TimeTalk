@@ -5,7 +5,7 @@ import {
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { auth, db, isAllowedEmail, ALLOWED_USERS } from '../firebase';
 
 export const useAuth = () => {
@@ -101,14 +101,15 @@ export const useAuth = () => {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       const userData = userDoc.data();
       
-      if (userData?.partnerId) {
-        const partnerDoc = await getDoc(doc(db, 'users', userData.partnerId));
-        if (partnerDoc.exists()) {
-          return {
-            ...partnerDoc.data(),
-            uid: userData.partnerId
-          };
-        }
+      // Get the other user that isn't the current user
+      const otherUserDocs = await getDocs(collection(db, 'users'));
+      const partnerDoc = otherUserDocs.docs.find(doc => doc.id !== user.uid);
+      
+      if (partnerDoc && partnerDoc.exists()) {
+        return {
+          ...partnerDoc.data(),
+          uid: partnerDoc.id
+        };
       }
       return null;
     } catch (error) {
