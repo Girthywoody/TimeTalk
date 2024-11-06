@@ -466,10 +466,10 @@ const SharedCalendar = () => {
 
       {/* Event Form Modal */}
       {showEventForm && (
-        <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 pt-8 px-4">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 p-4 overflow-y-auto">
+          <div className={`w-full max-w-md ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl my-8`}>
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b">
+            <div className={`flex items-center justify-between p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'} border-b sticky top-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} z-10`}>
               <button 
                 onClick={() => {
                   setShowEventForm(false);
@@ -487,17 +487,17 @@ const SharedCalendar = () => {
                     description: ""
                   });
                 }}
-                className="text-red-500 font-semibold"
+                className="text-red-500 font-semibold hover:text-red-600"
               >
                 Cancel
               </button>
-              <h2 className="text-lg font-semibold">
+              <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 {isEditing ? 'Edit Event' : 'New Event'}
               </h2>
               <button
                 onClick={isEditing ? handleUpdateEvent : handleAddEvent}
                 disabled={isSubmitting}
-                className="text-blue-500 font-semibold disabled:opacity-50"
+                className="text-blue-500 font-semibold disabled:opacity-50 hover:text-blue-600"
               >
                 {isSubmitting ? 'Saving...' : 'Save'}
               </button>
@@ -510,18 +510,20 @@ const SharedCalendar = () => {
                 placeholder="Event Title"
                 value={newEvent.title}
                 onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full p-3 text-lg font-semibold placeholder:text-gray-400 focus:outline-none"
+                className={`w-full p-3 text-lg font-semibold placeholder:text-gray-400 focus:outline-none ${
+                  darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+                }`}
               />
 
               {/* Time Selection */}
-              <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl">
+              <div className={`flex items-center gap-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-xl`}>
                 <div className="flex items-center gap-2 flex-1">
                   <Clock size={20} className="text-gray-400" />
                   <input
                     type="time"
                     value={newEvent.startTime}
                     onChange={e => setNewEvent(prev => ({ ...prev, startTime: e.target.value }))}
-                    className="bg-transparent p-1"
+                    className={`bg-transparent p-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}
                   />
                 </div>
                 <div className="text-gray-400">→</div>
@@ -530,7 +532,7 @@ const SharedCalendar = () => {
                     type="time"
                     value={newEvent.endTime}
                     onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
-                    className="bg-transparent p-1"
+                    className={`bg-transparent p-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}
                   />
                 </div>
               </div>
