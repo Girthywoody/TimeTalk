@@ -518,29 +518,86 @@ const SharedCalendar = () => {
       {showEventForm && (
         <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 p-4 overflow-y-auto">
           <div className={`w-full max-w-md ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl my-8 mb-32`}>
-            {/* Basic Info Section */}
+            {/* Basic Info Section - Always Visible */}
             <div className="p-4 space-y-4">
-              {/* Title, Date, Time, All Day toggle remain the same */}
-              
-              {/* Advanced Options Toggle */}
+              {/* Title Input */}
+              <input
+                type="text"
+                placeholder="Event Title"
+                value={newEvent.title}
+                onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
+                className={`w-full p-3 rounded-xl text-lg font-semibold placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  darkMode ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900'
+                }`}
+              />
+
+              {/* Date Selection */}
+              <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                <CalendarDays size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                <input
+                  type="date"
+                  value={newEvent.date}
+                  onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                  className={`flex-1 bg-transparent ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                />
+              </div>
+
+              {/* Time Selection */}
+              <div className={`flex items-center gap-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-xl`}>
+                <Clock size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                <input
+                  type="time"
+                  value={newEvent.startTime}
+                  onChange={e => {/* existing time change handler */}}
+                  className={`bg-transparent ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                />
+                <span className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>→</span>
+                <input
+                  type="time"
+                  value={newEvent.endTime}
+                  onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
+                  className={`bg-transparent ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                />
+              </div>
+
+              {/* All Day Toggle */}
+              <div className={`flex items-center justify-between p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                <span className={`${darkMode ? 'text-white' : 'text-gray-900'}`}>All day</span>
+                <button
+                  type="button"
+                  onClick={() => setNewEvent(prev => ({
+                    ...prev,
+                    isAllDay: !prev.isAllDay,
+                    startTime: "",
+                    endTime: ""
+                  }))}
+                  className={`w-12 h-7 rounded-full transition-colors ${
+                    newEvent.isAllDay ? 'bg-blue-500' : darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                  } relative`}
+                >
+                  <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                    newEvent.isAllDay ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Advanced Options Toggle - Subtle Design */}
               <button
-                type="button"
                 onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                className={`w-full flex items-center justify-between p-4 ${
-                  darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'
-                } rounded-xl transition-colors`}
+                className="w-full flex items-center justify-center gap-2 py-2 opacity-60 hover:opacity-100 transition-opacity"
               >
-                <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Advanced Options
+                <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {showAdvancedOptions ? 'Less Options' : 'More Options'}
                 </span>
                 <ChevronDown 
-                  className={`transform transition-transform ${showAdvancedOptions ? 'rotate-180' : ''} ${
-                    darkMode ? 'text-gray-400' : 'text-gray-500'
-                  }`} 
+                  size={18}
+                  className={`transform transition-transform duration-200 ${
+                    showAdvancedOptions ? 'rotate-180' : ''
+                  } ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
                 />
               </button>
 
-              {/* Collapsible Advanced Options */}
+              {/* Advanced Options - Collapsible Section */}
               <AnimatePresence>
                 {showAdvancedOptions && (
                   <motion.div
@@ -550,14 +607,14 @@ const SharedCalendar = () => {
                     transition={{ duration: 0.2 }}
                     className="space-y-4 overflow-hidden"
                   >
-                    {/* Notifications, Repeat, Participants, Location, Description */}
-                    {/* ... existing advanced options ... */}
+                    {/* Existing advanced options (notifications, repeat, participants, etc.) */}
+                    {/* ... */}
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Action Buttons */}
-              <div className="flex gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              {/* Action Buttons - Always at Bottom */}
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -576,27 +633,20 @@ const SharedCalendar = () => {
                       description: ""
                     });
                   }}
-                  className={`flex-1 py-3 rounded-xl ${
+                  className={`flex-1 py-3 px-6 rounded-xl font-medium transition-colors ${
                     darkMode 
                       ? 'bg-gray-700 text-white hover:bg-gray-600' 
                       : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                  } transition-colors`}
+                  }`}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (isEditing) {
-                      handleUpdateEvent(e);
-                    } else {
-                      handleAddEvent(e);
-                    }
-                  }}
+                  onClick={isEditing ? handleUpdateEvent : handleAddEvent}
                   disabled={!newEvent.title || !newEvent.date || isSubmitting}
-                  className="flex-1 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 
-                    disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
+                  className="flex-1 py-3 px-6 rounded-xl font-medium bg-blue-600 text-white 
+                    hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
                 >
                   {isSubmitting ? 'Saving...' : 'Save'}
                 </button>
