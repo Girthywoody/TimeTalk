@@ -34,6 +34,13 @@ const PartnerProfilePage = () => {
     fetchProfileData();
   }, [userId]);
 
+  const getDaysTogether = () => {
+    if (!profileData?.relationship?.anniversary) return 0;
+    const anniversary = new Date(profileData.relationship.anniversary);
+    const today = new Date();
+    return Math.floor((today - anniversary) / (1000 * 60 * 60 * 24));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-950">
@@ -89,18 +96,32 @@ const PartnerProfilePage = () => {
           <div className="text-center space-y-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {profileData?.displayName || "User"}
+                {profileData?.displayName}
               </h2>
               <p className="text-gray-500 dark:text-gray-400">
-                @{profileData?.username || "username"}
+                @{profileData?.username}
               </p>
             </div>
 
-            {/* Bio if exists */}
+            {/* Bio */}
             {profileData?.bio && (
               <p className="text-gray-600 dark:text-gray-300 max-w-md mx-auto">
                 {profileData.bio}
               </p>
+            )}
+
+            {/* Relationship Status */}
+            {profileData?.relationship?.anniversary && (
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                  <Calendar className="w-4 h-4" />
+                  <span>Together since {new Date(profileData.relationship.anniversary).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                  <Heart className="w-4 h-4" />
+                  <span>With {profileData?.partnerInfo?.name}</span>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -114,13 +135,13 @@ const PartnerProfilePage = () => {
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center border border-gray-200 dark:border-gray-800">
             <Camera className="w-6 h-6 text-purple-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-purple-500">{profileData?.stats?.moments || 0}</p>
+            <p className="text-2xl font-bold text-purple-500">{profileData?.stats?.memories || 0}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400">Moments</p>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center border border-gray-200 dark:border-gray-800">
             <Calendar className="w-6 h-6 text-rose-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-rose-500">{profileData?.stats?.daysConnected || 0}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Days</p>
+            <p className="text-2xl font-bold text-rose-500">{getDaysTogether()}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Days Together</p>
           </div>
         </div>
       </div>
