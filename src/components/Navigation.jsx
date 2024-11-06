@@ -4,6 +4,17 @@ import { useDarkMode } from '../context/DarkModeContext';
 
 export default function Navigation({ currentPage, setCurrentPage }) {
   const { darkMode } = useDarkMode();
+  const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      const isKeyboard = window.innerHeight < window.outerHeight * 0.75;
+      setIsKeyboardVisible(isKeyboard);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const buttonClasses = (page) => `
     relative flex-1 flex flex-col items-center justify-center py-3
@@ -12,7 +23,9 @@ export default function Navigation({ currentPage, setCurrentPage }) {
   `;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50">
+    <nav className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
+      isKeyboardVisible ? 'translate-y-full' : 'translate-y-0'
+    }`}>
       <div className={`${
         darkMode 
           ? 'bg-gray-900/80 border-gray-800' 
@@ -53,8 +66,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
         darkMode 
           ? 'bg-gray-900/80' 
           : 'bg-white/80'
-        } backdrop-blur-lg`} 
-      />
+        } backdrop-blur-lg`} />
     </nav>
   );
 }
