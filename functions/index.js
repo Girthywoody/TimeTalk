@@ -14,69 +14,53 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-async function sendNotificationToUser(userId, { senderName, messageContent, messageId, messageType }) {
-    const userDoc = await admin.firestore().collection('users').doc(userId).get();
-    const userData = userDoc.data();
-    
-    if (!userData?.fcmToken) {
-        console.log('No FCM token found for user:', userId);
-        return { success: false, error: 'No FCM token found for user' };
-    }
-
-    // Format notification content based on message type
-    let title = `Message from ${senderName}`;
-    let body = messageContent;
-
-    if (messageType === 'image') {
-        body = '📷 Sent you an image';
-    } else if (messageType === 'file') {
-        body = '📎 Sent you a file';
-    } else if (!messageContent) {
-        body = 'Sent you a message';
-    }
-
-    const message = {
-        token: userData.fcmToken,
-        notification: {
-            title,
-            body,
-        },
-        webpush: {
-            headers: {
-                Urgency: 'high'
-            },
-            notification: {
-                title,
-                body,
-                icon: '/ios-icon-192.png',
-                badge: '/ios-icon-192.png',
-                vibrate: [100, 50, 100],
-                requireInteraction: true,
-                renotify: false,
-                tag: messageId || 'default',
-                actions: [
-                    {
-                        action: 'reply',
-                        title: 'Reply'
-                    },
-                    {
-                        action: 'mark-read',
-                        title: 'Mark as Read'
-                    }
-                ],
-                silent: false
-            },
-            fcmOptions: {
-                link: 'https://time-talk.vercel.app/chat'
-            }
-        }
-    };
-
+async function sendNotificationToUser(userId, notification) {
     try {
-        await admin.messaging().send(message);
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
+        const userData = userDoc.data();
+        
+        if (!userData?.fcmToken) {
+            console.log('No FCM token found for user:', userId);
+            return { success: false, error: 'No FCM token found for user' };
+        }
+
+        const message = {
+            token: userData.fcmToken,
+            notification: {
+                title: notification.title,
+                body: notification.body,
+            },
+            webpush: {
+                headers: {
+                    Urgency: 'high'
+                },
+                notification: {
+                    title: notification.title,
+                    body: notification.body,
+                    icon: '/ios-icon-192.png',
+                    badge: '/ios-icon-192.png',
+                    tag: 'message',
+                    vibrate: [100, 50, 100],
+                    requireInteraction: true,
+                    renotify: true
+                },
+                fcmOptions: {
+                    link: 'https://time-talk.vercel.app/chat'
+                }
+            }
+        };
+
+        const response = await admin.messaging().send(message);
+        console.log('Successfully sent notification:', response);
         return { success: true };
     } catch (error) {
         console.error('Error sending notification:', error);
+        if (error.code === 'messaging/registration-token-not-registered') {
+            // Remove invalid token
+            await admin.firestore().collection('users').doc(userId).update({
+                fcmToken: admin.firestore.FieldValue.delete()
+            });
+        }
         return { success: false, error: error.message };
     }
 }
@@ -84,6 +68,7 @@ async function sendNotificationToUser(userId, { senderName, messageContent, mess
 // Test notification endpoint
 app.post('/sendNotification', async (req, res) => {
     try {
+        // Verify authentication
         const authHeader = req.headers.authorization;
         if (!authHeader) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -99,10 +84,8 @@ app.post('/sendNotification', async (req, res) => {
         const { userId } = req.body;
         
         const result = await sendNotificationToUser(userId, {
-            senderName: 'Test',
-            messageContent: 'This is a test notification',
-            messageId: 'test-' + Date.now(),
-            messageType: 'text'
+            title: 'Test Notification',
+            body: 'This is a test notification'
         });
 
         return res.json(result);
@@ -112,14 +95,11 @@ app.post('/sendNotification', async (req, res) => {
     }
 });
 
-exports.api = functions.https.onRequest(app);
-
 // Firestore trigger for new messages
 exports.onNewMessage = functions.firestore
     .document('messages/{messageId}')
     .onCreate(async (snap, context) => {
         const message = snap.data();
-        const messageId = context.params.messageId;
 
         // Don't send notification for deleted or system messages
         if (message.deleted || message.type === 'system') {
@@ -130,46 +110,25 @@ exports.onNewMessage = functions.firestore
             // Get sender's profile
             const senderDoc = await admin.firestore().collection('users').doc(message.senderId).get();
             const senderData = senderDoc.data();
-            const senderName = senderData?.username || senderData?.displayName || 'Someone';
             
             // Get all users except sender
             const usersSnapshot = await admin.firestore().collection('users').get();
-            const notifications = [];
             
-            // Send notification to each user and update message
+            // Send notifications
             for (const userDoc of usersSnapshot.docs) {
                 if (userDoc.id !== message.senderId) {
-                    // Send notification
-                    notifications.push(
-                        sendNotificationToUser(userDoc.id, {
-                            senderName,
-                            messageContent: message.text,
-                            messageId,
-                            messageType: message.type
-                        })
-                    );
+                    await sendNotificationToUser(userDoc.id, {
+                        title: `Message from ${senderData?.username || 'Someone'}`,
+                        body: message.text || 'New message'
+                    });
                 }
             }
 
-            // Update message with notification status
-            await admin.firestore().collection('messages').doc(messageId).update({
-                notifications: {
-                    sent: true,
-                    timestamp: admin.firestore.FieldValue.serverTimestamp(),
-                    recipients: usersSnapshot.docs
-                        .filter(doc => doc.id !== message.senderId)
-                        .map(doc => ({
-                            userId: doc.id,
-                            status: 'sent',
-                            sentAt: admin.firestore.FieldValue.serverTimestamp()
-                        }))
-                }
-            });
-
-            await Promise.all(notifications);
             return null;
         } catch (error) {
-            console.error('Error in onNewMessage:', error);
+            console.error('Error sending chat notification:', error);
             return null;
         }
     });
+
+exports.api = functions.https.onRequest(app);

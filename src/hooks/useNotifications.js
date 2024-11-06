@@ -7,8 +7,6 @@ export const useNotifications = () => {
     const [fcmToken, setFcmToken] = useState(null);
 
     useEffect(() => {
-        let unsubscribe = () => {};
-
         const initializeNotifications = async () => {
             if (!auth.currentUser) return;
 
@@ -33,7 +31,7 @@ export const useNotifications = () => {
                             fcmToken: token,
                             notificationsEnabled: true,
                             lastTokenUpdate: new Date().toISOString()
-                        });
+                        }, { merge: true }); // Add merge option
                     }
                 }
             } catch (error) {
@@ -42,8 +40,7 @@ export const useNotifications = () => {
         };
 
         initializeNotifications();
-        return () => unsubscribe();
-    }, []);
+    }, [auth.currentUser]); // Add auth.currentUser as dependency
 
     return {
         notificationPermission,
