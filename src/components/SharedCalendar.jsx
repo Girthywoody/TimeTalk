@@ -485,8 +485,8 @@ const SharedCalendar = () => {
 
       {/* Event Form Modal */}
       {showEventForm && (
-        <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 p-4 overflow-y-auto">
-          <div className={`w-full max-w-md ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl my-8`}>
+        <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 p-4 overflow-y-auto pb-24">
+          <div className={`w-full max-w-md ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl my-8 mb-20`}>
             {/* Header */}
             <div className={`p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'} border-b sticky top-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} z-10`}>
               <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} text-center`}>
@@ -703,7 +703,7 @@ const SharedCalendar = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-4 mt-8 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex gap-4 pt-4 mt-8 border-t border-gray-200 dark:border-gray-700 pb-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -731,10 +731,18 @@ const SharedCalendar = () => {
                   Cancel
                 </button>
                 <button
-                  type="button"
-                  onClick={isEditing ? handleUpdateEvent : handleAddEvent}
-                  disabled={isSubmitting}
-                  className="flex-1 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
+                  type="submit"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (isEditing) {
+                      handleUpdateEvent(e);
+                    } else {
+                      handleAddEvent(e);
+                    }
+                  }}
+                  disabled={!newEvent.title || !newEvent.date || isSubmitting}
+                  className="flex-1 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 
+                    disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
                 >
                   {isSubmitting ? 'Saving...' : 'Save'}
                 </button>
