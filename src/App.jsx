@@ -10,6 +10,7 @@ import SettingsPage from './components/profile/SettingsPage';
 import { DarkModeProvider } from './context/DarkModeContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import PartnerProfilePage from './components/profile/PartnerProfilePage';
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -53,6 +54,8 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+
+          <Route path="/profile/:userId" element={<PartnerProfilePage />} />
         </Routes>
         
         <ToastContainer
