@@ -70,7 +70,7 @@ const ProfilePage = () => {
     { label: 'Days', value: getDaysTogether(), Icon: Calendar, color: 'text-rose-500' }
   ];
 
-  if (loading || !user) {
+  if (loading || !user || !profileData) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-950">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -94,12 +94,25 @@ const ProfilePage = () => {
       <div className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-gray-200 dark:border-gray-800 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Profile</h1>
-          <button 
-            onClick={() => setShowSettings(true)}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Partner Profile Button */}
+            {partnerProfile && (
+              <button 
+                onClick={() => {/* Add navigation to partner profile */}}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
+              >
+                <Heart className="w-4 h-4" />
+                <span className="text-sm font-medium">View Partner</span>
+              </button>
+            )}
+            {/* Settings Button */}
+            <button 
+              onClick={() => setShowSettings(true)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -111,8 +124,8 @@ const ProfilePage = () => {
             <div className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 p-1">
               <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-900">
                 <img
-                  src={profileData.profilePhotoURL || "/api/placeholder/128/128"}
-                  alt={profileData.displayName}
+                  src={profileData?.profilePhotoURL || "/api/placeholder/128/128"}
+                  alt={profileData?.displayName || "Profile"}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -123,13 +136,15 @@ const ProfilePage = () => {
           <div className="text-center space-y-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {profileData.displayName}
+                {profileData?.displayName || "User"}
               </h2>
-              <p className="text-gray-500 dark:text-gray-400">@{profileData.username}</p>
+              <p className="text-gray-500 dark:text-gray-400">
+                @{profileData?.username || "username"}
+              </p>
             </div>
 
             {/* Relationship Status */}
-            {(profileData.relationship?.anniversary || profileData.partnerInfo?.name) && (
+            {(profileData?.relationship?.anniversary || profileData?.partnerInfo?.name) && (
               <div className="flex flex-wrap justify-center gap-2">
                 {profileData.relationship?.anniversary && (
                   <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
@@ -159,7 +174,7 @@ const ProfilePage = () => {
           ))}
         </div>
 
-        {/* Quick Actions - Replaced the old metrics with new QuickActions component */}
+        {/* Quick Actions */}
         <QuickActions />
       </div>
 
@@ -172,23 +187,6 @@ const ProfilePage = () => {
             onProfileUpdate: handleProfileUpdate
           }}
         />
-      )}
-
-      {partnerProfile && (
-        <div className="mt-8 p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
-          <h3 className="text-lg font-semibold mb-4">Partner Profile</h3>
-          <div className="flex items-center space-x-4">
-            <img
-              src={partnerProfile.profilePhotoURL || "/api/placeholder/64/64"}
-              alt={partnerProfile.displayName}
-              className="w-16 h-16 rounded-full"
-            />
-            <div>
-              <p className="font-medium">{partnerProfile.displayName}</p>
-              <p className="text-sm text-gray-500">@{partnerProfile.username}</p>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
