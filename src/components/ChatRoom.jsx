@@ -101,6 +101,11 @@ const ChatRoom = () => {
   const [touchEnd, setTouchEnd] = useState(null);
   const [messageStatuses, setMessageStatuses] = useState({});
 
+  const otherUserInfo = {
+    name: "Sarah", // Replace with the actual name
+    photoURL: "https://path-to-photo.jpg" // Replace with actual photo URL or null
+  };
+
   
 
   const searchHighlightStyles = `
@@ -756,10 +761,26 @@ useEffect(() => {
   useEffect(() => {
     if (!user || !messages.length) return;
 
-    // Get all messages sent by the current user
+    // Mark all unread messages as read when recipient opens the chat
+    const markMessagesAsRead = async () => {
+      const unreadMessages = messages.filter(msg => 
+        msg.senderId !== user.uid && 
+        (!msg.status || msg.status !== 'read')
+      );
+
+      for (const message of unreadMessages) {
+        const messageRef = doc(db, 'messages', message.id);
+        await updateDoc(messageRef, {
+          status: 'read'
+        });
+      }
+    };
+
+    // Mark messages as read when chat is opened
+    markMessagesAsRead();
+
+    // Mark new messages as delivered
     const userMessages = messages.filter(msg => msg.senderId === user.uid);
-    
-    // Update delivered status for new messages
     userMessages.forEach(async (message) => {
       if (!message.status || message.status === 'sent') {
         const messageRef = doc(db, 'messages', message.id);
@@ -769,59 +790,23 @@ useEffect(() => {
       }
     });
 
-    // Update read status when messages are visible
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(async (entry) => {
-          if (entry.isIntersecting) {
-            const messageId = entry.target.id.replace('message-', '');
-            const message = messages.find(m => m.id === messageId);
-            
-            if (message && message.senderId !== user.uid && (!message.status || message.status !== 'read')) {
-              const messageRef = doc(db, 'messages', messageId);
-              await updateDoc(messageRef, {
-                status: 'read'
-              });
-            }
-          }
-        });
-      },
-      {
-        root: scrollContainerRef.current,
-        threshold: 0.5
-      }
-    );
-
-    // Observe all messages from other users
-    const otherUserMessages = messages.filter(msg => msg.senderId !== user.uid);
-    otherUserMessages.forEach(message => {
-      const element = document.getElementById(`message-${message.id}`);
-      if (element) {
-        observer.observe(element);
-      }
-    });
-
-    return () => observer.disconnect();
   }, [messages, user]);
 
-  const MessageStatus = ({ status, timestamp }) => {
-    if (!status || !timestamp) return null;
+  const MessageStatus = ({ status, timestamp, isLastMessage }) => {
+    if (!status || !timestamp || !isLastMessage) return null;
 
     return (
-      <div className={`text-[10px] flex items-center gap-1 
-        ${status === 'sent' ? 'text-gray-400' : 
-          status === 'delivered' ? 'text-gray-500' : 
-          'text-blue-500'}`}>
-        <span>
-          {timestamp.toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })}
-        </span>
-        <span>•</span>
-        <span className="font-medium">
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </span>
+      <div className={`text-[11px] ${
+        darkMode 
+          ? 'text-white/80' 
+          : 'text-white'
+      }`}>
+        {timestamp.toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })}
+        {' • '}
+        {status.charAt(0).toUpperCase() + status.slice(1)}
       </div>
     );
   };
@@ -840,30 +825,25 @@ useEffect(() => {
               >
                 <Bell size={20} className="text-blue-500" />
               </button>
-              {otherUser?.profilePhotoURL ? (
+              {otherUserInfo.photoURL ? (
                 <img 
-                  src={otherUser.profilePhotoURL} 
+                  src={otherUserInfo.photoURL} 
                   alt="Profile" 
                   className="w-10 h-10 rounded-full object-cover"
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                   <span className="text-blue-500 font-medium">
-                    {otherUser?.username?.[0] || otherUser?.displayName?.[0] || '?'}
+                    {otherUserInfo.name[0]}
                   </span>
                 </div>
               )}
               <div>
                 <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
-                  {otherUser?.username || otherUser?.displayName || 'Loading...'}
+                  {otherUserInfo.name}
                 </h1>
                 <p className={`text-sm ${otherUserStatus?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
-                  {otherUserStatus?.isOnline 
-                    ? 'Online'
-                    : otherUserStatus?.lastSeen 
-                      ? formatLastSeen(otherUserStatus.lastSeen)
-                      : 'Offline'
-                  }
+                  {otherUserStatus?.isOnline ? 'Online' : ''}
                 </p>
               </div>
             </div>
@@ -1247,6 +1227,7 @@ useEffect(() => {
                           <MessageStatus 
                             status={message.status} 
                             timestamp={message.timestamp}
+                            isLastMessage={index === messages.length - 1}
                           />
                         )}
                       </div>
