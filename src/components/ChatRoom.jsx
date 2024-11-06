@@ -41,7 +41,9 @@ import {
   Bell,
   BellOff,
   Moon,
-  LogOut
+  LogOut,
+  Vibrate,
+  BellRing
 } from 'lucide-react';
 
 
@@ -880,13 +882,34 @@ useEffect(() => {
     };
   };
 
-  const handleMessageLongPress = (message, event) => {
-    event.preventDefault();
-    const messageElement = event.target.closest('.message-bubble');
-    if (messageElement) {
-      setActionPosition(getActionPosition(messageElement, window.innerHeight));
+  const handleNudge = async () => {
+    try {
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken();
+
+      const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          userId: otherUser.uid,
+          notification: {
+            title: 'TimeTalk',
+            body: `${user.displayName || 'Someone'} nudged you to check your phone!`
+          }
+        })
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send nudge');
+      }
+    } catch (error) {
+      console.error('Error sending nudge:', error);
+      alert('Failed to send nudge: ' + error.message);
     }
-    setSelectedMessage(message);
   };
 
   return (
@@ -927,101 +950,27 @@ useEffect(() => {
             </div>
 
             <div className="flex items-center gap-2">
-              <button 
-                onClick={() => {
-                  setIsSearchOpen(!isSearchOpen);
-                  setTimeout(() => searchInputRef.current?.focus(), 100);
-                }}
+              <button
+                onClick={() => setIsSearchOpen(true)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                title="Search Messages"
               >
-                <Search size={20} className="text-blue-500" />
+                <Search size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
-              
-              <div className="relative" ref={dropdownRef}>
-                <button 
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                  title="More Options"
-                >
-                  <MoreVertical size={20} className="text-blue-500" />
-                </button>
 
-                {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-lg shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50 divide-y divide-gray-100 dark:divide-gray-700">
-                    {/* Notification Settings */}
-                    <div className="py-1">
-                      <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
-                        Notifications
-                      </div>
-                      {notificationSettings.muted ? (
-                        <button
-                          onClick={() => handleMuteNotifications(null)}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                        >
-                          <Bell className="mr-2 h-4 w-4" />
-                          <span>Unmute Notifications</span>
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => handleMuteNotifications('1h')}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                          >
-                            <BellOff className="mr-2 h-4 w-4" />
-                            <span>Mute for 1 hour</span>
-                          </button>
-                          <button
-                            onClick={() => handleMuteNotifications('8h')}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                          >
-                            <BellOff className="mr-2 h-4 w-4" />
-                            <span>Mute for 8 hours</span>
-                          </button>
-                          <button
-                            onClick={() => handleMuteNotifications('24h')}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                          >
-                            <BellOff className="mr-2 h-4 w-4" />
-                            <span>Mute for 24 hours</span>
-                          </button>
-                          <button
-                            onClick={() => handleMuteNotifications('forever')}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                          >
-                            <BellOff className="mr-2 h-4 w-4" />
-                            <span>Mute indefinitely</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
-                      {/* Display Settings */}
-                      <div className="py-1">
-                        <button
-                          onClick={() => {
-                            setDarkMode(!darkMode);
-                            setIsDropdownOpen(false);
-                          }}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                        >
-                          <Moon className="mr-2 h-4 w-4" />
-                          <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
-                        </button>
+              <button
+                onClick={handleNudge}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title="Nudge"
+              >
+                <Vibrate size={20} className="text-gray-500 dark:text-gray-400" />
+              </button>
 
-                        <button
-                          onClick={() => {
-                            setIsSettingsOpen(true);
-                            setIsDropdownOpen(false);
-                          }}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                        >
-                          <Settings className="mr-2 h-4 w-4" />
-                          <span>Chat Settings</span>
-                        </button>
-                      </div>
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={() => setIsDropdownOpen(true)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              >
+                <MoreVertical size={20} className="text-gray-500 dark:text-gray-400" />
+              </button>
             </div>
           </div>
 
