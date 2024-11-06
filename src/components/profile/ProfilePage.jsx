@@ -97,16 +97,6 @@ const ProfilePage = () => {
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Profile</h1>
           <div className="flex items-center gap-2">
-            {/* Partner Profile Button */}
-            {partnerProfile && (
-              <button 
-                onClick={() => {/* Add navigation to partner profile */}}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
-              >
-                <Heart className="w-4 h-4" />
-                <span className="text-sm font-medium">View Partner</span>
-              </button>
-            )}
             {/* Settings Button */}
             <button 
               onClick={() => setShowSettings(true)}
@@ -154,15 +144,14 @@ const ProfilePage = () => {
                     <span>Together since {new Date(profileData.relationship.anniversary).toLocaleDateString()}</span>
                   </div>
                 )}
-                {partnerProfile && (
-                  <button 
-                    onClick={() => navigate(`/profile/${profileData.partnerId}`)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
-                  >
-                    <Heart className="w-4 h-4" />
-                    <span>With {partnerProfile.displayName || partnerProfile.username}</span>
-                  </button>
-                )}
+                {/* Partner Button - Modified to always show if we have partner data */}
+                <button 
+                  onClick={() => navigate(`/profile/${profileData.partnerId}`)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
+                >
+                  <Heart className="w-4 h-4" />
+                  <span>With {partnerProfile?.displayName || 'Partner'}</span>
+                </button>
               </div>
             )}
           </div>
