@@ -5,45 +5,48 @@ const AudioRecorder = ({ onMediaCapture }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const [audioURL, setAudioURL] = useState(null);
-  const [isPaused, setIsPaused] = useState(false);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const timerRef = useRef(null);
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const canvasRef = useRef(null);
-  const audioRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const dataArrayRef = useRef(null);
   const chunksRef = useRef([]);
 
-  useEffect(() => {
-    // Initialize audio context and analyzer
-    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-    analyserRef.current = audioContextRef.current.createAnalyser();
-    analyserRef.current.fftSize = 2048;
-    
-    // Create data array for visualization
-    const bufferLength = analyserRef.current.frequencyBinCount;
-    dataArrayRef.current = new Uint8Array(bufferLength);
+  // Detect if device is mobile
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+  useEffect(() => {
     return () => {
+      // Cleanup function
       stopRecording();
-      if (audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
+      if (audioContextRef.current?.state !== 'closed') {
+        audioContextRef.current?.close();
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
     };
   }, []);
 
   useEffect(() => {
-    return () => {
-      stopRecording();
-    };
-  }, []);
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const container = canvas.parentElement;
+      canvas.width = container.offsetWidth;
+      canvas.height = isMobile ? 60 : 100; // Smaller height on mobile
+    }
+  }, [isMobile]);
 
   const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   const drawWaveform = () => {
@@ -53,10 +56,18 @@ const AudioRecorder = ({ onMediaCapture }) => {
     const canvasCtx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-    const bufferLength = analyserRef.current.frequencyBinCount;
+
+    // Adjust analyzer settings for mobile
+    const bufferLength = isMobile ? 
+      analyserRef.current.frequencyBinCount / 4 : 
+      analyserRef.current.frequencyBinCount;
 
     // Get the current waveform data
-    analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
+    const dataArray = new Uint8Array(bufferLength);
+    analyserRef.current.getByteTimeDomainData(dataArray);
+
+    // Clear canvas
+    canvasCtx.clearRect(0, 0, width, height);
 
     // Style the visualization
     canvasCtx.fillStyle = '#1e1b4b';
@@ -65,12 +76,12 @@ const AudioRecorder = ({ onMediaCapture }) => {
     canvasCtx.strokeStyle = '#818cf8';
     canvasCtx.beginPath();
 
-    // Draw the waveform
-    const sliceWidth = width / bufferLength;
+    // Optimize drawing for mobile
+    const sliceWidth = width / (isMobile ? bufferLength / 2 : bufferLength);
     let x = 0;
 
-    for (let i = 0; i < bufferLength; i++) {
-      const v = dataArrayRef.current[i] / 128.0;
+    for (let i = 0; i < bufferLength; i += (isMobile ? 2 : 1)) {
+      const v = dataArray[i] / 128.0;
       const y = (v * height) / 2;
 
       if (i === 0) {
@@ -79,19 +90,24 @@ const AudioRecorder = ({ onMediaCapture }) => {
         canvasCtx.lineTo(x, y);
       }
 
-      x += sliceWidth;
+      x += sliceWidth * (isMobile ? 2 : 1);
     }
 
     canvasCtx.lineTo(width, height / 2);
     canvasCtx.stroke();
 
-    // Request next frame
-    animationFrameRef.current = requestAnimationFrame(drawWaveform);
+    // Reduce frame rate on mobile
+    if (isMobile) {
+      setTimeout(() => {
+        animationFrameRef.current = requestAnimationFrame(drawWaveform);
+      }, 50); // 20fps on mobile
+    } else {
+      animationFrameRef.current = requestAnimationFrame(drawWaveform);
+    }
   };
 
   const startRecording = async () => {
     try {
-      // Reset state
       setAudioURL(null);
       chunksRef.current = [];
       setDuration(0);
@@ -100,21 +116,32 @@ const AudioRecorder = ({ onMediaCapture }) => {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          // Optimize for mobile
+          sampleRate: isMobile ? 22050 : 44100,
+          channelCount: isMobile ? 1 : 2
         } 
       });
       
       streamRef.current = stream;
 
-      // Set up audio context and analyzer
-      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      // Initialize audio context with mobile-optimized settings
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({
+        sampleRate: isMobile ? 22050 : 44100,
+        latencyHint: isMobile ? 'playback' : 'interactive'
+      });
+
       analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 2048;
+      analyserRef.current.fftSize = isMobile ? 1024 : 2048; // Reduced FFT size for mobile
       
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
       
-      const options = { mimeType: 'audio/webm' };
+      const options = { 
+        mimeType: 'audio/webm',
+        audioBitsPerSecond: isMobile ? 16000 : 128000
+      };
+
       mediaRecorderRef.current = new MediaRecorder(stream, options);
       
       mediaRecorderRef.current.ondataavailable = (e) => {
@@ -129,15 +156,13 @@ const AudioRecorder = ({ onMediaCapture }) => {
         setAudioURL(url);
       };
 
-      mediaRecorderRef.current.start(100);
+      mediaRecorderRef.current.start(isMobile ? 1000 : 100); // Larger chunks on mobile
       setIsRecording(true);
 
-      // Start timer
       timerRef.current = setInterval(() => {
         setDuration(prev => prev + 1);
       }, 1000);
 
-      // Start visualization
       drawWaveform();
 
     } catch (err) {
@@ -149,7 +174,7 @@ const AudioRecorder = ({ onMediaCapture }) => {
   const stopRecording = () => {
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current?.getTracks().forEach(track => track.stop());
       clearInterval(timerRef.current);
       cancelAnimationFrame(animationFrameRef.current);
       setIsRecording(false);
