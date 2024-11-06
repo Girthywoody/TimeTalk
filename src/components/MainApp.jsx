@@ -245,9 +245,6 @@ const MainApp = () => {
                     Our Timeline
                   </h1>
                 </div>
-                <div className="flex items-center gap-4">
-                  <Lock className={`${darkMode ? 'text-blue-400' : 'text-blue-500'}`} size={24} />
-                </div>
                 <div className="flex items-center gap-2">
                   <NotificationButton />
                 </div>

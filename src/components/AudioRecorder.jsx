@@ -1,17 +1,19 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Mic, StopCircle } from 'lucide-react';
+import { Mic, StopCircle, Trash2, Save } from 'lucide-react';
 
 const AudioRecorder = ({ onMediaCapture }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
+  const [audioURL, setAudioURL] = useState(null);
+  const [isPaused, setIsPaused] = useState(false);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const timerRef = useRef(null);
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
-  const animationFrameRef = useRef(null);
   const canvasRef = useRef(null);
-  const dataArrayRef = useRef(null);
+  const audioRef = useRef(null);
+  const chunksRef = useRef([]);
 
   useEffect(() => {
     // Initialize audio context and analyzer
@@ -89,7 +91,11 @@ const AudioRecorder = ({ onMediaCapture }) => {
 
   const startRecording = async () => {
     try {
-      // Get audio stream
+      // Reset state
+      setAudioURL(null);
+      chunksRef.current = [];
+      setDuration(0);
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -100,27 +106,30 @@ const AudioRecorder = ({ onMediaCapture }) => {
       
       streamRef.current = stream;
 
-      // Set up audio processing
+      // Set up audio context and analyzer
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 2048;
+      
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
       
-      // Create and configure media recorder
       const options = { mimeType: 'audio/webm' };
       mediaRecorderRef.current = new MediaRecorder(stream, options);
       
-      const chunks = [];
       mediaRecorderRef.current.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
       };
 
       mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        onMediaCapture(URL.createObjectURL(blob));
-        chunks.length = 0;
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        setAudioURL(url);
       };
 
-      // Start recording
-      mediaRecorderRef.current.start(1000);
+      mediaRecorderRef.current.start(100);
       setIsRecording(true);
 
       // Start timer
@@ -129,10 +138,11 @@ const AudioRecorder = ({ onMediaCapture }) => {
       }, 1000);
 
       // Start visualization
-      requestAnimationFrame(drawWaveform);
+      drawWaveform();
 
     } catch (err) {
       console.error('Error starting recording:', err);
+      alert('Unable to access microphone. Please check your permissions.');
     }
   };
 
@@ -143,38 +153,72 @@ const AudioRecorder = ({ onMediaCapture }) => {
       clearInterval(timerRef.current);
       cancelAnimationFrame(animationFrameRef.current);
       setIsRecording(false);
-      setDuration(0);
+    }
+  };
+
+  const discardRecording = () => {
+    setAudioURL(null);
+    setDuration(0);
+    chunksRef.current = [];
+  };
+
+  const saveRecording = () => {
+    if (audioURL) {
+      onMediaCapture(audioURL);
     }
   };
 
   return (
-    <div className="relative flex flex-col items-center justify-center h-full bg-indigo-950 p-6">
-      <div className="flex flex-col items-center gap-4 w-full max-w-md">
-        <div className="text-2xl font-medium text-indigo-200">
+    <div className="audio-recorder">
+      <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-b from-indigo-950 to-indigo-900 rounded-xl shadow-xl">
+        {/* Timer Display */}
+        <div className="audio-recorder__timer text-indigo-100">
           {formatTime(duration)}
         </div>
-        <div className="text-sm text-indigo-300 font-medium">
-          {isRecording ? 'Recording...' : 'Ready to record'}
-        </div>
-        
+
+        {/* Waveform Canvas */}
         <canvas
           ref={canvasRef}
-          className="w-full h-24 rounded-lg bg-indigo-900/50"
+          className="audio-recorder__canvas"
           width={800}
           height={100}
         />
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={isRecording ? stopRecording : startRecording}
-            className={`p-4 rounded-full text-white transition-colors ${
-              isRecording 
-                ? 'bg-pink-600 hover:bg-pink-700' 
-                : 'bg-indigo-500 hover:bg-indigo-600'
-            }`}
-          >
-            {isRecording ? <StopCircle size={24} /> : <Mic size={24} />}
-          </button>
+        {/* Controls */}
+        <div className="flex items-center gap-4 mt-2">
+          {!audioURL ? (
+            <button
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`audio-recorder__btn ${
+                isRecording ? 'audio-recorder__btn--recording' : 'audio-recorder__btn--record'
+              }`}
+            >
+              {isRecording ? <StopCircle size={24} className="text-white" /> : <Mic size={24} className="text-white" />}
+            </button>
+          ) : (
+            <div className="flex items-center gap-4">
+              <button
+                onClick={discardRecording}
+                className="audio-recorder__btn audio-recorder__btn--discard"
+              >
+                <Trash2 size={20} className="text-white" />
+              </button>
+              
+              <audio ref={audioRef} src={audioURL} className="hidden" />
+              
+              <button
+                onClick={saveRecording}
+                className="audio-recorder__btn audio-recorder__btn--save"
+              >
+                <Save size={20} className="text-white" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Status Text */}
+        <div className="audio-recorder__status text-indigo-300">
+          {isRecording ? 'Recording in progress...' : audioURL ? 'Ready to save' : 'Ready to record'}
         </div>
       </div>
     </div>
