@@ -44,12 +44,12 @@ const functions = getFunctions(app);
 // Add this after your firebaseConfig
 const ALLOWED_USERS = {
   user1: {
-    email: "your-email@example.com",
-    partnerId: "user2-uid"  // We'll fill this in after creating both accounts
+    email: "your-actual-email@example.com",
+    partnerId: "your-uid"
   },
   user2: {
-    email: "girlfriend-email@example.com",
-    partnerId: "user1-uid"  // We'll fill this in after creating both accounts
+    email: "your-girlfriend-email@example.com",
+    partnerId: "her-uid"
   }
 };
 
