@@ -95,6 +95,11 @@ const ChatRoom = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [otherUser, setOtherUser] = useState(null);
   const [otherUserStatus, setOtherUserStatus] = useState(null);
+  const [lastTapTime, setLastTapTime] = useState(0);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [messageStatuses, setMessageStatuses] = useState({});
 
   
 
@@ -347,7 +352,8 @@ const ChatRoom = () => {
         timestamp: serverTimestamp(),
         edited: false,
         deleted: false,
-        saved: false
+        saved: false,
+        status: 'sent'
       };
 
       if (fileURL) {
@@ -705,6 +711,121 @@ useEffect(() => {
     }
   };
 
+  const handleDoubleTap = async (message) => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300; // ms
+    
+    if (now - lastTapTime < DOUBLE_TAP_DELAY) {
+      // Double tap detected, add heart reaction
+      await handleReaction(message.id, '❤️');
+    }
+    
+    setLastTapTime(now);
+  };
+
+  const handleTouchStart = (e, message) => {
+    setTouchStart({
+      x: e.targetTouches[0].clientX,
+      time: Date.now()
+    });
+  };
+
+  const handleTouchMove = (e) => {
+    if (!touchStart) return;
+    
+    setTouchEnd({
+      x: e.targetTouches[0].clientX
+    });
+  };
+
+  const handleTouchEnd = (message) => {
+    if (!touchStart || !touchEnd) return;
+    
+    const swipeDistance = touchEnd.x - touchStart.x;
+    const swipeTime = Date.now() - touchStart.time;
+    
+    // If swipe is fast enough and long enough
+    if (Math.abs(swipeDistance) > 100 && swipeTime < 300) {
+      setReplyingTo(message);
+    }
+    
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
+  useEffect(() => {
+    if (!user || !messages.length) return;
+
+    // Get all messages sent by the current user
+    const userMessages = messages.filter(msg => msg.senderId === user.uid);
+    
+    // Update delivered status for new messages
+    userMessages.forEach(async (message) => {
+      if (!message.status || message.status === 'sent') {
+        const messageRef = doc(db, 'messages', message.id);
+        await updateDoc(messageRef, {
+          status: 'delivered'
+        });
+      }
+    });
+
+    // Update read status when messages are visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(async (entry) => {
+          if (entry.isIntersecting) {
+            const messageId = entry.target.id.replace('message-', '');
+            const message = messages.find(m => m.id === messageId);
+            
+            if (message && message.senderId !== user.uid && (!message.status || message.status !== 'read')) {
+              const messageRef = doc(db, 'messages', messageId);
+              await updateDoc(messageRef, {
+                status: 'read'
+              });
+            }
+          }
+        });
+      },
+      {
+        root: scrollContainerRef.current,
+        threshold: 0.5
+      }
+    );
+
+    // Observe all messages from other users
+    const otherUserMessages = messages.filter(msg => msg.senderId !== user.uid);
+    otherUserMessages.forEach(message => {
+      const element = document.getElementById(`message-${message.id}`);
+      if (element) {
+        observer.observe(element);
+      }
+    });
+
+    return () => observer.disconnect();
+  }, [messages, user]);
+
+  const MessageStatus = ({ status, timestamp }) => {
+    if (!status || !timestamp) return null;
+
+    return (
+      <div className={`text-[10px] flex items-center gap-1 
+        ${status === 'sent' ? 'text-gray-400' : 
+          status === 'delivered' ? 'text-gray-500' : 
+          'text-blue-500'}`}>
+        <span>
+          {timestamp.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })}
+        </span>
+        <span>•</span>
+        <span className="font-medium">
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
@@ -988,16 +1109,27 @@ useEffect(() => {
                         ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
                         ${index === messages.length - 1 ? 'mb-4' : 'mb-2'}
                         transition-all duration-200`}
-                      onContextMenu={(e) => handleMessageLongPress(message, e)}
-                      onTouchStart={(e) => {
-                        setPressedMessageId(message.id);
-                        let timer = setTimeout(() => handleMessageLongPress(message, e), 500);
-                        e.target.addEventListener('touchend', () => {
-                          clearTimeout(timer);
-                          setPressedMessageId(null);
-                        }, { once: true });
-                      }}
+                      onTouchStart={(e) => handleTouchStart(e, message)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={() => handleTouchEnd(message)}
+                      onClick={() => handleDoubleTap(message)}
                     >
+                      {message.replyTo && (
+                        <div className={`text-sm mb-1 pb-1 border-b ${
+                          message.senderId === user?.uid 
+                            ? "border-white/20 text-white/80" 
+                            : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400"
+                        }`}>
+                          <div className="flex items-center gap-1">
+                            <MessageSquare size={12} />
+                            <span className="font-medium">
+                              {message.replyTo.senderId === user?.uid ? 'You' : 'Their message'}
+                            </span>
+                          </div>
+                          <div className="line-clamp-1">{message.replyTo.text}</div>
+                        </div>
+                      )}
+
                       {message.deleted ? (
                         <div className="italic text-opacity-70">This message was deleted</div>
                       ) : (
@@ -1099,15 +1231,24 @@ useEffect(() => {
                         </>
                       )}
 
-                      <div className={`text-[11px] mt-1 ${
-                        message.senderId === user?.uid 
-                          ? "text-white/60" 
-                          : "text-gray-500 dark:text-gray-400"
-                      }`}>
-                        {message.timestamp?.toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className={`text-[11px] ${
+                          message.senderId === user?.uid 
+                            ? "text-white/60" 
+                            : "text-gray-500 dark:text-gray-400"
+                        }`}>
+                          {message.timestamp?.toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </div>
+                        
+                        {message.senderId === user?.uid && (
+                          <MessageStatus 
+                            status={message.status} 
+                            timestamp={message.timestamp}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
