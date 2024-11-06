@@ -102,7 +102,7 @@ const ChatRoom = () => {
   const [messageStatuses, setMessageStatuses] = useState({});
 
   const otherUserInfo = {
-    name: "Sarah", // Replace with the actual name
+    name: "Test", // Replace with the actual name
     photoURL: "https://path-to-photo.jpg" // Replace with actual photo URL or null
   };
 
@@ -792,8 +792,8 @@ useEffect(() => {
 
   }, [messages, user]);
 
-  const MessageStatus = ({ status, timestamp, isLastMessage }) => {
-    if (!status || !timestamp || !isLastMessage) return null;
+  const MessageStatus = ({ status, isLastMessage }) => {
+    if (!status || !isLastMessage) return null;
 
     return (
       <div className={`text-[11px] ${
@@ -801,11 +801,6 @@ useEffect(() => {
           ? 'text-white/80' 
           : 'text-white'
       }`}>
-        {timestamp.toLocaleTimeString([], { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        })}
-        {' • '}
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </div>
     );
@@ -1213,9 +1208,11 @@ useEffect(() => {
 
                       <div className="flex items-center justify-between gap-2">
                         <div className={`text-[11px] ${
-                          message.senderId === user?.uid 
-                            ? "text-white/60" 
-                            : "text-gray-500 dark:text-gray-400"
+                          darkMode 
+                            ? 'text-white/80' 
+                            : message.senderId === user?.uid 
+                              ? 'text-white' 
+                              : 'text-gray-500'
                         }`}>
                           {message.timestamp?.toLocaleTimeString([], { 
                             hour: '2-digit', 
@@ -1226,7 +1223,6 @@ useEffect(() => {
                         {message.senderId === user?.uid && (
                           <MessageStatus 
                             status={message.status} 
-                            timestamp={message.timestamp}
                             isLastMessage={index === messages.length - 1}
                           />
                         )}
