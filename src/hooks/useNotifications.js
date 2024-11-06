@@ -12,19 +12,10 @@ export const useNotifications = () => {
             if (!auth.currentUser) return;
 
             try {
-                // Check for existing service worker registration
-                const existingRegistration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                    scope: '/'
+                });
                 
-                let registration;
-                if (!existingRegistration) {
-                    // Only register if no existing registration
-                    registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                    console.log('New Service Worker registered:', registration);
-                } else {
-                    registration = existingRegistration;
-                    console.log('Using existing Service Worker:', registration);
-                }
-
                 const permission = await Notification.requestPermission();
                 setNotificationPermission(permission);
 
@@ -37,22 +28,11 @@ export const useNotifications = () => {
 
                     if (token) {
                         setFcmToken(token);
-                        
-                        // Store token in Firestore
-                        const userRef = doc(db, 'users', auth.currentUser.uid);
-                        const userDoc = await getDoc(userRef);
-                        
-                        const tokenData = {
+                        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                             fcmToken: token,
                             notificationsEnabled: true,
                             lastTokenUpdate: new Date().toISOString()
-                        };
-
-                        if (userDoc.exists()) {
-                            await updateDoc(userRef, tokenData);
-                        } else {
-                            await setDoc(userRef, tokenData, { merge: true });
-                        }
+                        });
                     }
                 }
             } catch (error) {

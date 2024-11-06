@@ -19,9 +19,9 @@ async function sendNotificationToUser(userId, notification) {
         const userDoc = await admin.firestore().collection('users').doc(userId).get();
         const userData = userDoc.data();
         
-        if (!userData?.fcmToken || !userData?.notificationsEnabled) {
-            console.log('No FCM token or notifications disabled for user:', userId);
-            return { success: false, error: 'Notifications not available' };
+        if (!userData?.fcmToken) {
+            console.log('No FCM token for user:', userId);
+            return { success: false, error: 'No FCM token available' };
         }
 
         const message = {
@@ -31,9 +31,6 @@ async function sendNotificationToUser(userId, notification) {
                 body: notification.body,
             },
             webpush: {
-                headers: {
-                    Urgency: 'high'
-                },
                 notification: {
                     title: notification.title,
                     body: notification.body,
@@ -43,19 +40,30 @@ async function sendNotificationToUser(userId, notification) {
                     vibrate: [100, 50, 100],
                     requireInteraction: true,
                     renotify: true,
-                    actions: [
+                    data: notification.data || {},
+                    actions: notification.actions || [
                         {
                             action: 'view',
-                            title: 'View Event'
-                        },
-                        {
-                            action: 'dismiss',
-                            title: 'Dismiss'
+                            title: 'View'
                         }
                     ]
                 },
                 fcmOptions: {
-                    link: notification.link || 'https://time-talk.vercel.app/calendar'
+                    link: notification.link || 'https://time-talk.vercel.app/chat'
+                }
+            },
+            android: {
+                notification: {
+                    clickAction: notification.link || 'https://time-talk.vercel.app/chat',
+                    sound: 'default'
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: 'default',
+                        category: 'MESSAGE'
+                    }
                 }
             }
         };
@@ -66,6 +74,7 @@ async function sendNotificationToUser(userId, notification) {
     } catch (error) {
         console.error('Error sending notification:', error);
         if (error.code === 'messaging/registration-token-not-registered') {
+            // Remove invalid token
             await admin.firestore().collection('users').doc(userId).update({
                 fcmToken: admin.firestore.FieldValue.delete()
             });

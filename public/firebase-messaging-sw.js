@@ -38,22 +38,15 @@ self.addEventListener('push', (event) => {
         const data = event.data.json();
         if (!data.notification) return;
 
-        // Generate a unique ID for the notification
-        const notificationId = `${data.data?.messageId || Date.now()}-${data.notification.title}`;
+        const notificationId = `${data.data?.type || 'default'}-${Date.now()}`;
         
-        // Check if this notification has already been displayed
         if (displayedNotifications.has(notificationId)) {
             console.log('Duplicate notification prevented:', notificationId);
             return;
         }
 
-        // Add to displayed notifications set
         displayedNotifications.add(notificationId);
-
-        // Clear old notifications after 1 minute
-        setTimeout(() => {
-            displayedNotifications.delete(notificationId);
-        }, 60000);
+        setTimeout(() => displayedNotifications.delete(notificationId), 60000);
 
         const notificationOptions = {
             ...data.notification,
@@ -62,6 +55,7 @@ self.addEventListener('push', (event) => {
             tag: notificationId,
             data: data.data || {},
             requireInteraction: true,
+            vibrate: [100, 50, 100],
             actions: [
                 {
                     action: 'reply',
@@ -73,6 +67,12 @@ self.addEventListener('push', (event) => {
                 }
             ]
         };
+
+        // For message notifications, add sound
+        if (data.data?.type === 'message') {
+            notificationOptions.silent = false;
+            notificationOptions.sound = '/sounds/notification.mp3';
+        }
 
         event.waitUntil(
             self.registration.showNotification(
@@ -89,18 +89,16 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
+    const data = event.notification.data;
+    let urlToOpen = 'https://time-talk.vercel.app/chat';
+
+    if (data?.link) {
+        urlToOpen = data.link;
+    }
+
     if (event.action === 'reply') {
-        const urlToOpen = new URL('/chat?action=reply', self.location.origin).href;
-        event.waitUntil(clients.openWindow(urlToOpen));
-        return;
+        urlToOpen = `${urlToOpen}?action=reply&messageId=${data?.messageId || ''}`;
     }
-
-    if (event.action === 'mark-read') {
-        // Mark message as read and close notification
-        return;
-    }
-
-    const urlToOpen = new URL('/chat', self.location.origin).href;
 
     const promiseChain = clients.matchAll({
         type: 'window',
@@ -113,9 +111,7 @@ self.addEventListener('notificationclick', (event) => {
                 return client.focus();
             }
         }
-        if (clients.openWindow) {
-            return clients.openWindow(urlToOpen);
-        }
+        return clients.openWindow(urlToOpen);
     });
 
     event.waitUntil(promiseChain);
