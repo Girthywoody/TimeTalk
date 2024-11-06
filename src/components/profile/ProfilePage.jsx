@@ -11,7 +11,8 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
-  const { user } = useAuth();
+  const [partnerProfile, setPartnerProfile] = useState(null);
+  const { user, getPartnerProfile } = useAuth();
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -41,6 +42,17 @@ const ProfilePage = () => {
     fetchProfileData();
   }, [user]);
 
+  useEffect(() => {
+    const loadPartnerProfile = async () => {
+      const partner = await getPartnerProfile();
+      setPartnerProfile(partner);
+    };
+
+    if (user) {
+      loadPartnerProfile();
+    }
+  }, [user]);
+
   const handleProfileUpdate = (updatedData) => {
     setProfileData(updatedData);
   };
@@ -58,7 +70,7 @@ const ProfilePage = () => {
     { label: 'Days', value: getDaysTogether(), Icon: Calendar, color: 'text-rose-500' }
   ];
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-950">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -71,16 +83,6 @@ const ProfilePage = () => {
       <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-950">
         <div className="bg-red-500/10 text-red-600 dark:text-red-400 p-4 rounded-lg">
           {error}
-        </div>
-      </div>
-    );
-  }
-
-  if (!profileData) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-950">
-        <div className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 p-4 rounded-lg">
-          No profile data available. Try logging out and back in.
         </div>
       </div>
     );
@@ -170,6 +172,23 @@ const ProfilePage = () => {
             onProfileUpdate: handleProfileUpdate
           }}
         />
+      )}
+
+      {partnerProfile && (
+        <div className="mt-8 p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
+          <h3 className="text-lg font-semibold mb-4">Partner Profile</h3>
+          <div className="flex items-center space-x-4">
+            <img
+              src={partnerProfile.profilePhotoURL || "/api/placeholder/64/64"}
+              alt={partnerProfile.displayName}
+              className="w-16 h-16 rounded-full"
+            />
+            <div>
+              <p className="font-medium">{partnerProfile.displayName}</p>
+              <p className="text-sm text-gray-500">@{partnerProfile.username}</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

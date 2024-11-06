@@ -6,7 +6,7 @@ import {
   onAuthStateChanged
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { auth, db, isAllowedEmail, ALLOWED_USERS } from '../firebase';
 
 export const useAuth = () => {
   const [user, setUser] = useState(null);
@@ -38,8 +38,12 @@ export const useAuth = () => {
 
   const login = async (email, password) => {
     try {
+      // Check if email is allowed
+      if (!isAllowedEmail(email)) {
+        throw new Error('This app is restricted to specific users only.');
+      }
+
       const result = await signInWithEmailAndPassword(auth, email, password);
-      // Force token refresh after login
       await result.user.getIdToken(true);
       return result;
     } catch (error) {
@@ -50,8 +54,26 @@ export const useAuth = () => {
 
   const signup = async (email, password) => {
     try {
+      // Check if email is allowed
+      if (!isAllowedEmail(email)) {
+        throw new Error('This app is restricted to specific users only.');
+      }
+
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      // Force token refresh after signup
+      
+      // Get partner info based on email
+      const partnerConfig = Object.values(ALLOWED_USERS).find(user => 
+        user.email !== email
+      );
+
+      // Create initial user profile with partner link
+      await setDoc(doc(db, 'users', result.user.uid), {
+        email: email,
+        createdAt: new Date().toISOString(),
+        partnerId: partnerConfig?.partnerId || null,
+        // Add any other initial profile fields
+      });
+
       await result.user.getIdToken(true);
       return result;
     } catch (error) {
@@ -71,6 +93,25 @@ export const useAuth = () => {
     }
   };
 
+  // Add this function to get partner's profile
+  const getPartnerProfile = async () => {
+    if (!user) return null;
+    
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+      
+      if (userData?.partnerId) {
+        const partnerDoc = await getDoc(doc(db, 'users', userData.partnerId));
+        return partnerDoc.exists() ? partnerDoc.data() : null;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting partner profile:', error);
+      return null;
+    }
+  };
+
   return {
     user,
     loading,
@@ -78,6 +119,7 @@ export const useAuth = () => {
     login,
     signup,
     logout,
+    getPartnerProfile,
     auth
   };
 };

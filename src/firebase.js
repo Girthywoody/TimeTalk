@@ -41,6 +41,26 @@ const storage = getStorage(app);
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 const functions = getFunctions(app);
 
+// Add this after your firebaseConfig
+const ALLOWED_USERS = {
+  user1: {
+    email: "your-email@example.com",
+    partnerId: "user2-uid"  // We'll fill this in after creating both accounts
+  },
+  user2: {
+    email: "girlfriend-email@example.com",
+    partnerId: "user1-uid"  // We'll fill this in after creating both accounts
+  }
+};
+
+// Add this function to check if email is allowed
+export const isAllowedEmail = (email) => {
+  return Object.values(ALLOWED_USERS).some(user => user.email === email);
+};
+
+// Export the allowed users config
+export { ALLOWED_USERS };
+
 export const requestNotificationPermission = async () => {
     try {
         if (!messaging) return null;
