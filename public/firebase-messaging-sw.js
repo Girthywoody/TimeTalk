@@ -14,23 +14,14 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 self.addEventListener('install', (event) => {
-    event.waitUntil(
-        Promise.all([
-            self.skipWaiting(),
-            // Clean up old caches here if needed
-        ])
-    );
+    event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        Promise.all([
-            self.clients.claim(),
-            // Clean up old caches here if needed
-        ])
-    );
+    event.waitUntil(self.clients.claim());
 });
 
+// Remove the onBackgroundMessage handler and use only push event
 self.addEventListener('push', (event) => {
     if (!event.data) return;
 
@@ -38,18 +29,23 @@ self.addEventListener('push', (event) => {
         const data = event.data.json();
         if (!data.notification) return;
 
-        // Create a unique tag based on messageId and timestamp
-        const tag = `${data.data?.messageId || 'default'}-${Date.now()}`;
-
         const notificationOptions = {
             ...data.notification,
             icon: '/ios-icon-192.png',
             badge: '/ios-icon-192.png',
-            tag: tag,
+            tag: data.data?.messageId || 'default',
             data: data.data || {},
-            renotify: false,
             requireInteraction: true,
-            silent: false
+            actions: [
+                {
+                    action: 'reply',
+                    title: 'Reply'
+                },
+                {
+                    action: 'mark-read',
+                    title: 'Mark as Read'
+                }
+            ]
         };
 
         event.waitUntil(
@@ -65,21 +61,38 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    
+
+    // Handle notification actions
+    if (event.action === 'reply') {
+        // Open chat in reply mode
+        const urlToOpen = new URL('/chat?action=reply', self.location.origin).href;
+        event.waitUntil(clients.openWindow(urlToOpen));
+        return;
+    }
+
+    if (event.action === 'mark-read') {
+        // Mark message as read and close notification
+        return;
+    }
+
+    // Default click behavior
     const urlToOpen = new URL('/chat', self.location.origin).href;
-    event.waitUntil(
-        clients.matchAll({
-            type: 'window',
-            includeUncontrolled: true
-        })
-        .then((windowClients) => {
-            for (let i = 0; i < windowClients.length; i++) {
-                const client = windowClients[i];
-                if (client.url === urlToOpen && 'focus' in client) {
-                    return client.focus();
-                }
+
+    const promiseChain = clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true
+    })
+    .then((windowClients) => {
+        for (let i = 0; i < windowClients.length; i++) {
+            const client = windowClients[i];
+            if (client.url === urlToOpen && 'focus' in client) {
+                return client.focus();
             }
+        }
+        if (clients.openWindow) {
             return clients.openWindow(urlToOpen);
-        })
-    );
+        }
+    });
+
+    event.waitUntil(promiseChain);
 });
