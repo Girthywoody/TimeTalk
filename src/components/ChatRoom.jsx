@@ -93,6 +93,8 @@ const ChatRoom = () => {
     mutedUntil: null
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [otherUser, setOtherUser] = useState(null);
+  const [otherUserStatus, setOtherUserStatus] = useState(null);
 
   
 
@@ -618,6 +620,74 @@ useEffect(() => {
     return () => unsubscribe();
   }, [user, lastMessageId]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('uid', '!=', user.uid));
+
+    // Get the other user's profile
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const otherUserData = snapshot.docs[0].data();
+        setOtherUser(otherUserData);
+        
+        // If the other user has a lastActive field, use it for status
+        if (otherUserData.lastActive) {
+          const lastActive = otherUserData.lastActive.toDate();
+          const now = new Date();
+          const diffInMinutes = Math.floor((now - lastActive) / (1000 * 60));
+          
+          if (diffInMinutes < 2) { // Consider online if active in last 2 minutes
+            setOtherUserStatus({ isOnline: true });
+          } else {
+            setOtherUserStatus({
+              isOnline: false,
+              lastSeen: lastActive
+            });
+          }
+        }
+      }
+    });
+
+    // Update current user's lastActive status
+    const updateUserStatus = async () => {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        lastActive: serverTimestamp()
+      });
+    };
+
+    // Update status immediately and then every minute
+    updateUserStatus();
+    const intervalId = setInterval(updateUserStatus, 60000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(intervalId);
+      // Update lastActive when leaving
+      updateUserStatus();
+    };
+  }, [user]);
+
+  // Helper function to format last seen time
+  const formatLastSeen = (date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 60) {
+      return `Last seen ${diffInMinutes} minutes ago`;
+    } else if (diffInMinutes < 1440) { // less than 24 hours
+      const hours = Math.floor(diffInMinutes / 60);
+      return `Last seen ${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+    } else {
+      return `Last seen ${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit'
+      })}`;
+    }
+  };
+
   return (
     <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
@@ -625,32 +695,38 @@ useEffect(() => {
         <div className={`px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b z-10 relative`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-            <button 
+              <button 
                 onClick={testNotification}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 title="Test Notification"
-            >
+              >
                 <Bell size={20} className="text-blue-500" />
-            </button>
-              {userProfile?.profilePhotoURL ? (
+              </button>
+              {otherUser?.profilePhotoURL ? (
                 <img 
-                  src={userProfile.profilePhotoURL} 
+                  src={otherUser.profilePhotoURL} 
                   alt="Profile" 
                   className="w-10 h-10 rounded-full object-cover"
                 />
-                
               ) : (
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                   <span className="text-blue-500 font-medium">
-                    {userProfile?.username?.[0] || userProfile?.displayName?.[0] || '?'}
+                    {otherUser?.username?.[0] || otherUser?.displayName?.[0] || '?'}
                   </span>
                 </div>
               )}
               <div>
-              <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
-                  {userProfile?.username || userProfile?.displayName}
+                <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
+                  {otherUser?.username || otherUser?.displayName || 'Loading...'}
                 </h1>
-                <p className="text-sm text-green-500">Online</p>
+                <p className={`text-sm ${otherUserStatus?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
+                  {otherUserStatus?.isOnline 
+                    ? 'Online'
+                    : otherUserStatus?.lastSeen 
+                      ? formatLastSeen(otherUserStatus.lastSeen)
+                      : 'Offline'
+                  }
+                </p>
               </div>
             </div>
 
