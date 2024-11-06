@@ -518,6 +518,13 @@ const SharedCalendar = () => {
       {showEventForm && (
         <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 p-4 overflow-y-auto">
           <div className={`w-full max-w-md ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl my-8 mb-32`}>
+            {/* Header */}
+            <div className={`p-4 ${darkMode ? 'border-gray-700' : 'border-gray-200'} border-b`}>
+              <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} text-center`}>
+                {isEditing ? 'Edit Event' : 'New Event'}
+              </h2>
+            </div>
+
             {/* Basic Info Section - Always Visible */}
             <div className="p-4 space-y-4">
               {/* Title Input */}
@@ -531,33 +538,46 @@ const SharedCalendar = () => {
                 }`}
               />
 
-              {/* Date Selection */}
-              <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
-                <CalendarDays size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                <input
-                  type="date"
-                  value={newEvent.date}
-                  onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
-                  className={`flex-1 bg-transparent ${darkMode ? 'text-white' : 'text-gray-900'}`}
-                />
-              </div>
-
               {/* Time Selection */}
-              <div className={`flex items-center gap-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-xl`}>
-                <Clock size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                <input
-                  type="time"
-                  value={newEvent.startTime}
-                  onChange={e => {/* existing time change handler */}}
-                  className={`bg-transparent ${darkMode ? 'text-white' : 'text-gray-900'}`}
-                />
-                <span className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>→</span>
-                <input
-                  type="time"
-                  value={newEvent.endTime}
-                  onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
-                  className={`bg-transparent ${darkMode ? 'text-white' : 'text-gray-900'}`}
-                />
+              <div className={`space-y-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <label className="text-sm font-medium">Time</label>
+                <div className={`flex items-center gap-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} p-4 rounded-xl`}>
+                  <div className="flex items-center gap-2 flex-1">
+                    <Clock size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                    <input
+                      type="time"
+                      value={newEvent.startTime}
+                      onChange={e => {
+                        const startTime = e.target.value;
+                        const [hours, minutes] = startTime.split(':');
+                        const endDate = new Date();
+                        endDate.setHours(parseInt(hours) + 1);
+                        endDate.setMinutes(parseInt(minutes));
+                        const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+                        
+                        setNewEvent(prev => ({ 
+                          ...prev, 
+                          startTime,
+                          endTime
+                        }));
+                      }}
+                      className={`w-full cursor-pointer bg-transparent p-2 rounded-lg hover:bg-gray-600/10 ${
+                        darkMode ? 'text-white' : 'text-gray-900'
+                      }`}
+                    />
+                  </div>
+                  <div className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>→</div>
+                  <div className="flex items-center gap-2 flex-1">
+                    <input
+                      type="time"
+                      value={newEvent.endTime}
+                      onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
+                      className={`w-full cursor-pointer bg-transparent p-2 rounded-lg hover:bg-gray-600/10 ${
+                        darkMode ? 'text-white' : 'text-gray-900'
+                      }`}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* All Day Toggle */}
@@ -586,9 +606,6 @@ const SharedCalendar = () => {
                 onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
                 className="w-full flex items-center justify-center gap-2 py-2 opacity-60 hover:opacity-100 transition-opacity"
               >
-                <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {showAdvancedOptions ? 'Less Options' : 'More Options'}
-                </span>
                 <ChevronDown 
                   size={18}
                   className={`transform transition-transform duration-200 ${
@@ -607,13 +624,99 @@ const SharedCalendar = () => {
                     transition={{ duration: 0.2 }}
                     className="space-y-4 overflow-hidden"
                   >
-                    {/* Existing advanced options (notifications, repeat, participants, etc.) */}
-                    {/* ... */}
+                    {/* Notifications */}
+                    <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                      <Bell size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                      <select 
+                        value={newEvent.notifications[0] || ''} 
+                        onChange={e => setNewEvent(prev => ({ 
+                          ...prev, 
+                          notifications: e.target.value ? [e.target.value] : [] 
+                        }))}
+                        className={`flex-1 bg-transparent ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                      >
+                        <option value="" className={darkMode ? 'bg-gray-700' : 'bg-white'}>No Alert</option>
+                        {NOTIFICATION_OPTIONS.map(option => (
+                          <option 
+                            key={option.value} 
+                            value={option.value}
+                            className={darkMode ? 'bg-gray-700' : 'bg-white'}
+                          >
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Repeat */}
+                    <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                      <RefreshCw size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                      <select 
+                        value={newEvent.repeat} 
+                        onChange={e => setNewEvent(prev => ({ ...prev, repeat: e.target.value }))}
+                        className={`flex-1 bg-transparent ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                      >
+                        {REPEAT_OPTIONS.map(option => (
+                          <option 
+                            key={option.value} 
+                            value={option.value}
+                            className={darkMode ? 'bg-gray-700' : 'bg-white'}
+                          >
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Participants */}
+                    <div className={`p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                      <button
+                        type="button"
+                        onClick={() => setShowParticipantsModal(true)}
+                        className="flex items-center gap-3 w-full"
+                      >
+                        <Users size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                        <span className={`${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {newEvent.participants?.length 
+                            ? `${newEvent.participants.length} participant${newEvent.participants.length === 1 ? '' : 's'}`
+                            : 'Add Participants'
+                          }
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Location */}
+                    <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                      <MapPin size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                      <input
+                        type="text"
+                        placeholder="Add Location"
+                        value={newEvent.location}
+                        onChange={e => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
+                        className={`flex-1 bg-transparent placeholder:text-gray-400 ${
+                          darkMode ? 'text-white' : 'text-gray-900'
+                        }`}
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div className={`flex items-start gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                      <AlignLeft size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`} />
+                      <textarea
+                        placeholder="Add Description"
+                        value={newEvent.description}
+                        onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
+                        rows={3}
+                        className={`flex-1 bg-transparent placeholder:text-gray-400 resize-none ${
+                          darkMode ? 'text-white' : 'text-gray-900'
+                        }`}
+                      />
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Action Buttons - Always at Bottom */}
+              {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
