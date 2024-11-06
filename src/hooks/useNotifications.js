@@ -8,22 +8,25 @@ export const useNotifications = () => {
     const [fcmToken, setFcmToken] = useState(null);
 
     useEffect(() => {
+        let registrationPromise = null;
+
         const initializeNotifications = async () => {
             if (!auth.currentUser) return;
 
             try {
-                // Check for existing service worker registration
-                const existingRegistration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+                // Get all existing service worker registrations
+                const registrations = await navigator.serviceWorker.getRegistrations();
                 
-                let registration;
-                if (!existingRegistration) {
-                    // Only register if no existing registration
-                    registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                    console.log('New Service Worker registered:', registration);
-                } else {
-                    registration = existingRegistration;
-                    console.log('Using existing Service Worker:', registration);
-                }
+                // Unregister any existing service workers
+                await Promise.all(registrations.map(reg => reg.unregister()));
+
+                // Register new service worker with specific scope
+                registrationPromise = navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                    scope: '/'
+                });
+
+                const registration = await registrationPromise;
+                console.log('Service Worker registered:', registration);
 
                 const permission = await Notification.requestPermission();
                 setNotificationPermission(permission);
@@ -38,7 +41,6 @@ export const useNotifications = () => {
                     if (token) {
                         setFcmToken(token);
                         
-                        // Store token in Firestore
                         const userRef = doc(db, 'users', auth.currentUser.uid);
                         const userDoc = await getDoc(userRef);
                         
@@ -61,6 +63,15 @@ export const useNotifications = () => {
         };
 
         initializeNotifications();
+
+        // Cleanup function
+        return () => {
+            if (registrationPromise) {
+                registrationPromise.then(registration => {
+                    registration.unregister();
+                }).catch(console.error);
+            }
+        };
     }, [auth.currentUser]);
 
     return {

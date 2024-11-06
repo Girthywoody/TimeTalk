@@ -41,29 +41,6 @@ const storage = getStorage(app);
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 const functions = getFunctions(app);
 
-export const requestNotificationPermission = async () => {
-    try {
-        if (!messaging) return null;
-
-        // First, check if service worker is registered
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        console.log('Service Worker registered:', registration);
-
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            // Get token only after permission is granted
-            const token = await getToken(messaging, {
-                vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc',
-                serviceWorkerRegistration: registration
-            });
-            console.log('FCM Token:', token);
-            return token;
-        }
-        return null;
-    } catch (error) {
-        console.error('Notification permission error:', error);
-        return null;
-    }
-};
+// Remove the requestNotificationPermission function from here as it's now handled in useNotifications
 
 export { auth, db, storage, messaging, functions };
