@@ -12,24 +12,31 @@ export default function Navigation({ currentPage, setCurrentPage }) {
       setIsKeyboardVisible(isKeyboard);
     };
 
-    handleResize();
-    
-    window.addEventListener('resize', handleResize);
-    document.addEventListener('focusin', (e) => {
+    const handleFocusIn = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
         setIsKeyboardVisible(true);
       }
-    });
-    document.addEventListener('focusout', () => {
+    };
+
+    const handleFocusOut = () => {
       setIsKeyboardVisible(false);
-    });
+    };
+
+    window.addEventListener('resize', handleResize);
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      document.removeEventListener('focusin', handleResize);
-      document.removeEventListener('focusout', handleResize);
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
     };
   }, []);
+
+  // Hide the entire navigation component when keyboard is visible
+  if (isKeyboardVisible) {
+    return null;
+  }
 
   const buttonClasses = (page) => `
     relative flex-1 flex flex-col items-center justify-center py-3
@@ -38,9 +45,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
   `;
 
   return (
-    <nav className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out ${
-      isKeyboardVisible ? 'translate-y-full opacity-0' : 'translate-y-0 opacity-100'
-    }`}>
+    <nav className="fixed bottom-0 left-0 right-0 z-50">
       <div className={`${
         darkMode 
           ? 'bg-gray-900/80 border-gray-800' 
@@ -77,14 +82,12 @@ export default function Navigation({ currentPage, setCurrentPage }) {
           ))}
         </div>
       </div>
-      {!isKeyboardVisible && (
-        <div className={`h-[env(safe-area-inset-bottom)] ${
-          darkMode 
-            ? 'bg-gray-900/80' 
-            : 'bg-white/80'
-          } backdrop-blur-lg`} 
-        />
-      )}
+      <div className={`h-[env(safe-area-inset-bottom)] ${
+        darkMode 
+          ? 'bg-gray-900/80' 
+          : 'bg-white/80'
+        } backdrop-blur-lg`} 
+      />
     </nav>
   );
 }
