@@ -85,7 +85,7 @@ const MainApp = () => {
           postData.mediaUrl = mediaUrl;
         }
   
-        await addDoc(collection(db, 'posts'), postData);
+        const docRef = await addDoc(collection(db, 'posts'), postData);
         
         // Reset form
         setMessage('');
@@ -125,7 +125,7 @@ const MainApp = () => {
 
   const handlePost = async () => {
     console.log('Post button clicked', { message, mediaPreview, scheduledDateTime, isUploading });
-
+  
     if ((!message && !mediaPreview) || !scheduledDateTime || isUploading) {
       console.log('Early return conditions:', {
         noContent: !message && !mediaPreview,
@@ -134,22 +134,22 @@ const MainApp = () => {
       });
       return;
     }
-
+  
     const now = new Date();
     now.setDate(now.getDate() + 1);
     now.setHours(0, 0, 0, 0);
-
+  
     if (scheduledDateTime < now) {
       alert('Please select a future date and time');
       return;
     }
-
+  
     try {
       setIsUploading(true);
       console.log('Starting upload process');
-
+  
       let mediaUrl = null;
-
+  
       if (mediaPreview && mediaType !== 'text') {
         console.log('Processing media', { mediaType });
         
@@ -174,7 +174,7 @@ const MainApp = () => {
         mediaUrl = await getDownloadURL(storageRef);
         console.log('Media uploaded successfully', { mediaUrl });
       }
-
+  
       setPendingPost({
         type: mediaType,
         content: message,
@@ -182,12 +182,13 @@ const MainApp = () => {
         mediaUrl,
         createdAt: new Date().toISOString(),
         author: 'Partner 1',
-        authorId: auth.currentUser.uid,  // Add this line
-        likes: 0
+        authorId: auth.currentUser.uid,
+        likes: 0,
+        scheduledNotificationSent: false, // Add this field for scheduled notifications
       });
       
       setShowSecretModal(true);
-
+  
     } catch (error) {
       console.error('Error preparing post:', error);
       alert('Failed to prepare post. Please try again.');
@@ -200,7 +201,10 @@ const MainApp = () => {
       const finalPost = {
         ...pendingPost,
         completelySecret: isCompletelySecret,
-        isScheduled: isScheduled
+        isScheduled: isScheduled,
+        // If it's completely secret, we don't set scheduledNotificationSent
+        // This way the cloud function won't send notifications for secret posts
+        ...(isCompletelySecret ? {} : { scheduledNotificationSent: false })
       };
   
       console.log('Creating Firestore document with data:', finalPost);

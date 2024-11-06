@@ -29,15 +29,28 @@ const SharedCalendar = () => {
   const [showDayView, setShowDayView] = useState(false);  
   const { darkMode } = useDarkMode();
   const [selectedDate, setSelectedDate] = useState(new Date());  // Default to today
-  const [newEvent, setNewEvent] = useState({
-    title: "",
-    date: "",
-    isAllDay: false,
-    startTime: "",
-    endTime: "",
-    location: "",
-    type: "general"
-  });
+// In the newEvent state, add notifications field
+const [newEvent, setNewEvent] = useState({
+  title: "",
+  date: "",
+  isAllDay: false,
+  startTime: "",
+  endTime: "",
+  location: "",
+  type: "general",
+  notifications: [] // Add this field
+});
+
+// Add this array above the component for notification options
+const NOTIFICATION_OPTIONS = [
+  { value: '2880', label: '2 days before' },
+  { value: '1440', label: '1 day before' },
+  { value: '240', label: '4 hours before' },
+  { value: '120', label: '2 hours before' },
+  { value: '60', label: '1 hour before' },
+  { value: '30', label: '30 minutes before' },
+  { value: '15', label: '15 minutes before' }
+];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -122,7 +135,17 @@ const SharedCalendar = () => {
         ...newEvent,
         userId: auth.currentUser.uid,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        // Add notification timestamps
+        notificationTimes: newEvent.notifications.map(minutes => {
+          const eventDate = new Date(newEvent.date);
+          if (!newEvent.isAllDay && newEvent.startTime) {
+            const [hours, mins] = newEvent.startTime.split(':');
+            eventDate.setHours(parseInt(hours), parseInt(mins));
+          }
+          const notificationDate = new Date(eventDate.getTime() - (parseInt(minutes) * 60000));
+          return notificationDate.toISOString();
+        })
       };
   
       await addDoc(collection(db, 'events'), eventData);
@@ -134,7 +157,8 @@ const SharedCalendar = () => {
         startTime: "",
         endTime: "",
         location: "",
-        type: "general"
+        type: "general",
+        notifications: []
       });
       setShowEventForm(false);
     } catch (error) {
@@ -573,19 +597,41 @@ const SharedCalendar = () => {
           <label className={`block text-sm font-medium ${
             darkMode ? 'text-gray-300' : 'text-gray-700'
           }`}>
-            Title
+            Notifications
           </label>
-          <input
-            type="text"
-            value={newEvent.title}
-            onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-            className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
-              darkMode 
-                ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' 
-                : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
-            } border`}
-            placeholder="Enter event title"
-          />
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {NOTIFICATION_OPTIONS.map((option) => (
+              <label key={option.value} className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={newEvent.notifications.includes(option.value)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setNewEvent(prev => ({
+                        ...prev,
+                        notifications: [...prev.notifications, option.value]
+                      }));
+                    } else {
+                      setNewEvent(prev => ({
+                        ...prev,
+                        notifications: prev.notifications.filter(n => n !== option.value)
+                      }));
+                    }
+                  }}
+                  className={`h-4 w-4 rounded border-gray-300 ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600' 
+                      : 'bg-gray-100'
+                  } text-blue-600 focus:ring-blue-500`}
+                />
+                <span className={`text-sm ${
+                  darkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  {option.label}
+                </span>
+              </label>
+            ))}
+          </div>
         </div>
 
         {/* All Day Switch */}
