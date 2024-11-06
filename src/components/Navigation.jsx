@@ -38,8 +38,8 @@ export default function Navigation({ currentPage, setCurrentPage }) {
   `;
 
   return (
-    <nav className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
-      isKeyboardVisible ? 'translate-y-full' : 'translate-y-0'
+    <nav className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out ${
+      isKeyboardVisible ? 'translate-y-full opacity-0' : 'translate-y-0 opacity-100'
     }`}>
       <div className={`${
         darkMode 
@@ -77,11 +77,14 @@ export default function Navigation({ currentPage, setCurrentPage }) {
           ))}
         </div>
       </div>
-      <div className={`h-[env(safe-area-inset-bottom)] ${
-        darkMode 
-          ? 'bg-gray-900/80' 
-          : 'bg-white/80'
-        } backdrop-blur-lg`} />
+      {!isKeyboardVisible && (
+        <div className={`h-[env(safe-area-inset-bottom)] ${
+          darkMode 
+            ? 'bg-gray-900/80' 
+            : 'bg-white/80'
+          } backdrop-blur-lg`} 
+        />
+      )}
     </nav>
   );
 }
