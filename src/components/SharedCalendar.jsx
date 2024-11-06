@@ -2,46 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { 
   Bell, 
   Plus, 
-  Calendar as CalendarIcon, 
-  Clock, 
-  MapPin, 
-  Heart, 
-  Lock, 
+  Clock,
+  MapPin,
   Trash2, 
   Edit2, 
   X,
-  CalendarDays as Calendar
+  CalendarDays,
+  Users,
+  AlignLeft,
+  Sun, 
+  Moon, 
+  Sunrise, 
+  Sunset
 } from 'lucide-react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon, Sunrise, Sunset } from 'lucide-react';
 import { useDarkMode } from '../context/DarkModeContext';
 
-
-const SharedCalendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [events, setEvents] = useState([]);
-  const [showEventForm, setShowEventForm] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [profileData, setProfileData] = useState(null);
-  const [showDayView, setShowDayView] = useState(false);  
-  const { darkMode } = useDarkMode();
-  const [selectedDate, setSelectedDate] = useState(new Date());  // Default to today
-// In the newEvent state, add notifications field
-const [newEvent, setNewEvent] = useState({
-  title: "",
-  date: "",
-  isAllDay: false,
-  startTime: "",
-  endTime: "",
-  location: "",
-  type: "general",
-  notifications: [] // Add this field
-});
-
-// Add this array above the component for notification options
 const NOTIFICATION_OPTIONS = [
   { value: '2880', label: '2 days before' },
   { value: '1440', label: '1 day before' },
@@ -51,6 +29,39 @@ const NOTIFICATION_OPTIONS = [
   { value: '30', label: '30 minutes before' },
   { value: '15', label: '15 minutes before' }
 ];
+
+const REPEAT_OPTIONS = [
+  { value: 'never', label: 'Never' },
+  { value: 'everyday', label: 'Everyday' },
+  { value: 'weekly', label: 'Every Week' },
+  { value: 'biweekly', label: 'Every 2 Weeks' },
+  { value: 'monthly', label: 'Every Month' },
+  { value: 'yearly', label: 'Every Year' }
+];
+
+const SharedCalendar = () => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [events, setEvents] = useState([]);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+  const [showDayView, setShowDayView] = useState(false);
+  const { darkMode } = useDarkMode();
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    date: "",
+    isAllDay: false,
+    startTime: "",
+    endTime: "",
+    location: "",
+    type: "general",
+    notifications: [],
+    repeat: 'never',
+    description: ""
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -65,13 +76,29 @@ const NOTIFICATION_OPTIONS = [
     fetchProfile();
   }, []);
 
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    
+    const eventsRef = collection(db, 'events');
+    const q = query(eventsRef, orderBy('date', 'asc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedEvents = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setEvents(fetchedEvents);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleDateClick = (date) => {
     if (date) {
       setSelectedDate(date);
-      setShowDayView(true); // Add this line to show the day view modal
+      setShowDayView(true);
     }
   };
-
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -98,23 +125,6 @@ const NOTIFICATION_OPTIONS = [
     }
   };
 
-  useEffect(() => {
-    if (!auth.currentUser) return;
-    
-    const eventsRef = collection(db, 'events');
-    const q = query(eventsRef, orderBy('date', 'asc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedEvents = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setEvents(fetchedEvents);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
   const handleAddEvent = async (e) => {
     e.preventDefault();
     if (!newEvent.title || !newEvent.date) return;
@@ -136,7 +146,6 @@ const NOTIFICATION_OPTIONS = [
         userId: auth.currentUser.uid,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        // Add notification timestamps
         notificationTimes: newEvent.notifications.map(minutes => {
           const eventDate = new Date(newEvent.date);
           if (!newEvent.isAllDay && newEvent.startTime) {
@@ -158,7 +167,9 @@ const NOTIFICATION_OPTIONS = [
         endTime: "",
         location: "",
         type: "general",
-        notifications: []
+        notifications: [],
+        repeat: 'never',
+        description: ""
       });
       setShowEventForm(false);
     } catch (error) {
@@ -189,9 +200,14 @@ const NOTIFICATION_OPTIONS = [
       setNewEvent({
         title: "",
         date: "",
-        time: "",
+        isAllDay: false,
+        startTime: "",
+        endTime: "",
         location: "",
-        type: "general"
+        type: "general",
+        notifications: [],
+        repeat: 'never',
+        description: ""
       });
     } catch (error) {
       console.error("Error updating event: ", error);
@@ -260,17 +276,18 @@ const NOTIFICATION_OPTIONS = [
     
     return endTimeFormatted ? `${startTimeFormatted} - ${endTimeFormatted}` : startTimeFormatted;
   };
-  
+
   return (
     <div className={`h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white'} overflow-x-hidden overflow-y-auto flex flex-col pb-16`}>
+      {/* Main Calendar View */}
       <AnimatePresence mode="wait">
-         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="p-4 flex-1 overflow-y-auto pb-32" // Increased bottom padding
-          >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="p-4 flex-1 overflow-y-auto pb-32"
+        >
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-4">
@@ -310,7 +327,7 @@ const NOTIFICATION_OPTIONS = [
             ))}
           </div>
 
-          {/* Calendar Days */}
+          {/* Calendar Grid */}
           <div className="grid grid-cols-7 mb-2">
             {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(day => (
               <div key={day} className={`text-center text-xs font-medium ${
@@ -321,8 +338,7 @@ const NOTIFICATION_OPTIONS = [
             ))}
           </div>
 
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2 mb-8"> {/* Added larger margin bottom */}
+          <div className="grid grid-cols-7 gap-2 mb-8">
             {generateCalendarDays().map((date, index) => {
               const dayEvents = date ? getDayEvents(date) : [];
               const isToday = date?.toDateString() === new Date().toDateString();
@@ -364,10 +380,10 @@ const NOTIFICATION_OPTIONS = [
               );
             })}
           </div>
+
+          {/* Events List */}
           <div className={`w-full h-px ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} my-8`} />
-
-
-          {/* Selected Date Meetings */}
+          
           <div className="max-h-[calc(100vh-460px)] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">
@@ -394,7 +410,7 @@ const NOTIFICATION_OPTIONS = [
                 <span>Add Event</span>
               </button>
             </div>
-            
+
             {getDayEvents(selectedDate).length === 0 ? (
               <p className="text-gray-500 text-center py-4">No events scheduled for this day</p>
             ) : (
@@ -405,9 +421,9 @@ const NOTIFICATION_OPTIONS = [
                     className={`${darkMode ? 'bg-gray-800' : 'bg-blue-900'} text-white p-4 rounded-xl`}
                   >
                     <div className="flex justify-between items-start mb-2">
-                    <h4 className={`font-semibold text-white`}> 
-                      {event.title}
-                    </h4>
+                      <h4 className="font-semibold text-white">
+                        {event.title}
+                      </h4>
                       <div className="flex gap-2">
                         <Edit2 
                           size={18} 
@@ -435,9 +451,11 @@ const NOTIFICATION_OPTIONS = [
                         <span>{event.location}</span>
                       </div>
                     )}
-                    <div className="mt-2 text-sm text-blue-200">
-                      Type: {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
-                    </div>
+                    {event.description && (
+                      <div className="mt-2 text-sm text-blue-200">
+                        {event.description}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -446,380 +464,186 @@ const NOTIFICATION_OPTIONS = [
         </motion.div>
       </AnimatePresence>
 
-      {/* Selected Date Events Modal */}
-{showDayView && selectedDate && (
-  <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 mt-1">
-    <motion.div
-      initial={{ scale: 0.95, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.95, opacity: 0 }}
-      transition={{ type: "spring", duration: 0.3 }}
-      className={`${darkMode ? 'bg-gray-900' : 'bg-white'} rounded-3xl p-4 w-full max-w-lg shadow-xl`}
-      >
-    <div className="flex items-center justify-between mb-6">
-      <h3 className={`text-2xl font-semibold ${darkMode ? 'text-white' : 'text-blue-900'}`}>
-          {selectedDate.toLocaleDateString('en-US', { 
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric'
-          })}
-        </h3>
-        <button
-          onClick={() => setShowDayView(false)}
-          className={`p-2 ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} rounded-full transition-colors`}
-          >
-           <X size={24} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        {getDayEvents(selectedDate).length === 0 ? (
-          <p className={`text-center py-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            No events scheduled for this day
-          </p>
-        ) : (
-          getDayEvents(selectedDate).map((event) => (
-              <div
-                key={event.id}
-                className={`${darkMode ? 'bg-gray-800' : 'bg-blue-50'} p-4 rounded-xl`}
+      {/* Event Form Modal */}
+      {showEventForm && (
+        <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 pt-8 px-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <button 
+                onClick={() => {
+                  setShowEventForm(false);
+                  setIsEditing(false);
+                  setNewEvent({
+                    title: "",
+                    date: "",
+                    isAllDay: false,
+                    startTime: "",
+                    endTime: "",
+                    location: "",
+                    type: "general",
+                    notifications: [],
+                    repeat: 'never',
+                    description: ""
+                  });
+                }}
+                className="text-red-500 font-semibold"
               >
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-blue-900'}`}>
-                {event.title}
-              </h4>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setNewEvent(event);
-                      setIsEditing(true);
-                      setShowDayView(false);
-                      setShowEventForm(true);
-                    }}
-                    className={`p-1.5 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-blue-100'} rounded-full transition-colors`}
-                    >
-        <Edit2 size={16} className={darkMode ? 'text-gray-300' : 'text-blue-700'} />
-                  </button>
-                  <button
-                      onClick={() => handleDeleteEvent(event.id)}
-                      className={`p-1.5 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-blue-100'} rounded-full transition-colors`}
-                    >
-                      <Trash2 size={16} className={darkMode ? 'text-gray-300' : 'text-blue-700'} />
-                    </button>
+                Cancel
+              </button>
+              <h2 className="text-lg font-semibold">
+                {isEditing ? 'Edit Event' : 'New Event'}
+              </h2>
+              <button
+                onClick={isEditing ? handleUpdateEvent : handleAddEvent}
+                disabled={isSubmitting}
+                className="text-blue-500 font-semibold disabled:opacity-50"
+              >
+                {isSubmitting ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+
+            <form className="p-4 space-y-4">
+              {/* Title Input */}
+              <input
+                type="text"
+                placeholder="Event Title"
+                value={newEvent.title}
+                onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
+                className="w-full p-3 text-lg font-semibold placeholder:text-gray-400 focus:outline-none"
+              />
+
+              {/* Time Selection */}
+              <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl">
+                <div className="flex items-center gap-2 flex-1">
+                  <Clock size={20} className="text-gray-400" />
+                  <input
+                    type="time"
+                    value={newEvent.startTime}
+                    onChange={e => setNewEvent(prev => ({ ...prev, startTime: e.target.value }))}
+                    className="bg-transparent p-1"
+                  />
+                </div>
+                <div className="text-gray-400">→</div>
+                <div className="flex items-center gap-2 flex-1">
+                  <input
+                    type="time"
+                    value={newEvent.endTime}
+                    onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
+                    className="bg-transparent p-1"
+                  />
                 </div>
               </div>
-              <div className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-300' : 'text-blue-700'}`}>
-                <Clock size={14} />
-                  <span>{formatTime(event)}</span>
+
+              {/* Date Selection */}
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <CalendarDays size={20} className="text-gray-400" />
+                <input
+                  type="date"
+                  value={newEvent.date}
+                  onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                  className="bg-transparent flex-1"
+                />
               </div>
-              {event.location && (
-                <div className={`flex items-center gap-2 text-sm mt-1 ${darkMode ? 'text-gray-300' : 'text-blue-700'}`}>
-                  <MapPin size={14} />
-                  <span>{event.location}</span>
+
+              {/* All Day Toggle */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <Clock size={20} className="text-gray-400" />
+                  <span className="text-gray-600">All day</span>
                 </div>
-              )}
-              <div className={`mt-2 text-sm ${darkMode ? 'text-gray-300' : 'text-blue-600'}`}>
-                Type: {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
+                <button
+                  type="button"
+                  onClick={() => setNewEvent(prev => ({
+                    ...prev,
+                    isAllDay: !prev.isAllDay,
+                    startTime: "",
+                    endTime: ""
+                  }))}
+                  className={`w-12 h-7 rounded-full transition-colors ${
+                    newEvent.isAllDay ? 'bg-blue-500' : 'bg-gray-200'
+                  } relative`}
+                >
+                  <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                    newEvent.isAllDay ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </button>
               </div>
-            </div>
-          ))
-        )}
-      </div>
 
-      <div className="mt-6">
-        <button
-          onClick={() => {
-            setNewEvent(prev => ({
-              ...prev,
-              date: selectedDate.toISOString().split('T')[0]
-            }));
-            setIsEditing(false);
-            setShowDayView(false);
-            setShowEventForm(true);
-          }}
-          className="w-full p-4 bg-blue-900 text-white rounded-xl hover:bg-blue-800 font-medium transition-colors flex items-center justify-center gap-2"
-        >
-          <Plus size={20} />
-          <span>Add Event for This Day</span>
-        </button>
-      </div>
-    </motion.div>
-  </div>
-)}
+              {/* Notifications */}
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <Bell size={20} className="text-gray-400" />
+                <select 
+                  value={newEvent.notifications[0] || ''} 
+                  onChange={e => setNewEvent(prev => ({ 
+                    ...prev, 
+                    notifications: e.target.value ? [e.target.value] : [] 
+                  }))}
+                  className="flex-1 bg-transparent"
+                >
+                  <option value="">No Alert</option>
+                  {NOTIFICATION_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
+              {/* Repeat */}
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <div className="rotate-90">
+                  <Clock size={20} className="text-gray-400" />
+                </div>
+                <select 
+                  className="flex-1 bg-transparent"
+                  value={newEvent.repeat}
+                  onChange={e => setNewEvent(prev => ({ ...prev, repeat: e.target.value }))}
+                >
+                  {REPEAT_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-{/* Event Form Modal */}
-{showEventForm && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-    <motion.div
-      initial={{ scale: 0.95, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.95, opacity: 0 }}
-      transition={{ type: "spring", duration: 0.3 }}
-      className={`${
-        darkMode 
-          ? 'bg-gray-900 text-white' 
-          : 'bg-white text-gray-900'
-      } rounded-3xl p-6 pb-1 w-full max-w-lg shadow-xl`}
-    >
-      <div className="flex items-center justify-between mb-6">
-        <h3 className={`text-2xl font-semibold ${
-          darkMode ? 'text-white' : 'text-blue-900'
-        }`}>
-          {isEditing ? 'Edit Event' : 'New Event'}
-        </h3>
-        <button
-          onClick={() => {
-            setShowEventForm(false);
-            setIsEditing(false);
-            setNewEvent({
-              title: "",
-              date: "",
-              isAllDay: false,
-              startTime: "",
-              endTime: "",
-              location: "",
-              type: "general"
-            });
-          }}
-          className={`p-2 rounded-full transition-colors ${
-            darkMode 
-              ? 'hover:bg-gray-800 text-gray-400 hover:text-gray-300' 
-              : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          <X size={24} />
-        </button>
-      </div>
-      
-      <form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-4">
-        {/* Title Input */}
-        <div className="space-y-2">
-          <label className={`block text-sm font-medium ${
-            darkMode ? 'text-gray-300' : 'text-gray-700'
-          }`}>
-            Notifications
-          </label>
-          <div className="space-y-2 max-h-40 overflow-y-auto">
-            {NOTIFICATION_OPTIONS.map((option) => (
-              <label key={option.value} className="flex items-center space-x-3">
+              {/* Participants */}
+              <button 
+                type="button"
+                className="w-full flex items-center gap-3 p-4 bg-gray-50 rounded-xl"
+              >
+                <Users size={20} className="text-gray-400" />
+                <span className="text-gray-600">Add Participants</span>
+              </button>
+
+              {/* Location */}
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <MapPin size={20} className="text-gray-400" />
                 <input
-                  type="checkbox"
-                  checked={newEvent.notifications.includes(option.value)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setNewEvent(prev => ({
-                        ...prev,
-                        notifications: [...prev.notifications, option.value]
-                      }));
-                    } else {
-                      setNewEvent(prev => ({
-                        ...prev,
-                        notifications: prev.notifications.filter(n => n !== option.value)
-                      }));
-                    }
-                  }}
-                  className={`h-4 w-4 rounded border-gray-300 ${
-                    darkMode 
-                      ? 'bg-gray-700 border-gray-600' 
-                      : 'bg-gray-100'
-                  } text-blue-600 focus:ring-blue-500`}
+                  type="text"
+                  placeholder="Add Location"
+                  value={newEvent.location}
+                  onChange={e => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
+                  className="flex-1 bg-transparent placeholder:text-gray-600"
                 />
-                <span className={`text-sm ${
-                  darkMode ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  {option.label}
-                </span>
-              </label>
-            ))}
+              </div>
+
+              {/* Description */}
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <AlignLeft size={20} className="text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Add Description"
+                  value={newEvent.description}
+                  onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
+                  className="flex-1 bg-transparent placeholder:text-gray-600"
+                />
+              </div>
+            </form>
           </div>
         </div>
-
-        {/* All Day Switch */}
-        <div className={`flex items-center justify-between p-2 rounded-xl ${
-          darkMode ? 'bg-gray-800' : 'bg-gray-50'
-        }`}>
-          <label className={`text-sm font-medium ${
-            darkMode ? 'text-gray-300' : 'text-gray-700'
-          }`}>
-            All Day
-          </label>
-          <button
-            type="button"
-            onClick={() => setNewEvent(prev => ({
-              ...prev,
-              isAllDay: !prev.isAllDay,
-              startTime: "",
-              endTime: ""
-            }))}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-              ${newEvent.isAllDay 
-                ? 'bg-blue-600' 
-                : darkMode ? 'bg-gray-700' : 'bg-gray-200'
-              }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                ${newEvent.isAllDay ? 'translate-x-6' : 'translate-x-1'}`}
-            />
-          </button>
-        </div>
-
-        {/* Date Input */}
-        <div className="space-y-2">
-          <label className={`block text-sm font-medium ${
-            darkMode ? 'text-gray-300' : 'text-gray-700'
-          }`}>
-            Date
-          </label>
-          <input
-            type="date"
-            value={newEvent.date}
-            onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
-            className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
-              darkMode 
-                ? 'bg-gray-800 border-gray-700 text-white' 
-                : 'bg-gray-50 border-gray-200 text-gray-900'
-            } border`}
-          />
-        </div>
-
-        {/* Time Range */}
-        {!newEvent.isAllDay && (
-          <div className="space-y-2">
-            <label className={`block text-sm font-medium ${
-              darkMode ? 'text-gray-300' : 'text-gray-700'
-            }`}>
-              Time
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={`block text-xs ${
-                  darkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}>
-                  From
-                </label>
-                <input
-                  type="time"
-                  value={newEvent.startTime}
-                  onChange={e => {
-                    const newStartTime = e.target.value;
-                    setNewEvent(prev => ({
-                      ...prev,
-                      startTime: newStartTime,
-                      endTime: prev.endTime && newStartTime > prev.endTime ? newStartTime : prev.endTime
-                    }));
-                  }}
-                  className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
-                    darkMode 
-                      ? 'bg-gray-800 border-gray-700 text-white' 
-                      : 'bg-gray-50 border-gray-200 text-gray-900'
-                  } border`}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className={`block text-xs ${
-                  darkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}>
-                  To
-                </label>
-                <input
-                  type="time"
-                  value={newEvent.endTime}
-                  min={newEvent.startTime}
-                  onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
-                  className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
-                    darkMode 
-                      ? 'bg-gray-800 border-gray-700 text-white' 
-                      : 'bg-gray-50 border-gray-200 text-gray-900'
-                  } border`}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Location Input */}
-        <div className="space-y-2">
-          <label className={`block text-sm font-medium ${
-            darkMode ? 'text-gray-300' : 'text-gray-700'
-          }`}>
-            Location
-          </label>
-          <input
-            type="text"
-            value={newEvent.location}
-            onChange={e => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
-            className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
-              darkMode 
-                ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' 
-                : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
-            } border`}
-            placeholder="Enter location"
-          />
-        </div>
-
-        {/* Event Type Select */}
-        <div className="space-y-2">
-          <label className={`block text-sm font-medium ${
-            darkMode ? 'text-gray-300' : 'text-gray-700'
-          }`}>
-            Event Type
-          </label>
-          <select
-            value={newEvent.type}
-            onChange={e => setNewEvent(prev => ({ ...prev, type: e.target.value }))}
-            className={`w-full p-2 rounded-xl focus:ring-2 focus:ring-blue-500 ${
-              darkMode 
-                ? 'bg-gray-800 border-gray-700 text-white' 
-                : 'bg-gray-50 border-gray-200 text-gray-900'
-            } border`}
-          >
-            <option value="general">General</option>
-            <option value="meeting">Meeting</option>
-            <option value="personal">Personal</option>
-            <option value="important">Important</option>
-          </select>
-        </div>
-
-        {/* Form Buttons */}
-        <div className="flex gap-3 pt-4">
-          <button
-            type="button"
-            onClick={() => {
-              setShowEventForm(false);
-              setIsEditing(false);
-              setNewEvent({
-                title: "",
-                date: "",
-                isAllDay: false,
-                startTime: "",
-                endTime: "",
-                location: "",
-                type: "general"
-              });
-            }}
-            className={`flex-1 p-4w rounded-xl font-medium transition-colors ${
-              darkMode 
-                ? 'bg-gray-800 hover:bg-gray-700 text-white' 
-                : 'border hover:bg-gray-50 text-gray-900'
-            }`}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex-1 p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition-colors disabled:opacity-50"
-          >
-            {isSubmitting ? 'Saving...' : (isEditing ? 'Update' : 'Add Event')}
-          </button>
-        </div>
-      </form>
-    </motion.div>
-  </div>
-)}
-<form onSubmit={isEditing ? handleUpdateEvent : handleAddEvent} className="space-y-1 pb-20"></form>
-
+      )}
     </div>
   );
 };
