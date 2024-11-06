@@ -820,22 +820,22 @@ useEffect(() => {
               >
                 <Bell size={20} className="text-blue-500" />
               </button>
-              {otherUserInfo.photoURL ? (
+              {otherUser?.photoURL ? (
                 <img 
-                  src={otherUserInfo.photoURL} 
+                  src={otherUser.photoURL} 
                   alt="Profile" 
                   className="w-10 h-10 rounded-full object-cover"
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                   <span className="text-blue-500 font-medium">
-                    {otherUserInfo.name[0]}
+                    {otherUser?.username?.[0] || otherUser?.displayName?.[0]}
                   </span>
                 </div>
               )}
               <div>
                 <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
-                  {otherUserInfo.name}
+                  {otherUser?.username || otherUser?.displayName}
                 </h1>
                 <p className={`text-sm ${otherUserStatus?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
                   {otherUserStatus?.isOnline ? 'Online' : ''}
@@ -1088,6 +1088,20 @@ useEffect(() => {
                       onTouchMove={handleTouchMove}
                       onTouchEnd={() => handleTouchEnd(message)}
                       onClick={() => handleDoubleTap(message)}
+                      onContextMenu={(e) => handleMessageLongPress(message, e)}
+                      onTouchStart={(e) => {
+                        setPressTimer(
+                          setTimeout(() => {
+                            handleMessageLongPress(message, e);
+                          }, 500)
+                        );
+                      }}
+                      onTouchEnd={() => {
+                        if (pressTimer) clearTimeout(pressTimer);
+                      }}
+                      onTouchMove={() => {
+                        if (pressTimer) clearTimeout(pressTimer);
+                      }}
                     >
                       {message.replyTo && (
                         <div className={`text-sm mb-1 pb-1 border-b ${
