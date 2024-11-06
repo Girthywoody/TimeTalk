@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Image, MessageSquare, Mic, Video, Lock, Send, Heart, X, EyeOff } from 'lucide-react';
+import { Calendar, Clock, Image, MessageSquare, Video, Lock, Send, Heart, X, EyeOff } from 'lucide-react';
 import { collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -259,8 +259,7 @@ const MainApp = () => {
                   {[
                     { type: 'text', icon: MessageSquare },
                     { type: 'image', icon: Image },
-                    { type: 'video', icon: Video },
-                    { type: 'audio', icon: Mic }
+                    { type: 'video', icon: Video }
                   ].map(({ type, icon: Icon }) => (
                     <button
                       key={type}

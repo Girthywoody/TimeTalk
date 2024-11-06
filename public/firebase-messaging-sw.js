@@ -90,29 +90,54 @@ self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
     const data = event.notification.data;
-    let urlToOpen = 'https://time-talk.vercel.app/chat';
-
-    if (data?.link) {
-        urlToOpen = data.link;
-    }
+    // Base URL for the app
+    const baseUrl = 'https://time-talk.vercel.app';
+    
+    // Construct the path based on the notification type
+    let path = '/chat'; // Default to chat page
+    let queryParams = '';
 
     if (event.action === 'reply') {
-        urlToOpen = `${urlToOpen}?action=reply&messageId=${data?.messageId || ''}`;
+        queryParams = `?action=reply&messageId=${data?.messageId || ''}`;
     }
+
+    // Combine the path and query parameters
+    const urlToOpen = `${baseUrl}${path}${queryParams}`;
 
     const promiseChain = clients.matchAll({
         type: 'window',
         includeUncontrolled: true
     })
     .then((windowClients) => {
+        // Try to find an existing window/tab
+        let matchingClient = null;
+        
         for (let i = 0; i < windowClients.length; i++) {
             const client = windowClients[i];
-            if (client.url === urlToOpen && 'focus' in client) {
-                return client.focus();
+            // Check if the client URL starts with our base URL
+            if (client.url.startsWith(baseUrl)) {
+                matchingClient = client;
+                break;
             }
         }
+
+        if (matchingClient) {
+            // If we found an existing window, focus it and navigate
+            return matchingClient.focus().then((client) => {
+                // After focusing, navigate to the specific page
+                return client.navigate(urlToOpen).then((client) => client.focus());
+            });
+        } else {
+            // If no existing window, open a new one
+            return clients.openWindow(urlToOpen);
+        }
+    })
+    .catch((err) => {
+        console.error('Error handling notification click:', err);
+        // Fallback to simple window opening
         return clients.openWindow(urlToOpen);
     });
 
     event.waitUntil(promiseChain);
+});
 });
