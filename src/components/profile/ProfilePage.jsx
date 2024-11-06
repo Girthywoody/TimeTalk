@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Settings, MessageCircle, Heart, Calendar, Gift, Camera, Loader2 } from 'lucide-react';
 import SettingsPage from '../profile/SettingsPage';
 import QuickActions from '../profile/QuickActions'; // Add this import
+import { useNavigate } from 'react-router-dom';
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
@@ -13,6 +14,7 @@ const ProfilePage = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [partnerProfile, setPartnerProfile] = useState(null);
   const { user, getPartnerProfile } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -144,7 +146,7 @@ const ProfilePage = () => {
             </div>
 
             {/* Relationship Status */}
-            {(profileData?.relationship?.anniversary || profileData?.partnerInfo?.name) && (
+            {(profileData?.relationship?.anniversary || partnerProfile) && (
               <div className="flex flex-col items-center gap-2">
                 {profileData.relationship?.anniversary && (
                   <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
@@ -152,13 +154,13 @@ const ProfilePage = () => {
                     <span>Together since {new Date(profileData.relationship.anniversary).toLocaleDateString()}</span>
                   </div>
                 )}
-                {profileData.partnerInfo?.name && (
+                {partnerProfile && (
                   <button 
-                    onClick={() => {/* Add navigation to partner profile */}}
+                    onClick={() => navigate(`/profile/${profileData.partnerId}`)}
                     className="flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
                   >
                     <Heart className="w-4 h-4" />
-                    <span>With {profileData.partnerInfo.name}</span>
+                    <span>With {partnerProfile.displayName || partnerProfile.username}</span>
                   </button>
                 )}
               </div>
