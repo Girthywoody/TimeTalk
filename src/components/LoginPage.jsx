@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -48,8 +49,9 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      await auth.sendPasswordResetEmail(email);
+      await sendPasswordResetEmail(auth, email);
       setError('Password reset email sent! Please check your inbox.');
+      setIsResetPassword(false);
     } catch (err) {
       console.error('Reset error:', err);
       setError(getReadableErrorMessage(err));
@@ -76,6 +78,12 @@ const LoginPage = () => {
         return 'Network error - please check your connection';
       case 'auth/too-many-requests':
         return 'Too many failed attempts. Please try again later';
+      case 'auth/missing-email':
+        return 'Please enter an email address';
+      case 'auth/invalid-action-code':
+        return 'Invalid reset link. Please try again';
+      case 'auth/expired-action-code':
+        return 'Reset link has expired. Please request a new one';
       default:
         return 'An error occurred. Please try again';
     }
