@@ -106,6 +106,7 @@ const ChatRoom = () => {
   const [pressTimer, setPressTimer] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const otherUserInfo = {
     name: "Test", // Replace with the actual name
@@ -927,6 +928,17 @@ useEffect(() => {
     }
 };
 
+  useEffect(() => {
+    const handleResize = () => {
+      // Check if the viewport height has decreased significantly (keyboard is shown)
+      const isKeyboard = window.innerHeight < window.outerHeight * 0.75;
+      setIsKeyboardVisible(isKeyboard);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
@@ -1308,7 +1320,11 @@ useEffect(() => {
         </div>
 
         {/* Message Input */}
-        <div className={`fixed bottom-[80px] left-0 right-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t z-20`}>
+        <div className={`fixed ${
+          isKeyboardVisible ? 'bottom-0' : 'bottom-[80px]'
+        } left-0 right-0 ${
+          darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+        } border-t z-20 transition-all duration-300`}>
           <div className="max-w-2xl mx-auto px-4 py-3">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
