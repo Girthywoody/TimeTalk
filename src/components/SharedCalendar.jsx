@@ -538,6 +538,20 @@ const SharedCalendar = () => {
                 }`}
               />
 
+              {/* Date Selection */}
+              <div className={`space-y-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <label className="text-sm font-medium">Date</label>
+                <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                  <CalendarDays size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <input
+                    type="date"
+                    value={newEvent.date}
+                    onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                    className={`flex-1 bg-transparent cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                  />
+                </div>
+              </div>
+
               {/* Time Selection */}
               <div className={`space-y-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 <label className="text-sm font-medium">Time</label>
