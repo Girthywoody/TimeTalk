@@ -41,24 +41,13 @@ const storage = getStorage(app);
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 const functions = getFunctions(app);
 
-// Restore the original function but with a scope check
 export const requestNotificationPermission = async () => {
     try {
         if (!messaging) return null;
 
-        // Get existing registration if any
-        const existingRegistration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
-        
-        let registration;
-        if (existingRegistration) {
-            registration = existingRegistration;
-            console.log('Using existing Service Worker:', registration);
-        } else {
-            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                scope: '/'
-            });
-            console.log('Service Worker registered:', registration);
-        }
+        // First, check if service worker is registered
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        console.log('Service Worker registered:', registration);
 
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
