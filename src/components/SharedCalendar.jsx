@@ -15,7 +15,9 @@ import {
   Sunrise, 
   Sunset,
   ChevronDown,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
@@ -68,6 +70,9 @@ const SharedCalendar = () => {
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
 
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+
+  const [swipeDirection, setSwipeDirection] = useState(0);
+  const [touchStart, setTouchStart] = useState(null);
 
   const removeParticipant = (participantId) => {
     setNewEvent(prev => ({
@@ -151,16 +156,6 @@ const SharedCalendar = () => {
     e.preventDefault();
     if (!newEvent.title || !newEvent.date) return;
     
-    if (!newEvent.isAllDay && newEvent.startTime && !newEvent.endTime) {
-      alert('Please specify an end time');
-      return;
-    }
-  
-    if (!newEvent.isAllDay && newEvent.startTime > newEvent.endTime) {
-      alert('End time must be after start time');
-      return;
-    }
-    
     setIsSubmitting(true);
     try {
       const eventData = {
@@ -168,17 +163,12 @@ const SharedCalendar = () => {
         userId: auth.currentUser.uid,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        notificationTimes: newEvent.notifications.map(minutes => {
-          const eventDate = new Date(newEvent.date);
-          if (!newEvent.isAllDay && newEvent.startTime) {
-            const [hours, mins] = newEvent.startTime.split(':');
-            eventDate.setHours(parseInt(hours), parseInt(mins));
-          }
-          const notificationDate = new Date(eventDate.getTime() - (parseInt(minutes) * 60000));
-          return notificationDate.toISOString();
-        })
+        repeatConfig: newEvent.repeat !== 'never' ? {
+          type: newEvent.repeat,
+          startDate: newEvent.date
+        } : null
       };
-  
+
       await addDoc(collection(db, 'events'), eventData);
       
       setNewEvent({
@@ -299,6 +289,13 @@ const SharedCalendar = () => {
     return endTimeFormatted ? `${startTimeFormatted} - ${endTimeFormatted}` : startTimeFormatted;
   };
 
+  const changeMonth = (direction) => {
+    setSwipeDirection(direction);
+    const newDate = new Date(currentDate);
+    newDate.setMonth(currentDate.getMonth() + direction);
+    setCurrentDate(newDate);
+  };
+
   return (
     <div className={`h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white'} overflow-x-hidden overflow-y-auto flex flex-col pb-16`}>
       {/* Main Calendar View */}
@@ -349,59 +346,96 @@ const SharedCalendar = () => {
             ))}
           </div>
 
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 mb-2">
-            {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(day => (
-              <div key={day} className={`text-center text-xs font-medium ${
-                darkMode ? 'text-gray-400' : 'text-gray-500'
-              }`}>
-                {day}
-              </div>
-            ))}
+          {/* Month Navigation */}
+          <div className="flex items-center justify-between px-4 py-6">
+            <button
+              onClick={() => changeMonth(-1)}
+              className={`p-2 rounded-full ${
+                darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
+              } transition-colors`}
+            >
+              <ChevronLeft className={darkMode ? 'text-white' : 'text-gray-900'} />
+            </button>
+            
+            <h2 className={`text-xl font-semibold ${
+              darkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              {months[currentDate.getMonth()]} {currentDate.getFullYear()}
+            </h2>
+            
+            <button
+              onClick={() => changeMonth(1)}
+              className={`p-2 rounded-full ${
+                darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
+              } transition-colors`}
+            >
+              <ChevronRight className={darkMode ? 'text-white' : 'text-gray-900'} />
+            </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-2 mb-8">
-            {generateCalendarDays().map((date, index) => {
-              const dayEvents = date ? getDayEvents(date) : [];
-              const isToday = date?.toDateString() === new Date().toDateString();
-              
-              return (
-                <div
-                  key={index}
-                  onClick={() => handleDateClick(date)}
-                  className={`aspect-square p-2 rounded-xl flex flex-col items-center justify-center
-                    ${date ? darkMode 
-                      ? 'cursor-pointer hover:bg-gray-800' 
-                      : 'cursor-pointer hover:bg-gray-50' 
-                      : ''
-                    }
-                    ${isToday ? darkMode 
-                      ? 'bg-blue-900/50' 
-                      : 'bg-blue-100' 
-                      : ''
-                    }
-                    ${dayEvents.length > 0 ? 'ring-2 ring-blue-500/50' : ''}`}
-                >
-                  {date && (
-                    <>
-                      <span className={`text-sm ${
-                        isToday 
-                          ? 'text-blue-400 font-bold' 
-                          : darkMode 
-                            ? 'text-gray-300' 
-                            : 'text-gray-700'
-                      }`}>
-                        {date.getDate()}
-                      </span>
-                      {dayEvents.length > 0 && (
-                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1" />
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {/* Calendar Grid with Swipe */}
+          <AnimatePresence initial={false} mode='wait'>
+            <motion.div
+              key={currentDate.getMonth()}
+              initial={{ x: 100 * swipeDirection, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100 * swipeDirection, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="grid grid-cols-7 gap-1 p-4"
+              onTouchStart={e => setTouchStart(e.touches[0].clientX)}
+              onTouchEnd={e => {
+                if (!touchStart) return;
+                const touchEnd = e.changedTouches[0].clientX;
+                const diff = touchStart - touchEnd;
+                
+                if (Math.abs(diff) > 50) { // minimum swipe distance
+                  changeMonth(diff > 0 ? 1 : -1);
+                }
+                setTouchStart(null);
+              }}
+            >
+              {generateCalendarDays().map((date, index) => {
+                const dayEvents = date ? getDayEvents(date) : [];
+                const isToday = date?.toDateString() === new Date().toDateString();
+                
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleDateClick(date)}
+                    className={`aspect-square p-2 rounded-xl flex flex-col items-center justify-center
+                      ${date ? darkMode 
+                        ? 'cursor-pointer hover:bg-gray-800' 
+                        : 'cursor-pointer hover:bg-gray-50' 
+                        : ''
+                      }
+                      ${isToday ? darkMode 
+                        ? 'bg-blue-900/50' 
+                        : 'bg-blue-100' 
+                        : ''
+                      }
+                      ${dayEvents.length > 0 ? 'ring-2 ring-blue-500/50' : ''}`}
+                  >
+                    {date && (
+                      <>
+                        <span className={`text-sm ${
+                          isToday 
+                            ? 'text-blue-400 font-bold' 
+                            : darkMode 
+                              ? 'text-gray-300' 
+                              : 'text-gray-700'
+                        }`}>
+                          {date.getDate()}
+                        </span>
+                        {dayEvents.length > 0 && (
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1" />
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>
 
           {/* Events List */}
           <div className={`w-full h-px ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} my-8`} />
@@ -580,7 +614,8 @@ const SharedCalendar = () => {
                       }`}
                     />
                   </div>
-                  <div className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>→</div>
+                  <div className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  </div>
                   <div className="flex items-center gap-2 flex-1">
                     <input
                       type="time"
@@ -668,7 +703,7 @@ const SharedCalendar = () => {
                       <select 
                         value={newEvent.repeat} 
                         onChange={e => setNewEvent(prev => ({ ...prev, repeat: e.target.value }))}
-                        className={`flex-1 bg-transparent ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                        className={`flex-1 bg-transparent cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'}`}
                       >
                         {REPEAT_OPTIONS.map(option => (
                           <option 
