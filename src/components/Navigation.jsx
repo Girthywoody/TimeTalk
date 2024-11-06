@@ -12,8 +12,23 @@ export default function Navigation({ currentPage, setCurrentPage }) {
       setIsKeyboardVisible(isKeyboard);
     };
 
+    handleResize();
+    
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    document.addEventListener('focusin', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setIsKeyboardVisible(true);
+      }
+    });
+    document.addEventListener('focusout', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('focusin', handleResize);
+      document.removeEventListener('focusout', handleResize);
+    };
   }, []);
 
   const buttonClasses = (page) => `
