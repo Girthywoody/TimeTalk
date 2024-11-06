@@ -4,39 +4,6 @@ import { useDarkMode } from '../context/DarkModeContext';
 
 export default function Navigation({ currentPage, setCurrentPage }) {
   const { darkMode } = useDarkMode();
-  const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
-
-  React.useEffect(() => {
-    const handleResize = () => {
-      const isKeyboard = window.innerHeight < window.outerHeight * 0.75;
-      setIsKeyboardVisible(isKeyboard);
-    };
-
-    const handleFocusIn = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-        setIsKeyboardVisible(true);
-      }
-    };
-
-    const handleFocusOut = () => {
-      setIsKeyboardVisible(false);
-    };
-
-    window.addEventListener('resize', handleResize);
-    document.addEventListener('focusin', handleFocusIn);
-    document.addEventListener('focusout', handleFocusOut);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      document.removeEventListener('focusin', handleFocusIn);
-      document.removeEventListener('focusout', handleFocusOut);
-    };
-  }, []);
-
-  // Hide the entire navigation component when keyboard is visible
-  if (isKeyboardVisible) {
-    return null;
-  }
 
   const buttonClasses = (page) => `
     relative flex-1 flex flex-col items-center justify-center py-3
