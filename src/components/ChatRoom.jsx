@@ -101,6 +101,8 @@ const ChatRoom = () => {
   const [touchEnd, setTouchEnd] = useState(null);
   const [messageStatuses, setMessageStatuses] = useState({});
   const [pressTimer, setPressTimer] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState(null);
 
   const otherUserInfo = {
     name: "Test", // Replace with the actual name
@@ -110,7 +112,12 @@ const ChatRoom = () => {
   
 
   const searchHighlightStyles = `
-  .search-highlight {
+  .search-highlight {git add .
+git commit -m "Simplify auth flow"
+git push origin main
+
+
+
     background-color: #FFE082 !important;
     box-shadow: 0 0 12px rgba(251, 191, 36, 0.4) !important;
     transform: scale(1.02);
@@ -807,6 +814,81 @@ useEffect(() => {
     );
   };
 
+  useEffect(() => {
+    if (!user) return;
+
+    const typingRef = doc(db, 'typing', user.uid);
+    
+    return onSnapshot(doc(db, 'typing', otherUser?.uid || 'placeholder'), (doc) => {
+      if (doc.exists()) {
+        const { timestamp } = doc.data();
+        if (timestamp) {
+          const lastTyped = timestamp.toDate();
+          const now = new Date();
+          // Show typing indicator if last typed within 3 seconds
+          setIsTyping(now - lastTyped < 3000);
+        }
+      } else {
+        setIsTyping(false);
+      }
+    });
+  }, [user, otherUser]);
+
+  const updateTypingStatus = () => {
+    if (!user) return;
+
+    const typingRef = doc(db, 'typing', user.uid);
+    updateDoc(typingRef, {
+      timestamp: serverTimestamp()
+    });
+
+    // Clear previous timeout
+    if (typingTimeout) clearTimeout(typingTimeout);
+    
+    // Set new timeout
+    const timeout = setTimeout(() => {
+      updateDoc(typingRef, {
+        timestamp: null
+      });
+    }, 3000);
+    
+    setTypingTimeout(timeout);
+  };
+
+  const handleInputChange = (e) => {
+    setNewMessage(e.target.value);
+    updateTypingStatus();
+  };
+
+  const TypingIndicator = () => (
+    <div className="flex items-center gap-2 px-4 py-2">
+      <div className="flex space-x-1">
+        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+      </div>
+    </div>
+  );
+
+  const getActionPosition = (messageElement, windowHeight) => {
+    const rect = messageElement.getBoundingClientRect();
+    const isNearBottom = rect.bottom > (windowHeight * 0.75);
+    
+    return {
+      x: rect.left,
+      y: isNearBottom ? rect.top - 200 : rect.bottom + 8 // Adjust 200 based on your menu height
+    };
+  };
+
+  const handleMessageLongPress = (message, event) => {
+    event.preventDefault();
+    const messageElement = event.target.closest('.message-bubble');
+    if (messageElement) {
+      setActionPosition(getActionPosition(messageElement, window.innerHeight));
+    }
+    setSelectedMessage(message);
+  };
+
   return (
     <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
@@ -821,9 +903,9 @@ useEffect(() => {
               >
                 <Bell size={20} className="text-blue-500" />
               </button>
-              {otherUser?.photoURL ? (
+              {otherUser?.profilePhotoURL ? (
                 <img 
-                  src={otherUser.photoURL} 
+                  src={otherUser.profilePhotoURL} 
                   alt="Profile" 
                   className="w-10 h-10 rounded-full object-cover"
                 />
@@ -839,7 +921,7 @@ useEffect(() => {
                   {otherUser?.username || otherUser?.displayName}
                 </h1>
                 <p className={`text-sm ${otherUserStatus?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
-                  {otherUserStatus?.isOnline ? 'Online' : ''}
+                  {isTyping ? 'typing...' : otherUserStatus?.isOnline ? 'Online' : ''}
                 </p>
               </div>
             </div>
@@ -1284,7 +1366,7 @@ useEffect(() => {
                   <input
                     type="text"
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={handleInputChange}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -1292,7 +1374,9 @@ useEffect(() => {
                       }
                     }}
                     placeholder="Message"
-                    className={`flex-1 bg-transparent border-none py-2 ${darkMode ? 'text-white placeholder-gray-400' : 'text-gray-800 placeholder-gray-500'} focus:outline-none`}
+                    className={`flex-1 bg-transparent border-none py-2 ${
+                      darkMode ? 'text-white placeholder-gray-400' : 'text-gray-800 placeholder-gray-500'
+                    } focus:outline-none`}
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
