@@ -100,6 +100,7 @@ const ChatRoom = () => {
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   const [messageStatuses, setMessageStatuses] = useState({});
+  const [pressTimer, setPressTimer] = useState(null);
 
   const otherUserInfo = {
     name: "Test", // Replace with the actual name
@@ -1084,23 +1085,31 @@ useEffect(() => {
                         ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
                         ${index === messages.length - 1 ? 'mb-4' : 'mb-2'}
                         transition-all duration-200`}
-                      onTouchStart={(e) => handleTouchStart(e, message)}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={() => handleTouchEnd(message)}
-                      onClick={() => handleDoubleTap(message)}
-                      onContextMenu={(e) => handleMessageLongPress(message, e)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        handleMessageLongPress(message, e);
+                      }}
                       onTouchStart={(e) => {
                         setPressTimer(
                           setTimeout(() => {
                             handleMessageLongPress(message, e);
                           }, 500)
                         );
+                        setPressedMessageId(message.id);
                       }}
                       onTouchEnd={() => {
-                        if (pressTimer) clearTimeout(pressTimer);
+                        if (pressTimer) {
+                          clearTimeout(pressTimer);
+                          setPressTimer(null);
+                        }
+                        setPressedMessageId(null);
                       }}
                       onTouchMove={() => {
-                        if (pressTimer) clearTimeout(pressTimer);
+                        if (pressTimer) {
+                          clearTimeout(pressTimer);
+                          setPressTimer(null);
+                        }
+                        setPressedMessageId(null);
                       }}
                     >
                       {message.replyTo && (
