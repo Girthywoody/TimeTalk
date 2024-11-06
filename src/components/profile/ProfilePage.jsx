@@ -144,13 +144,13 @@ const ProfilePage = () => {
                     <span>Together since {new Date(profileData.relationship.anniversary).toLocaleDateString()}</span>
                   </div>
                 )}
-                {/* Partner Button - Modified to always show if we have partner data */}
+                {/* Partner Button */}
                 <button 
-                  onClick={() => navigate(`/profile/${profileData.partnerId}`)}
+                  onClick={() => navigate(`/profile/${partnerProfile?.uid}`)}
                   className="flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
                 >
                   <Heart className="w-4 h-4" />
-                  <span>With {partnerProfile?.displayName || 'Partner'}</span>
+                  <span>With {partnerProfile?.username || partnerProfile?.displayName}</span>
                 </button>
               </div>
             )}

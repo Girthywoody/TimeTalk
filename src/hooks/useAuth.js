@@ -103,7 +103,12 @@ export const useAuth = () => {
       
       if (userData?.partnerId) {
         const partnerDoc = await getDoc(doc(db, 'users', userData.partnerId));
-        return partnerDoc.exists() ? partnerDoc.data() : null;
+        if (partnerDoc.exists()) {
+          return {
+            ...partnerDoc.data(),
+            uid: userData.partnerId
+          };
+        }
       }
       return null;
     } catch (error) {
