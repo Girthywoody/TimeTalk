@@ -19,6 +19,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapsh
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDarkMode } from '../context/DarkModeContext';
+import ParticipantsModal from './ParticipantsModal';
 
 const NOTIFICATION_OPTIONS = [
   { value: '2880', label: '2 days before' },
@@ -62,6 +63,24 @@ const SharedCalendar = () => {
     repeat: 'never',
     description: ""
   });
+
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+
+  const removeParticipant = (participantId) => {
+    setNewEvent(prev => ({
+      ...prev,
+      participants: prev.participants.filter(p => p.id !== participantId)
+    }));
+  };
+
+  const handleParticipantSelect = (user) => {
+    setNewEvent(prev => ({
+      ...prev,
+      participants: prev.participants?.some(p => p.id === user.id)
+        ? prev.participants.filter(p => p.id !== user.id)
+        : [...(prev.participants || []), { id: user.id, name: user.displayName }]
+    }));
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -498,20 +517,17 @@ const SharedCalendar = () => {
                       value={newEvent.startTime}
                       onChange={e => {
                         const startTime = e.target.value;
-                        // Calculate end time (1 hour later)
                         const [hours, minutes] = startTime.split(':');
                         const endDate = new Date();
                         endDate.setHours(parseInt(hours) + 1);
                         endDate.setMinutes(parseInt(minutes));
                         const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
                         
-                        setNewEvent(prev => ({ 
-                          ...prev, 
-                          startTime,
-                          endTime
-                        }));
+                        setNewEvent(prev => ({ ...prev, startTime, endTime }));
                       }}
-                      className={`bg-transparent p-1 rounded ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                      className={`w-full cursor-pointer bg-transparent p-2 rounded-lg hover:bg-gray-600/10 focus:ring-2 focus:ring-blue-500 ${
+                        darkMode ? 'text-white' : 'text-gray-900'
+                      }`}
                     />
                   </div>
                   <div className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>→</div>
@@ -520,7 +536,9 @@ const SharedCalendar = () => {
                       type="time"
                       value={newEvent.endTime}
                       onChange={e => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
-                      className={`bg-transparent p-1 rounded ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                      className={`w-full cursor-pointer bg-transparent p-2 rounded-lg hover:bg-gray-600/10 focus:ring-2 focus:ring-blue-500 ${
+                        darkMode ? 'text-white' : 'text-gray-900'
+                      }`}
                     />
                   </div>
                 </div>
@@ -592,17 +610,21 @@ const SharedCalendar = () => {
               </div>
 
               {/* Repeat */}
-              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+              <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
                 <div className="rotate-90">
-                  <Clock size={20} className="text-gray-400" />
+                  <Clock size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                 </div>
                 <select 
-                  className="flex-1 bg-transparent"
+                  className={`flex-1 bg-transparent cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'}`}
                   value={newEvent.repeat}
                   onChange={e => setNewEvent(prev => ({ ...prev, repeat: e.target.value }))}
                 >
                   {REPEAT_OPTIONS.map(option => (
-                    <option key={option.value} value={option.value}>
+                    <option 
+                      key={option.value} 
+                      value={option.value}
+                      className={darkMode ? 'bg-gray-700' : 'bg-white'}
+                    >
                       {option.label}
                     </option>
                   ))}
@@ -610,36 +632,74 @@ const SharedCalendar = () => {
               </div>
 
               {/* Participants */}
-              <button 
-                type="button"
-                className="w-full flex items-center gap-3 p-4 bg-gray-50 rounded-xl"
-              >
-                <Users size={20} className="text-gray-400" />
-                <span className="text-gray-600">Add Participants</span>
-              </button>
+              <div className={`space-y-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <label className="text-sm font-medium">Participants</label>
+                <div className={`p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl space-y-3`}>
+                  <div className="flex items-center gap-3">
+                    <Users size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                    <button
+                      type="button"
+                      onClick={() => setShowParticipantsModal(true)}
+                      className={`flex-1 text-left ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                    >
+                      {newEvent.participants?.length 
+                        ? `${newEvent.participants.length} participant${newEvent.participants.length === 1 ? '' : 's'}`
+                        : 'Add Participants'
+                      }
+                    </button>
+                  </div>
+                  {newEvent.participants?.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {newEvent.participants.map(participant => (
+                        <div 
+                          key={participant.id}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-500"
+                        >
+                          <span className="text-sm">{participant.name}</span>
+                          <X 
+                            size={14}
+                            className="cursor-pointer hover:text-blue-600"
+                            onClick={() => removeParticipant(participant.id)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Location */}
-              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                <MapPin size={20} className="text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Add Location"
-                  value={newEvent.location}
-                  onChange={e => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
-                  className="flex-1 bg-transparent placeholder:text-gray-600"
-                />
+              <div className={`space-y-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <label className="text-sm font-medium">Location</label>
+                <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                  <MapPin size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <input
+                    type="text"
+                    placeholder="Add Location"
+                    value={newEvent.location}
+                    onChange={e => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
+                    className={`flex-1 bg-transparent placeholder:text-gray-400 focus:outline-none ${
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    }`}
+                  />
+                </div>
               </div>
 
               {/* Description */}
-              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                <AlignLeft size={20} className="text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Add Description"
-                  value={newEvent.description}
-                  onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
-                  className="flex-1 bg-transparent placeholder:text-gray-600"
-                />
+              <div className={`space-y-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <label className="text-sm font-medium">Description</label>
+                <div className={`flex items-start gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                  <AlignLeft size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`} />
+                  <textarea
+                    placeholder="Add Description"
+                    value={newEvent.description}
+                    onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    className={`flex-1 bg-transparent placeholder:text-gray-400 focus:outline-none resize-none ${
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    }`}
+                  />
+                </div>
               </div>
 
               {/* Action Buttons */}
@@ -682,6 +742,16 @@ const SharedCalendar = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Participants Modal */}
+      {showParticipantsModal && (
+        <ParticipantsModal
+          isOpen={showParticipantsModal}
+          onClose={() => setShowParticipantsModal(false)}
+          onSelect={handleParticipantSelect}
+          selectedParticipants={newEvent.participants || []}
+        />
       )}
     </div>
   );
