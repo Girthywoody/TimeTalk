@@ -472,15 +472,11 @@ git push origin main
     }
   };
 
-  const handleMessageLongPress = (message, event) => {
+  const handleMessageLongPress = (message, event, index, totalMessages) => {
     event.preventDefault();
     const messageElement = event.target.closest('.message-bubble');
     if (messageElement) {
-      const rect = messageElement.getBoundingClientRect();
-      setActionPosition({
-        x: rect.left,
-        y: rect.bottom + 8
-      });
+      setActionPosition(getActionPosition(messageElement, window.innerHeight, index, totalMessages));
     }
     setSelectedMessage(message);
   };
@@ -872,9 +868,10 @@ useEffect(() => {
     </div>
   );
 
-  const getActionPosition = (messageElement, windowHeight) => {
+  const getActionPosition = (messageElement, windowHeight, index, totalMessages) => {
     const rect = messageElement.getBoundingClientRect();
-    const isNearBottom = rect.bottom > (windowHeight * 0.75);
+    // Check if message is one of the last two messages
+    const isNearBottom = (index >= totalMessages - 2) || rect.bottom > (windowHeight * 0.75);
     
     return {
       x: rect.left,
@@ -883,9 +880,15 @@ useEffect(() => {
   };
 
   const handleNudge = async () => {
+    if (!otherUser?.uid) {
+      console.error('Other user not found');
+      return;
+    }
+
     try {
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken();
+      const senderName = user?.displayName || user?.username || 'Someone';
 
       const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
         method: 'POST',
@@ -896,19 +899,25 @@ useEffect(() => {
         body: JSON.stringify({
           userId: otherUser.uid,
           notification: {
-            title: 'TimeTalk',
-            body: `${user.displayName || 'Someone'} nudged you to check your phone!`
+            title: 'TimeTalk Nudge',
+            body: `${senderName} nudged you to check your phone!`,
+            data: {
+              type: 'nudge',
+              senderId: user.uid
+            }
           }
         })
       });
 
       const result = await response.json();
+      console.log('Nudge result:', result);
+
       if (!result.success) {
         throw new Error(result.error || 'Failed to send nudge');
       }
     } catch (error) {
       console.error('Error sending nudge:', error);
-      alert('Failed to send nudge: ' + error.message);
+      alert('Failed to send nudge. Please try again.');
     }
   };
 
@@ -959,10 +968,15 @@ useEffect(() => {
 
               <button
                 onClick={handleNudge}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                disabled={!otherUser?.uid}
+                className={`p-2 rounded-full transition-colors ${
+                  otherUser?.uid 
+                    ? 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400' 
+                    : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                }`}
                 title="Nudge"
               >
-                <Vibrate size={20} className="text-gray-500 dark:text-gray-400" />
+                <Vibrate size={20} />
               </button>
 
               <button
@@ -1116,14 +1130,11 @@ useEffect(() => {
                         ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
                         ${index === messages.length - 1 ? 'mb-4' : 'mb-2'}
                         transition-all duration-200`}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        handleMessageLongPress(message, e);
-                      }}
+                      onContextMenu={(e) => handleMessageLongPress(message, e, index, messages.length)}
                       onTouchStart={(e) => {
                         setPressTimer(
                           setTimeout(() => {
-                            handleMessageLongPress(message, e);
+                            handleMessageLongPress(message, e, index, messages.length);
                           }, 500)
                         );
                         setPressedMessageId(message.id);
