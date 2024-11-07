@@ -21,33 +21,32 @@ export const useNotifications = () => {
 
                 const messaging = getMessaging();
 
-                // Handle foreground messages
-                onMessage(messaging, (payload) => {
-                    console.log('Received foreground message:', payload);
-                    // Don't show notifications in foreground, let service worker handle all notifications
+                // Request permission first
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    throw new Error('Notification permission denied');
+                }
+
+                const token = await getToken(messaging, {
+                    vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
+                    serviceWorkerRegistration: registration
                 });
 
-                try {
-                    const token = await getToken(messaging, {
-                        vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc',
-                        serviceWorkerRegistration: registration
+                if (token) {
+                    console.log('FCM Token:', token);
+                    setFcmToken(token);
+                    await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                        fcmToken: token,
+                        notificationsEnabled: true,
+                        lastTokenUpdate: new Date().toISOString()
                     });
-
-                    if (token) {
-                        console.log('FCM Token:', token);
-                        setFcmToken(token);
-                        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-                            fcmToken: token,
-                            notificationsEnabled: true,
-                            lastTokenUpdate: new Date().toISOString()
-                        });
-                    }
-                } catch (tokenError) {
-                    console.error('Error getting FCM token:', tokenError);
+                } else {
+                    throw new Error('No FCM token received');
                 }
             }
         } catch (error) {
             console.error('Error initializing notifications:', error);
+            throw error;
         }
     };
 

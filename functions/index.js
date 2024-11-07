@@ -29,6 +29,11 @@ async function sendNotificationToUser(userId, notification) {
             notification: {
                 title: notification.title,
                 body: notification.body
+            },
+            data: {
+                timestamp: Date.now().toString(),
+                type: notification.data?.type || 'test',
+                senderId: notification.data?.senderId || ''
             }
         };
 
@@ -55,13 +60,20 @@ app.post('/sendNotification', async (req, res) => {
             return res.status(401).json({ error: 'Invalid token' });
         }
 
-        const { userId } = req.body;
+        const { userId, notification } = req.body;
         
-        const result = await sendNotificationToUser(userId, {
+        // Use the provided notification or fallback to test notification
+        const notificationToSend = notification || {
             title: 'Test Notification',
-            body: 'This is a test notification!'
-        });
+            body: 'This is a test notification!',
+            data: {
+                type: 'test',
+                senderId: decodedToken.uid,
+                timestamp: Date.now().toString()
+            }
+        };
 
+        const result = await sendNotificationToUser(userId, notificationToSend);
         return res.json(result);
     } catch (error) {
         console.error('Error in sendNotification endpoint:', error);
