@@ -229,10 +229,10 @@ git push origin main
             body: JSON.stringify({
                 userId: partnerData.uid,
                 notification: {
-                    title: 'New Message',
-                    body: 'You have a new message!',
+                    title: 'Test Notification',
+                    body: 'This is a test notification!',
                     data: {
-                        type: 'message',
+                        type: 'test',
                         senderId: user.uid,
                         timestamp: new Date().toISOString()
                     }
@@ -246,6 +246,8 @@ git push origin main
         if (!result.success) {
             throw new Error(result.error || 'Failed to send notification');
         }
+
+        toast.success('Test notification sent!');
     } catch (error) {
         console.error('Error in testNotification:', error);
         toast.error('Failed to send notification: ' + error.message);
