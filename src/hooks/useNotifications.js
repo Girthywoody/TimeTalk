@@ -82,9 +82,49 @@ export const useNotifications = () => {
         }
     };
 
+    const debugServiceWorker = async () => {
+        try {
+            // Check if service worker is supported
+            if (!('serviceWorker' in navigator)) {
+                throw new Error('Service Worker not supported');
+            }
+
+            // Check registration
+            const registration = await navigator.serviceWorker.getRegistration();
+            console.log('Current registration:', registration);
+            
+            if (!registration) {
+                throw new Error('No Service Worker registration found');
+            }
+
+            // Check service worker state
+            const serviceWorker = registration.active || registration.installing || registration.waiting;
+            console.log('Service Worker state:', serviceWorker?.state);
+
+            // Check push manager
+            const subscription = await registration.pushManager.getSubscription();
+            console.log('Push subscription:', subscription);
+
+            // Test notification
+            await registration.showNotification('Debug Test', {
+                body: 'Testing notification system',
+                icon: '/ios-icon-192.png',
+                badge: '/ios-icon-192.png'
+            });
+
+            return true;
+        } catch (error) {
+            console.error('Service Worker debug failed:', error);
+            throw error;
+        }
+    };
+
     // Test notification function
     const testNotification = async () => {
         try {
+            // Debug service worker first
+            await debugServiceWorker();
+            
             if (!isPWA) {
                 throw new Error('PWA_REQUIRED');
             }

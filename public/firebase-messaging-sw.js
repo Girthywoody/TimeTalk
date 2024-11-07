@@ -1,3 +1,20 @@
+// Clear any existing cache on activation
+self.addEventListener('activate', event => {
+    event.waitUntil(
+        Promise.all([
+            self.clients.claim(),
+            caches.keys().then(cacheNames => {
+                return Promise.all(
+                    cacheNames.map(cache => {
+                        return caches.delete(cache);
+                    })
+                );
+            })
+        ])
+    );
+});
+
+// Initialize Firebase
 importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
 
@@ -12,34 +29,36 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-console.log('Firebase messaging service worker initialized');
-
+// Handle background messages
 messaging.onBackgroundMessage(function(payload) {
     console.log('[firebase-messaging-sw.js] Received background message:', payload);
-
+    
+    const notificationTitle = payload.notification.title;
     const notificationOptions = {
         body: payload.notification.body,
         icon: '/ios-icon-192.png',
         badge: '/ios-icon-192.png',
-        sound: 'default',
-        vibrate: [200, 100, 200],
-        data: payload.data,
+        tag: payload.data?.timestamp || Date.now().toString(),
+        data: payload.data || {},
         actions: [{
             action: 'open',
-            title: 'Open App'
+            title: 'Open'
         }],
-        tag: payload.data?.timestamp || Date.now().toString(),
         renotify: true,
-        requireInteraction: true
+        requireInteraction: true,
+        silent: false
     };
 
-    return self.registration.showNotification(payload.notification.title, notificationOptions);
+    self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
+// Handle notification clicks
 self.addEventListener('notificationclick', function(event) {
+    console.log('[Service Worker] Notification click received:', event);
+
     event.notification.close();
-    
-    const urlToOpen = event.notification.data?.url || '/';
+
+    const clickAction = event.notification.data?.clickAction || '/';
     
     event.waitUntil(
         clients.matchAll({
@@ -47,15 +66,49 @@ self.addEventListener('notificationclick', function(event) {
             includeUncontrolled: true
         }).then(function(clientList) {
             for (const client of clientList) {
-                if (client.url === urlToOpen && 'focus' in client) {
+                if (client.url === clickAction && 'focus' in client) {
                     return client.focus();
                 }
             }
             if (clients.openWindow) {
-                return clients.openWindow(urlToOpen);
+                return clients.openWindow(clickAction);
             }
         })
     );
+});
+
+// Handle push events directly
+self.addEventListener('push', function(event) {
+    console.log('[Service Worker] Push received:', event);
+
+    if (event.data) {
+        try {
+            const payload = event.data.json();
+            console.log('[Service Worker] Push payload:', payload);
+
+            const notificationTitle = payload.notification.title;
+            const notificationOptions = {
+                body: payload.notification.body,
+                icon: '/ios-icon-192.png',
+                badge: '/ios-icon-192.png',
+                tag: payload.data?.timestamp || Date.now().toString(),
+                data: payload.data || {},
+                actions: [{
+                    action: 'open',
+                    title: 'Open'
+                }],
+                renotify: true,
+                requireInteraction: true,
+                silent: false
+            };
+
+            event.waitUntil(
+                self.registration.showNotification(notificationTitle, notificationOptions)
+            );
+        } catch (error) {
+            console.error('[Service Worker] Error handling push event:', error);
+        }
+    }
 });
 
 self.addEventListener('error', function(event) {
