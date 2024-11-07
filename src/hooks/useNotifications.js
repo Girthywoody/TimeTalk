@@ -16,6 +16,8 @@ export const useNotifications = () => {
             
             // Request permission first
             const permission = await Notification.requestPermission();
+            console.log('Notification permission:', permission);
+            
             if (permission !== 'granted') {
                 throw new Error('Notification permission denied');
             }
@@ -28,30 +30,24 @@ export const useNotifications = () => {
             
             console.log('Service Worker registered:', registration);
 
+            // Handle foreground messages
             onMessage(messaging, (payload) => {
                 console.log('Received foreground message:', payload);
                 
-                if (document.visibilityState !== 'visible') {
-                    const notificationId = payload.data?.timestamp || Date.now().toString();
-                    
-                    if (processedMessageIds.has(notificationId)) {
-                        console.log('Duplicate notification prevented:', notificationId);
-                        return;
-                    }
+                // Always show notification in foreground
+                const notificationTitle = payload.notification.title;
+                const notificationOptions = {
+                    body: payload.notification.body,
+                    icon: '/ios-icon-192.png',
+                    badge: '/ios-icon-192.png',
+                    vibrate: [100, 50, 100],
+                    data: payload.data,
+                    tag: payload.data?.timestamp || Date.now().toString(),
+                    renotify: false,
+                    requireInteraction: true
+                };
 
-                    processedMessageIds.add(notificationId);
-                    setTimeout(() => processedMessageIds.delete(notificationId), 5000);
-
-                    registration.showNotification(payload.notification.title, {
-                        body: payload.notification.body,
-                        icon: '/ios-icon-192.png',
-                        badge: '/ios-icon-192.png',
-                        vibrate: [100, 50, 100],
-                        data: payload.data,
-                        tag: notificationId,
-                        renotify: false
-                    });
-                }
+                registration.showNotification(notificationTitle, notificationOptions);
             });
 
             const token = await getToken(messaging, {

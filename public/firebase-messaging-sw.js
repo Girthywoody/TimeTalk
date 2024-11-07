@@ -12,9 +12,12 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-    console.log('Received background message:', payload);
+console.log('Firebase messaging service worker initialized');
 
+messaging.onBackgroundMessage(function(payload) {
+    console.log('[firebase-messaging-sw.js] Received background message:', payload);
+
+    const notificationTitle = payload.notification.title;
     const notificationOptions = {
         body: payload.notification.body,
         icon: '/ios-icon-192.png',
@@ -22,11 +25,24 @@ messaging.onBackgroundMessage((payload) => {
         vibrate: [100, 50, 100],
         data: payload.data,
         tag: payload.data?.timestamp || Date.now().toString(),
-        renotify: false
+        renotify: false,
+        requireInteraction: true
     };
 
-    return self.registration.showNotification(
-        payload.notification.title,
-        notificationOptions
-    );
+    return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+self.addEventListener('notificationclick', function(event) {
+    console.log('[firebase-messaging-sw.js] Notification click:', event);
+    
+    event.notification.close();
+    
+    const clickAction = event.notification.data?.clickAction;
+    if (clickAction) {
+        clients.openWindow(clickAction);
+    }
+});
+
+self.addEventListener('error', function(event) {
+    console.error('[firebase-messaging-sw.js] Error:', event.error);
 });
