@@ -29,6 +29,20 @@ export const useNotifications = () => {
                     if (document.visibilityState !== 'visible') {
                         const notificationId = payload.data?.timestamp || Date.now().toString();
                         
+                        // Check if we've already shown this notification
+                        if (processedMessageIds.has(notificationId)) {
+                            console.log('Duplicate notification prevented:', notificationId);
+                            return;
+                        }
+
+                        // Add to set of processed messages
+                        processedMessageIds.add(notificationId);
+
+                        // Clear old messages from the set after 5 seconds
+                        setTimeout(() => {
+                            processedMessageIds.delete(notificationId);
+                        }, 5000);
+
                         registration.showNotification(payload.notification.title, {
                             body: payload.notification.body,
                             icon: '/ios-icon-192.png',
