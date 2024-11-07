@@ -21,6 +21,21 @@ export const useNotifications = () => {
 
                 const messaging = getMessaging();
 
+                // Add foreground message handler
+                onMessage(messaging, (payload) => {
+                    console.log('Received foreground message:', payload);
+                    // Show notification even when app is in foreground
+                    registration.showNotification(payload.notification.title, {
+                        body: payload.notification.body,
+                        icon: '/ios-icon-192.png',
+                        badge: '/ios-icon-192.png',
+                        vibrate: [100, 50, 100],
+                        data: payload.data,
+                        tag: payload.data?.timestamp || Date.now().toString(),
+                        renotify: false
+                    });
+                });
+
                 // Request permission first
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') {
