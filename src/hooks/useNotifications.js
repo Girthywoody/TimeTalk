@@ -12,37 +12,63 @@ export const useNotifications = () => {
         if (!auth.currentUser) return;
 
         try {
-            if ('serviceWorker' in navigator) {
-                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                    scope: '/',
-                    updateViaCache: 'none'
-                });
-                console.log('Service Worker registered:', registration);
+            const messaging = getMessaging();
+            
+            // Request permission first
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                throw new Error('Notification permission denied');
+            }
 
-                const messaging = getMessaging();
+            // Register service worker
+            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                scope: '/',
+                updateViaCache: 'none'
+            });
+            
+            console.log('Service Worker registered:', registration);
 
-                // Request permission first
-                const permission = await Notification.requestPermission();
-                if (permission !== 'granted') {
-                    throw new Error('Notification permission denied');
-                }
+            onMessage(messaging, (payload) => {
+                console.log('Received foreground message:', payload);
+                
+                if (document.visibilityState !== 'visible') {
+                    const notificationId = payload.data?.timestamp || Date.now().toString();
+                    
+                    if (processedMessageIds.has(notificationId)) {
+                        console.log('Duplicate notification prevented:', notificationId);
+                        return;
+                    }
 
-                const token = await getToken(messaging, {
-                    vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
-                    serviceWorkerRegistration: registration
-                });
+                    processedMessageIds.add(notificationId);
+                    setTimeout(() => processedMessageIds.delete(notificationId), 5000);
 
-                if (token) {
-                    console.log('FCM Token:', token);
-                    setFcmToken(token);
-                    await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-                        fcmToken: token,
-                        notificationsEnabled: true,
-                        lastTokenUpdate: new Date().toISOString()
+                    registration.showNotification(payload.notification.title, {
+                        body: payload.notification.body,
+                        icon: '/ios-icon-192.png',
+                        badge: '/ios-icon-192.png',
+                        vibrate: [100, 50, 100],
+                        data: payload.data,
+                        tag: notificationId,
+                        renotify: false
                     });
-                } else {
-                    throw new Error('No FCM token received');
                 }
+            });
+
+            const token = await getToken(messaging, {
+                vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
+                serviceWorkerRegistration: registration
+            });
+
+            if (token) {
+                console.log('FCM Token:', token);
+                setFcmToken(token);
+                await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                    fcmToken: token,
+                    notificationsEnabled: true,
+                    lastTokenUpdate: new Date().toISOString()
+                });
+            } else {
+                throw new Error('No FCM token received');
             }
         } catch (error) {
             console.error('Error initializing notifications:', error);
@@ -53,12 +79,19 @@ export const useNotifications = () => {
     useEffect(() => {
         const checkPermission = async () => {
             if ('Notification' in window) {
+                console.log('Current notification permission:', Notification.permission);
                 const permission = Notification.permission;
                 setNotificationPermission(permission);
                 
                 if (permission === 'granted') {
-                    await initializeNotifications();
+                    try {
+                        await initializeNotifications();
+                    } catch (error) {
+                        console.error('Failed to initialize notifications:', error);
+                    }
                 }
+            } else {
+                console.error('Notifications not supported in this browser');
             }
         };
 
@@ -78,40 +111,6 @@ export const useNotifications = () => {
             throw error;
         }
     };
-
-    // Handle foreground messages
-    onMessage(messaging, (payload) => {
-        console.log('Received foreground message:', payload);
-        
-        // Only show notification if the app is not focused
-        if (document.visibilityState !== 'visible') {
-            const notificationId = payload.data?.timestamp || Date.now().toString();
-            
-            // Check if we've already shown this notification
-            if (processedMessageIds.has(notificationId)) {
-                console.log('Duplicate notification prevented:', notificationId);
-                return;
-            }
-
-            // Add to set of processed messages
-            processedMessageIds.add(notificationId);
-
-            // Clear old messages from the set after 5 seconds
-            setTimeout(() => {
-                processedMessageIds.delete(notificationId);
-            }, 5000);
-
-            registration.showNotification(payload.notification.title, {
-                body: payload.notification.body,
-                icon: '/ios-icon-192.png',
-                badge: '/ios-icon-192.png',
-                vibrate: [100, 50, 100],
-                data: payload.data,
-                tag: notificationId,
-                renotify: false
-            });
-        }
-    });
 
     return {
         notificationPermission,
