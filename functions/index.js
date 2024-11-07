@@ -36,25 +36,25 @@ async function sendNotificationToUser(userId, notification) {
                     body: notification.body,
                     icon: '/ios-icon-192.png',
                     badge: '/ios-icon-192.png',
-                    tag: notification.tag || 'default',
+                    tag: 'message',
                     vibrate: [100, 50, 100],
                     requireInteraction: true,
                     renotify: true,
                     data: notification.data || {},
-                    actions: notification.actions || [
+                    actions: [
                         {
-                            action: 'view',
-                            title: 'View'
+                            action: 'open',
+                            title: 'Open'
                         }
                     ]
                 },
                 fcmOptions: {
-                    link: notification.link || 'https://time-talk.vercel.app/chat'
+                    link: 'https://time-talk.vercel.app/chat'
                 }
             },
             android: {
                 notification: {
-                    clickAction: notification.link || 'https://time-talk.vercel.app/chat',
+                    clickAction: 'https://time-talk.vercel.app/chat',
                     sound: 'default'
                 }
             },
@@ -68,6 +68,7 @@ async function sendNotificationToUser(userId, notification) {
             }
         };
 
+        // Send only one message
         const response = await admin.messaging().send(message);
         console.log('Successfully sent notification:', response);
         return { success: true };
@@ -220,6 +221,7 @@ exports.checkScheduledPosts = functions.pubsub
 // Test notification endpoint
 app.post('/sendNotification', async (req, res) => {
     try {
+        // Verify auth token
         const authHeader = req.headers.authorization;
         if (!authHeader) {
             return res.status(401).json({ error: 'Unauthorized' });
