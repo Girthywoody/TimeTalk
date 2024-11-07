@@ -15,7 +15,6 @@ import SecretPostModal from './SecretPostModal';
 import { auth } from '../firebase';  // Add this line with your other imports
 import { useDarkMode } from '../context/DarkModeContext';
 import PostButton from './PostButton';  // Add this line
-import NotificationButton from './NotificationButton';
 
 const MainApp = () => {
   const [message, setMessage] = useState('');
@@ -244,9 +243,6 @@ const MainApp = () => {
                   <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
                     Our Timeline
                   </h1>
-                </div>
-                <div className="flex items-center gap-2">
-                  <NotificationButton />
                 </div>
               </div>
             </div>

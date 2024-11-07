@@ -206,15 +206,9 @@ git push origin main
 
   const testNotification = async () => {
     try {
-        console.log('Starting test notification...');
-        console.log('Current user:', user?.uid);
-        
         const idToken = await user.getIdToken(true);
-        console.log('Got ID token');
-        
         const timestamp = Date.now().toString();
         
-        console.log('Sending notification request...');
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
             headers: {
@@ -224,8 +218,8 @@ git push origin main
             body: JSON.stringify({
                 userId: user.uid,
                 notification: {
-                    title: 'Test Notification',
-                    body: 'This is a test notification!',
+                    title: user.displayName || 'Someone',
+                    body: 'New message',
                     data: {
                         type: 'test',
                         senderId: user.uid,
@@ -236,8 +230,6 @@ git push origin main
         });
 
         const result = await response.json();
-        console.log('Notification API response:', result);
-
         if (!result.success) {
             throw new Error(result.error || 'Failed to send notification');
         }
@@ -245,7 +237,7 @@ git push origin main
         toast.success('Test notification sent!');
     } catch (error) {
         console.error('Error in testNotification:', error);
-        toast.error('Failed to send notification: ' + error.message);
+        toast.error('Failed to send notification');
     }
 };
 
@@ -915,14 +907,23 @@ useEffect(() => {
         const auth = getAuth();
         const idToken = await auth.currentUser.getIdToken();
 
-        const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNudge', {
+        const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${idToken}`
             },
             body: JSON.stringify({
-                userId: otherUser.uid
+                userId: otherUser.uid,
+                notification: {
+                    title: auth.currentUser.displayName || 'Someone',
+                    body: 'Hey! Come answer me!',
+                    data: {
+                        type: 'nudge',
+                        senderId: auth.currentUser.uid,
+                        timestamp: Date.now().toString()
+                    }
+                }
             })
         });
 
@@ -932,23 +933,10 @@ useEffect(() => {
             throw new Error(result.error || 'Failed to send nudge');
         }
 
-        // Add visual feedback
-        toast.success('Nudge sent!', {
-            position: 'bottom-center',
-            autoClose: 2000,
-            hideProgressBar: true,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-        });
-
+        toast.success('Nudge sent!');
     } catch (error) {
         console.error('Error sending nudge:', error);
-        toast.error('Failed to send nudge. Please try again.', {
-            position: 'bottom-center',
-            autoClose: 3000,
-        });
+        toast.error('Failed to send nudge');
     }
 };
 

@@ -12,28 +12,29 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Keep track of displayed notifications to prevent duplicates
+// CRUCIAL: This Set prevents duplicate notifications - DO NOT REMOVE
 const displayedNotifications = new Set();
 
+// CRUCIAL: This event handler must remain as onBackgroundMessage - DO NOT CHANGE
 messaging.onBackgroundMessage((payload) => {
     console.log('Received background message:', payload);
 
-    // Wrap the notification logic in event.waitUntil()
+    // CRUCIAL: event.waitUntil() is required to prevent duplicate notifications - DO NOT REMOVE
     return event.waitUntil(
         (async () => {
-            // Create a unique ID for the notification
+            // CRUCIAL: Unique ID generation for deduplication - DO NOT MODIFY
             const notificationId = payload.data?.timestamp || Date.now().toString();
 
-            // Check if we've already shown this notification
+            // CRUCIAL: Duplicate check logic - DO NOT MODIFY
             if (displayedNotifications.has(notificationId)) {
                 console.log('Duplicate notification prevented:', notificationId);
                 return;
             }
 
-            // Add to set of displayed notifications
+            // CRUCIAL: Notification tracking - DO NOT REMOVE
             displayedNotifications.add(notificationId);
 
-            // Clear old notifications from the set after 5 seconds
+            // CRUCIAL: Cleanup logic - DO NOT REMOVE
             setTimeout(() => {
                 displayedNotifications.delete(notificationId);
             }, 5000);
@@ -44,10 +45,12 @@ messaging.onBackgroundMessage((payload) => {
                 badge: '/ios-icon-192.png',
                 vibrate: [100, 50, 100],
                 data: payload.data,
+                // CRUCIAL: tag property helps prevent duplicates - DO NOT REMOVE
                 tag: notificationId,
                 renotify: false
             };
 
+            // CRUCIAL: This is the actual notification display call - DO NOT MODIFY
             return self.registration.showNotification(
                 payload.notification.title,
                 notificationOptions
