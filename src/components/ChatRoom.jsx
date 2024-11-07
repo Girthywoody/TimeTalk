@@ -207,7 +207,6 @@ git push origin main
   const testNotification = async () => {
     try {
         const idToken = await user.getIdToken(true);
-        const timestamp = Date.now().toString();
         
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
@@ -216,27 +215,19 @@ git push origin main
                 'Authorization': `Bearer ${idToken}`
             },
             body: JSON.stringify({
-                userId: user.uid,
-                notification: {
-                    title: 'Test Notification',
-                    body: 'This is a test notification!',
-                    data: {
-                        type: 'test',
-                        timestamp: timestamp
-                    }
-                }
+                userId: user.uid
             })
         });
 
         const result = await response.json();
+        
         if (!result.success) {
             throw new Error(result.error || 'Failed to send notification');
         }
 
-        toast.success('Test notification sent!');
+        console.log('Notification sent successfully');
     } catch (error) {
-        console.error('Error in testNotification:', error);
-        toast.error('Failed to send notification: ' + error.message);
+        console.error('Error sending notification:', error);
     }
 };
 
