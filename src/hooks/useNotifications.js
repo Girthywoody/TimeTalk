@@ -48,11 +48,18 @@ export const useNotifications = () => {
                 onMessage(messaging, (payload) => {
                     console.log('Received foreground message:', payload);
                     
-                    // Show notification even in foreground
-                    if (registration.active) {
-                        registration.active.postMessage({
-                            type: 'SHOW_NOTIFICATION',
-                            payload
+                    // Only show notification if the app is not focused
+                    if (document.visibilityState !== 'visible') {
+                        const notificationId = payload.data?.timestamp || Date.now().toString();
+                        
+                        registration.showNotification(payload.notification.title, {
+                            body: payload.notification.body,
+                            icon: '/ios-icon-192.png',
+                            badge: '/ios-icon-192.png',
+                            vibrate: [100, 50, 100],
+                            data: payload.data,
+                            tag: notificationId,
+                            renotify: false
                         });
                     }
                 });
