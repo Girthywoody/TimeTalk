@@ -21,21 +21,6 @@ export const useNotifications = () => {
 
                 const messaging = getMessaging();
 
-                // Add foreground message handler
-                onMessage(messaging, (payload) => {
-                    console.log('Received foreground message:', payload);
-                    // Show notification even when app is in foreground
-                    registration.showNotification(payload.notification.title, {
-                        body: payload.notification.body,
-                        icon: '/ios-icon-192.png',
-                        badge: '/ios-icon-192.png',
-                        vibrate: [100, 50, 100],
-                        data: payload.data,
-                        tag: payload.data?.timestamp || Date.now().toString(),
-                        renotify: false
-                    });
-                });
-
                 // Request permission first
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') {
@@ -93,6 +78,40 @@ export const useNotifications = () => {
             throw error;
         }
     };
+
+    // Handle foreground messages
+    onMessage(messaging, (payload) => {
+        console.log('Received foreground message:', payload);
+        
+        // Only show notification if the app is not focused
+        if (document.visibilityState !== 'visible') {
+            const notificationId = payload.data?.timestamp || Date.now().toString();
+            
+            // Check if we've already shown this notification
+            if (processedMessageIds.has(notificationId)) {
+                console.log('Duplicate notification prevented:', notificationId);
+                return;
+            }
+
+            // Add to set of processed messages
+            processedMessageIds.add(notificationId);
+
+            // Clear old messages from the set after 5 seconds
+            setTimeout(() => {
+                processedMessageIds.delete(notificationId);
+            }, 5000);
+
+            registration.showNotification(payload.notification.title, {
+                body: payload.notification.body,
+                icon: '/ios-icon-192.png',
+                badge: '/ios-icon-192.png',
+                vibrate: [100, 50, 100],
+                data: payload.data,
+                tag: notificationId,
+                renotify: false
+            });
+        }
+    });
 
     return {
         notificationPermission,
