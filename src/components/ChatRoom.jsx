@@ -212,13 +212,6 @@ git push origin main
         const idToken = await user.getIdToken(true);
         console.log('Got ID token');
         
-        const partnerData = await getPartnerProfile();
-        console.log('Partner data:', partnerData);
-        
-        if (!partnerData?.uid) {
-            throw new Error('Partner not found');
-        }
-
         console.log('Sending notification request...');
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
@@ -227,7 +220,7 @@ git push origin main
                 'Authorization': `Bearer ${idToken}`
             },
             body: JSON.stringify({
-                userId: partnerData.uid,
+                userId: user.uid, // Send to yourself instead of partner
                 notification: {
                     title: 'Test Notification',
                     body: 'This is a test notification!',
