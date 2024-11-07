@@ -60,6 +60,16 @@ const ALLOWED_FILE_TYPES = [
 ];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
+const formatLastSeen = (date) => {
+  const now = new Date();
+  const diff = Math.floor((now - date) / 1000); // difference in seconds
+
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return date.toLocaleDateString();
+};
+
 const ChatRoom = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -941,14 +951,14 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    const fetchPartner = async () => {
-      if (!user) return;
-      
+    const fetchAndTrackPartner = async () => {
       try {
+        // Get partner's profile
         const partnerData = await getPartnerProfile();
         if (partnerData) {
           setPartner(partnerData);
-          // Also set up real-time listener for partner's online status
+          
+          // Set up real-time listener for partner's status
           const partnerRef = doc(db, 'users', partnerData.uid);
           const unsubscribe = onSnapshot(partnerRef, (doc) => {
             if (doc.exists()) {
@@ -966,14 +976,33 @@ useEffect(() => {
             }
           });
 
-          return () => unsubscribe();
+          // Update current user's status
+          const updateStatus = async () => {
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, {
+              lastActive: serverTimestamp()
+            });
+          };
+
+          // Update status immediately and then every minute
+          updateStatus();
+          const intervalId = setInterval(updateStatus, 60000);
+
+          return () => {
+            unsubscribe();
+            clearInterval(intervalId);
+            // Set offline status when component unmounts
+            updateDoc(doc(db, 'users', user.uid), {
+              lastActive: serverTimestamp()
+            });
+          };
         }
       } catch (error) {
-        console.error('Error fetching partner:', error);
+        console.error('Error setting up partner tracking:', error);
       }
     };
 
-    fetchPartner();
+    fetchAndTrackPartner();
   }, [user]);
 
   return (

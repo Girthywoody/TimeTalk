@@ -12,6 +12,10 @@ export const useNotifications = () => {
             if (!auth.currentUser) return;
 
             try {
+                const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+                
+                await Promise.all(existingRegistrations.map(registration => registration.unregister()));
+                
                 const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
                     scope: '/'
                 });
