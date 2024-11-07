@@ -1021,6 +1021,25 @@ useEffect(() => {
     fetchAndTrackPartner();
   }, [user]);
 
+  useEffect(() => {
+    const promptNotifications = async () => {
+        if (Notification.permission === 'default') {
+            const shouldPrompt = window.confirm(
+                'Would you like to receive notifications for new messages?'
+            );
+            if (shouldPrompt) {
+                try {
+                    await Notification.requestPermission();
+                } catch (error) {
+                    console.error('Error requesting permission:', error);
+                }
+            }
+        }
+    };
+
+    promptNotifications();
+  }, []);
+
   return (
     <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>

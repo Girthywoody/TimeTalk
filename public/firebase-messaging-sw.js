@@ -58,50 +58,27 @@ self.addEventListener('push', (event) => {
     if (!event.data) return;
 
     try {
-        const data = event.data.json();
-        if (!data.notification) return;
-
-        const notificationId = `${data.data?.type || 'default'}-${Date.now()}`;
-        
-        if (displayedNotifications.has(notificationId)) {
-            console.log('Duplicate notification prevented:', notificationId);
-            return;
-        }
-
-        displayedNotifications.add(notificationId);
-        setTimeout(() => displayedNotifications.delete(notificationId), 60000);
-
-        const notificationOptions = {
-            ...data.notification,
+        const payload = event.data.json();
+        const options = {
+            body: payload.notification.body,
             icon: '/ios-icon-192.png',
             badge: '/ios-icon-192.png',
-            tag: notificationId,
-            data: data.data || {},
-            requireInteraction: true,
             vibrate: [100, 50, 100],
+            data: payload.data,
             actions: [
                 {
-                    action: 'reply',
-                    title: 'Reply'
-                },
-                {
-                    action: 'mark-read',
-                    title: 'Mark as Read'
+                    action: 'open',
+                    title: 'Open'
                 }
-            ]
+            ],
+            // Add these for iOS
+            renotify: true,
+            tag: 'message',
+            requireInteraction: true
         };
 
-        // For message notifications, add sound
-        if (data.data?.type === 'message') {
-            notificationOptions.silent = false;
-            notificationOptions.sound = '/sounds/notification.mp3';
-        }
-
         event.waitUntil(
-            self.registration.showNotification(
-                data.notification.title,
-                notificationOptions
-            )
+            self.registration.showNotification(payload.notification.title, options)
         );
     } catch (error) {
         console.error('Error showing notification:', error);
@@ -162,4 +139,28 @@ self.addEventListener('notificationclick', (event) => {
     });
 
     event.waitUntil(promiseChain);
+});
+
+// Handle messages from the main thread
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+        const payload = event.data.payload;
+        self.registration.showNotification(payload.notification.title, {
+            body: payload.notification.body,
+            icon: '/ios-icon-192.png',
+            badge: '/ios-icon-192.png',
+            vibrate: [100, 50, 100],
+            data: payload.data,
+            actions: [
+                {
+                    action: 'open',
+                    title: 'Open'
+                }
+            ],
+            // Add these for iOS
+            renotify: true,
+            tag: 'message',
+            requireInteraction: true
+        });
+    }
 });

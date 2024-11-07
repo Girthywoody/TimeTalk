@@ -15,6 +15,15 @@ import PartnerProfilePage from './components/profile/PartnerProfilePage';
 const App = () => {
   const { user, loading } = useAuth();
 
+  useEffect(() => {
+    // Check if the app is installed as PWA
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+    if (!isPWA && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      // Show installation prompt for iOS users
+      alert('To enable notifications, please add this app to your home screen by clicking the share button and selecting "Add to Home Screen".');
+    }
+  }, []); // Empty dependency array means this runs once when component mounts
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
