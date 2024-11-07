@@ -23,16 +23,18 @@ async function sendNotificationToUser(userId, notification) {
             return { success: false, error: 'No FCM token available' };
         }
 
-        // Simplest possible message structure
+        // Simplified message structure with only supported fields
         const message = {
             token: userData.fcmToken,
             notification: {
                 title: notification.title,
-                body: notification.body,
-                icon: '/ios-icon-192.png'
+                body: notification.body
             },
-            data: {
-                messageId: Date.now().toString()
+            webpush: {
+                notification: {
+                    icon: '/ios-icon-192.png',
+                    tag: Date.now().toString()
+                }
             }
         };
 
