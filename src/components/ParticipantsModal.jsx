@@ -1,124 +1,106 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Check } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
-import useDarkMode from '../hooks/useDarkMode';
-import useAuth from '../hooks/useAuth';
+import { db, auth } from '../firebase';
 
 const ParticipantsModal = ({ isOpen, onClose, onSelect, selectedParticipants }) => {
-  const { darkMode } = useDarkMode();
   const [users, setUsers] = useState([]);
-  const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user && !selectedParticipants.some(p => p.id === user.uid)) {
-      onSelect({
-        id: user.uid,
-        displayName: user.displayName || 'You'
-      });
-    }
-
     const fetchUsers = async () => {
-      const usersRef = collection(db, 'users');
-      const snapshot = await getDocs(usersRef);
-      const usersList = snapshot.docs
-        .map(doc => ({
+      try {
+        const usersRef = collection(db, 'users');
+        const snapshot = await getDocs(usersRef);
+        const userData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }))
-        .filter(u => u.id !== user.uid);
-
-      setUsers(usersList);
+        }));
+        
+        const currentUser = userData.find(user => user.id === auth.currentUser.uid);
+        if (currentUser && !selectedParticipants.some(p => p.id === currentUser.id)) {
+          onSelect(currentUser);
+        }
+        
+        setUsers(userData);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchUsers();
-  }, [user]);
+    if (isOpen) {
+      fetchUsers();
+    }
+  }, [isOpen]);
 
-  if (!isOpen) return null;
+  const filteredUsers = users.filter(user => 
+    user.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.username?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const isSelected = (userId) => {
+    return selectedParticipants.some(p => p.id === userId) || userId === auth.currentUser.uid;
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`w-full max-w-md m-4 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl`}>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              Add Participants
-            </h2>
-            <button
-              onClick={onClose}
-              className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
-            >
-              <X size={20} className={darkMode ? 'text-gray-400' : 'text-gray-500'} />
-            </button>
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h3 className="text-lg font-semibold dark:text-white">Add Participants</h3>
+          <button onClick={onClose}>
+            <X className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" />
+          </button>
+        </div>
+
+        <div className="p-4">
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 
+                text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none"
+            />
           </div>
 
-          <div className={`mb-4 p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-blue-500 font-medium">
-                  {user?.displayName?.[0] || 'Y'}
-                </span>
-              </div>
-              <div className="flex-1">
-                <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {user?.displayName || 'You'} (Event Creator)
-                </p>
-              </div>
-              <div className="flex items-center">
-                <div className={`w-5 h-5 rounded-full border-2 ${darkMode ? 'border-blue-400 bg-blue-400' : 'border-blue-500 bg-blue-500'} flex items-center justify-center`}>
-                  <Check size={12} className="text-white" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {users.map(user => (
-              <div
+          <div className="space-y-2 max-h-[300px] overflow-y-auto mb-4">
+            {filteredUsers.map(user => (
+              <button
                 key={user.id}
-                onClick={() => onSelect(user)}
-                className={`p-3 rounded-lg cursor-pointer transition-colors
-                  ${darkMode 
-                    ? 'hover:bg-gray-700' 
-                    : 'hover:bg-gray-50'}`}
+                onClick={() => user.id !== auth.currentUser.uid && onSelect(user)}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                  isSelected(user.id)
+                    ? 'bg-blue-500/10 text-blue-500'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                } ${user.id === auth.currentUser.uid ? 'cursor-default' : 'cursor-pointer'}`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <span className="text-blue-500 font-medium">
-                      {user.displayName?.[0] || user.email?.[0]?.toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {user.displayName || user.email?.split('@')[0]}
-                    </p>
-                  </div>
-                  <div className="flex items-center">
-                    <div className={`w-5 h-5 rounded-full border-2 
-                      ${selectedParticipants.some(p => p.id === user.id)
-                        ? darkMode 
-                          ? 'border-blue-400 bg-blue-400' 
-                          : 'border-blue-500 bg-blue-500'
-                        : darkMode
-                          ? 'border-gray-600'
-                          : 'border-gray-300'
-                      } flex items-center justify-center`}
-                    >
-                      {selectedParticipants.some(p => p.id === user.id) && (
-                        <Check size={12} className="text-white" />
-                      )}
-                    </div>
-                  </div>
+                <img
+                  src={user.profilePhotoURL || "/default-avatar.png"}
+                  alt={user.displayName}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                <div className="flex-1 text-left">
+                  <p className={`font-medium ${isSelected(user.id) ? 'text-blue-500' : 'dark:text-white'}`}>
+                    {user.displayName}
+                    {user.id === auth.currentUser.uid && " (You)"}
+                  </p>
+                  <p className="text-sm text-gray-500">@{user.username}</p>
                 </div>
-              </div>
+                {isSelected(user.id) && <Check size={20} />}
+              </button>
             ))}
           </div>
 
-          <div className="mt-6 flex justify-end">
+          <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={onClose}
-              className={`px-6 py-2 rounded-lg font-medium text-white bg-blue-500 hover:bg-blue-600 
-                transition-colors ${darkMode ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+              className="px-6 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white 
+                transition-colors font-medium"
             >
               OK
             </button>
