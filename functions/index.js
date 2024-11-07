@@ -169,4 +169,113 @@ exports.checkScheduledPosts = functions.pubsub.schedule('every 1 hours').onRun(a
     }
 });
 
+// Add this new function to check calendar events
+exports.checkCalendarEvents = functions.pubsub.schedule('every 5 minutes').onRun(async (context) => {
+    try {
+        const now = new Date();
+        const eventsRef = admin.firestore().collection('events');
+        
+        // Get all events that have notification times and haven't sent all notifications
+        const snapshot = await eventsRef
+            .where('notificationTimes', '!=', [])
+            .get();
+
+        const notifications = [];
+
+        snapshot.forEach(doc => {
+            const event = doc.data();
+            const eventId = doc.id;
+
+            // Check each notification time
+            event.notificationTimes.forEach((notificationTime, index) => {
+                const notificationDate = new Date(notificationTime);
+                
+                // If notification time has passed and hasn't been sent yet
+                if (notificationDate <= now && 
+                    (!event.sentNotifications || !event.sentNotifications.includes(index))) {
+                    
+                    // Calculate time difference for message
+                    const eventDate = new Date(`${event.date}T${event.startTime || '00:00'}`);
+                    const minutesDiff = Math.round((eventDate - now) / (1000 * 60));
+                    let timeMessage;
+
+                    if (minutesDiff > 1440) {
+                        timeMessage = `in ${Math.round(minutesDiff/1440)} days`;
+                    } else if (minutesDiff > 60) {
+                        timeMessage = `in ${Math.round(minutesDiff/60)} hours`;
+                    } else {
+                        timeMessage = `in ${minutesDiff} minutes`;
+                    }
+
+                    // Add notification for each participant
+                    if (event.participants?.length > 0) {
+                        event.participants.forEach(participant => {
+                            notifications.push({
+                                userId: participant.id,
+                                notification: {
+                                    title: '📅 Event Reminder',
+                                    body: `"${event.title}" starts ${timeMessage}${event.location ? ` at ${event.location}` : ''}`,
+                                    data: {
+                                        type: 'calendar_reminder',
+                                        eventId: eventId,
+                                        timestamp: Date.now().toString(),
+                                        eventDetails: {
+                                            title: event.title,
+                                            date: event.date,
+                                            time: event.startTime || 'All day',
+                                            location: event.location || 'No location specified'
+                                        }
+                                    }
+                                },
+                                update: {
+                                    sentNotifications: admin.firestore.FieldValue.arrayUnion(index)
+                                }
+                            });
+                        });
+                    }
+
+                    // Also notify the event creator
+                    notifications.push({
+                        userId: event.userId,
+                        notification: {
+                            title: '📅 Event Reminder',
+                            body: `"${event.title}" starts ${timeMessage}${event.location ? ` at ${event.location}` : ''}`,
+                            data: {
+                                type: 'calendar_reminder',
+                                eventId: eventId,
+                                timestamp: Date.now().toString(),
+                                eventDetails: {
+                                    title: event.title,
+                                    date: event.date,
+                                    time: event.startTime || 'All day',
+                                    location: event.location || 'No location specified'
+                                }
+                            }
+                        },
+                        update: {
+                            sentNotifications: admin.firestore.FieldValue.arrayUnion(index)
+                        }
+                    });
+                }
+            });
+        });
+
+        // Send all notifications and update documents
+        await Promise.all(notifications.map(async (notif) => {
+            // Send notification
+            await sendNotificationToUser(notif.userId, notif.notification);
+
+            // Update event document
+            if (notif.update) {
+                await eventsRef.doc(notif.eventId).update(notif.update);
+            }
+        }));
+
+        return null;
+    } catch (error) {
+        console.error('Error in checkCalendarEvents:', error);
+        return null;
+    }
+});
+
 exports.api = functions.https.onRequest(app);
