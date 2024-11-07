@@ -206,7 +206,7 @@ git push origin main
 
   const testNotification = async () => {
     try {
-        const idToken = await user.getIdToken(true);
+        const idToken = await auth.currentUser.getIdToken(true);
         const timestamp = Date.now().toString();
         
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
@@ -216,13 +216,13 @@ git push origin main
                 'Authorization': `Bearer ${idToken}`
             },
             body: JSON.stringify({
-                userId: user.uid,
+                userId: partner?.uid, // Send to partner instead of self
                 notification: {
-                    title: user.displayName || 'Someone',
-                    body: 'New message',
+                    title: '🔔 Test Notification',
+                    body: `${auth.currentUser.displayName || 'Your partner'} sent you a test notification!`,
                     data: {
                         type: 'test',
-                        senderId: user.uid,
+                        senderId: auth.currentUser.uid,
                         timestamp: timestamp
                     }
                 }
@@ -231,13 +231,13 @@ git push origin main
 
         const result = await response.json();
         if (!result.success) {
-            throw new Error(result.error || 'Failed to send notification');
+            throw new Error(result.error || 'Failed to send test notification');
         }
 
         toast.success('Test notification sent!');
     } catch (error) {
-        console.error('Error in testNotification:', error);
-        toast.error('Failed to send notification');
+        console.error('Error sending test notification:', error);
+        toast.error('Failed to send test notification');
     }
 };
 
@@ -1025,8 +1025,35 @@ useEffect(() => {
         {/* Header */}
         <div className={`px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b z-10 relative`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center justify-between w-full px-4">
-              {/* Left side */}
+            {/* Left side - Partner info */}
+            <div className="flex items-center gap-3">
+              {partner?.profilePhotoURL ? (
+                <img 
+                  src={partner.profilePhotoURL} 
+                  alt={partner.displayName || 'Partner'}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                  <span className="text-blue-500 font-medium">
+                    {partner?.displayName?.[0] || partner?.email?.[0]?.toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <div>
+                <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
+                  {partner?.displayName || partner?.email?.split('@')[0]}
+                </h1>
+                <p className={`text-sm ${otherUserStatus?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
+                  {isTyping ? 'typing...' : 
+                    otherUserStatus?.isOnline ? 'Online' : 
+                    otherUserStatus?.lastSeen ? formatLastSeen(otherUserStatus.lastSeen) : 'Offline'}
+                </p>
+              </div>
+            </div>
+
+            {/* Right side - Action buttons */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsSearchOpen(true)}
                 className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
@@ -1035,40 +1062,20 @@ useEffect(() => {
                 <Search size={24} className="text-gray-500" />
               </button>
 
-              {/* Center - Partner info */}
-              <div className="flex items-center gap-3">
-                {partner?.profilePhotoURL ? (
-                  <img 
-                    src={partner.profilePhotoURL} 
-                    alt={partner.displayName || 'Partner'}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <span className="text-blue-500 font-medium">
-                      {partner?.displayName?.[0] || partner?.email?.[0]?.toUpperCase()}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
-                    {partner?.displayName || partner?.email?.split('@')[0]}
-                  </h1>
-                  <p className={`text-sm ${otherUserStatus?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
-                    {isTyping ? 'typing...' : 
-                      otherUserStatus?.isOnline ? 'Online' : 
-                      otherUserStatus?.lastSeen ? formatLastSeen(otherUserStatus.lastSeen) : 'Offline'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Right side */}
               <button
                 onClick={handleNudge}
                 className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 title="Nudge Partner"
               >
                 <Vibrate size={24} className="text-gray-500" />
+              </button>
+
+              <button 
+                onClick={testNotification}
+                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title="Test Notification"
+              >
+                <Bell size={24} className="text-gray-500" />
               </button>
             </div>
           </div>
