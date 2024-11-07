@@ -1027,9 +1027,9 @@ useEffect(() => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button 
-                onClick={handleNudge}
+                onClick={testNotification}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                title="Nudge Partner"
+                title="Test Notification"
               >
                 <Bell size={20} className="text-blue-500" />
               </button>
@@ -1060,30 +1060,23 @@ useEffect(() => {
 
             <div className="flex items-center gap-2">
               <button
+                onClick={handleNudge}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title="Nudge Partner"
+              >
+                <Vibrate size={20} className="text-gray-500" />
+              </button>
+              <button
                 onClick={() => setIsSearchOpen(true)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
               >
-                <Search size={20} className="text-gray-500 dark:text-gray-400" />
+                <Search size={20} className="text-gray-500" />
               </button>
-
               <button
-                onClick={handleNudge}
-                disabled={!otherUser?.uid}
-                className={`p-2 rounded-full transition-colors ${
-                  otherUser?.uid 
-                    ? 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400' 
-                    : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                }`}
-                title="Nudge"
-              >
-                <Vibrate size={20} />
-              </button>
-
-              <button
-                onClick={() => setIsDropdownOpen(true)}
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
               >
-                <MoreVertical size={20} className="text-gray-500 dark:text-gray-400" />
+                <MoreVertical size={20} className="text-gray-500" />
               </button>
             </div>
           </div>
