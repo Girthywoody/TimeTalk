@@ -10,25 +10,16 @@
   "gcm_sender_id": "676555846687",
   "icons": [
     {
-      "src": "/ios-icon-192.png",
+      "src": "ios-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/ios-icon-512.png",
+      "src": "ios-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "related_applications": [],
-  "prefer_related_applications": false,
-  "categories": ["social"],
-  "shortcuts": [],
-  "screenshots": [],
-  "apple-touch-startup-image": "/ios-icon-512.png",
-  "apple-mobile-web-app-capable": "yes",
-  "apple-mobile-web-app-status-bar-style": "black-translucent",
-  "apple-mobile-web-app-title": "TimeTalk"
+  ]
 } 
