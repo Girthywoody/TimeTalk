@@ -28,7 +28,8 @@ async function sendNotificationToUser(userId, notification) {
             token: userData.fcmToken,
             notification: {
                 title: notification.title,
-                body: notification.body
+                body: notification.body,
+                icon: '/ios-icon-192.png'
             },
             data: {
                 messageId: Date.now().toString()
@@ -36,6 +37,7 @@ async function sendNotificationToUser(userId, notification) {
         };
 
         const response = await admin.messaging().send(message);
+        console.log('Successfully sent notification:', response);
         return { success: true, messageId: response };
     } catch (error) {
         console.error('Error sending notification:', error);
