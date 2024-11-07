@@ -54,6 +54,36 @@
         }
     </script>
 
+    <!-- Check if running as PWA on iOS -->
+    <script>
+        // Check if running as PWA on iOS
+        if (window.navigator.standalone) {
+            // Set up a custom event listener for push notifications
+            window.addEventListener('push', function(event) {
+                if (event.data) {
+                    const payload = event.data.json();
+                    if (Notification.permission === 'granted') {
+                        const notification = new Notification(payload.notification.title, {
+                            body: payload.notification.body,
+                            icon: '/ios-icon-192.png',
+                            badge: '/ios-icon-192.png',
+                            data: payload.data
+                        });
+                        
+                        notification.onclick = function() {
+                            window.focus();
+                            notification.close();
+                            // Handle any custom click actions
+                            if (payload.data?.url) {
+                                window.location.href = payload.data.url;
+                            }
+                        };
+                    }
+                }
+            });
+        }
+    </script>
+
     <title>Time Talk</title>
 
     <style>

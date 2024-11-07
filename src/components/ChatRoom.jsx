@@ -204,12 +204,60 @@ git push origin main
     setIsDropdownOpen(false);
   };
 
-  const handleTestNotification = async () => {
+  const testNotification = async () => {
     try {
-        await testNotification();
-        toast.success('Test notification sent successfully!');
+        // Verify PWA mode
+        const isPWA = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+        if (!isPWA) {
+            throw new Error('Please open the app from your home screen to enable notifications');
+        }
+
+        // Request permission
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            throw new Error('Notification permission denied');
+        }
+
+        // Get FCM token
+        const token = await requestNotificationPermission();
+        if (!token) {
+            throw new Error('Failed to get notification token');
+        }
+
+        // Send test notification
+        const idToken = await auth.currentUser.getIdToken(true);
+        const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({
+                userId: auth.currentUser.uid,
+                notification: {
+                    title: 'Test Notification',
+                    body: 'This is a test notification from TimeTalk',
+                    sound: 'default',
+                    badge: '1',
+                    data: {
+                        type: 'test',
+                        timestamp: Date.now().toString(),
+                        url: '/',
+                        clickAction: '/'
+                    }
+                }
+            })
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to send notification');
+        }
+
+        console.log('Test notification sent successfully');
     } catch (error) {
-        toast.error(error.message);
+        console.error('Test notification failed:', error);
+        throw error;
     }
 };
 

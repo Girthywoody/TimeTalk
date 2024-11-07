@@ -17,35 +17,45 @@ console.log('Firebase messaging service worker initialized');
 messaging.onBackgroundMessage(function(payload) {
     console.log('[firebase-messaging-sw.js] Received background message:', payload);
 
-    const notificationTitle = payload.notification.title;
     const notificationOptions = {
         body: payload.notification.body,
         icon: '/ios-icon-192.png',
         badge: '/ios-icon-192.png',
         sound: 'default',
-        vibrate: [100, 50, 100],
-        data: {
-            ...payload.data,
-            clickAction: payload.notification.click_action || '/',
-            url: payload.notification.click_action || '/'
-        },
+        vibrate: [200, 100, 200],
+        data: payload.data,
+        actions: [{
+            action: 'open',
+            title: 'Open App'
+        }],
         tag: payload.data?.timestamp || Date.now().toString(),
         renotify: true,
         requireInteraction: true
     };
 
-    return self.registration.showNotification(notificationTitle, notificationOptions);
+    return self.registration.showNotification(payload.notification.title, notificationOptions);
 });
 
 self.addEventListener('notificationclick', function(event) {
-    console.log('[firebase-messaging-sw.js] Notification click:', event);
-    
     event.notification.close();
     
-    const clickAction = event.notification.data?.clickAction;
-    if (clickAction) {
-        clients.openWindow(clickAction);
-    }
+    const urlToOpen = event.notification.data?.url || '/';
+    
+    event.waitUntil(
+        clients.matchAll({
+            type: 'window',
+            includeUncontrolled: true
+        }).then(function(clientList) {
+            for (const client of clientList) {
+                if (client.url === urlToOpen && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(urlToOpen);
+            }
+        })
+    );
 });
 
 self.addEventListener('error', function(event) {
