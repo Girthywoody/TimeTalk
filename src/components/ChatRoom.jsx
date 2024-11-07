@@ -99,7 +99,7 @@ const ChatRoom = () => {
   const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
   const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
   const [isVisible, setIsVisible] = useState(false);
-  const { user, getPartnerProfile, auth } = useAuth();
+  const { user, getPartnerProfile } = useAuth();
   const { darkMode } = useDarkMode();
   const [notificationSettings, setNotificationSettings] = useState({
     muted: false,
@@ -205,18 +205,10 @@ git push origin main
   };
 
   const testNotification = async () => {
-    if (!user || !partner?.uid) {
-        toast.error('Cannot send notification: Missing user information');
-        return;
-    }
-
     try {
         const idToken = await user.getIdToken(true);
         const timestamp = Date.now().toString();
         
-        console.log('Sending notification to:', partner.uid);
-        console.log('Current user:', user.uid);
-
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
             headers: {
@@ -224,36 +216,28 @@ git push origin main
                 'Authorization': `Bearer ${idToken}`
             },
             body: JSON.stringify({
-                userId: partner.uid,
+                userId: user.uid,
                 notification: {
-                    title: '🔔 New Message',
-                    body: `${user.displayName || 'Your partner'} sent you a test notification!`,
+                    title: user.displayName || 'Someone',
+                    body: 'New message',
                     data: {
-                        type: 'test_notification',
+                        type: 'test',
                         senderId: user.uid,
-                        timestamp: timestamp,
-                        click_action: 'OPEN_CHAT'
+                        timestamp: timestamp
                     }
                 }
             })
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to send notification');
-        }
-
         const result = await response.json();
-        console.log('Notification result:', result);
-
         if (!result.success) {
             throw new Error(result.error || 'Failed to send notification');
         }
 
         toast.success('Test notification sent!');
     } catch (error) {
-        console.error('Error sending test notification:', error);
-        toast.error(`Failed to send notification: ${error.message}`);
+        console.error('Error in testNotification:', error);
+        toast.error('Failed to send notification');
     }
 };
 
@@ -1041,8 +1025,14 @@ useEffect(() => {
         {/* Header */}
         <div className={`px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b z-10 relative`}>
           <div className="flex items-center justify-between">
-            {/* Left side - Partner info */}
             <div className="flex items-center gap-3">
+              <button 
+                onClick={testNotification}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title="Test Notification"
+              >
+                <Bell size={20} className="text-blue-500" />
+              </button>
               {partner?.profilePhotoURL ? (
                 <img 
                   src={partner.profilePhotoURL} 
@@ -1068,30 +1058,25 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Right side - Action buttons */}
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setIsSearchOpen(true)}
-                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                title="Search Messages"
-              >
-                <Search size={24} className="text-gray-500" />
-              </button>
-
-              <button
                 onClick={handleNudge}
-                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 title="Nudge Partner"
               >
-                <Vibrate size={24} className="text-gray-500" />
+                <Vibrate size={20} className="text-gray-500" />
               </button>
-
-              <button 
-                onClick={testNotification}
-                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                title="Test Notification"
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
               >
-                <Bell size={24} className="text-gray-500" />
+                <Search size={20} className="text-gray-500" />
+              </button>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              >
+                <MoreVertical size={20} className="text-gray-500" />
               </button>
             </div>
           </div>
