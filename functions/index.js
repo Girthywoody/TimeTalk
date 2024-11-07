@@ -24,20 +24,46 @@ async function sendNotificationToUser(userId, notification) {
             return { success: false, error: 'No FCM token available' };
         }
 
-        // Create a single message object
+        // Create message with collapse key to prevent duplicates
         const message = {
             token: userData.fcmToken,
             notification: {
                 title: notification.title,
                 body: notification.body,
             },
-            data: {
-                timestamp: Date.now().toString(),
-                ...notification.data
+            // Add collapse key to group similar notifications
+            collapseKey: 'test_notification',
+            // Add Android channel for better control
+            android: {
+                priority: 'high',
+                notification: {
+                    channelId: 'test_channel'
+                }
+            },
+            // Add APNS specific configuration
+            apns: {
+                headers: {
+                    'apns-collapse-id': 'test_notification'
+                },
+                payload: {
+                    aps: {
+                        'thread-id': 'test_notification'
+                    }
+                }
+            },
+            // Add web specific configuration
+            webpush: {
+                headers: {
+                    Urgency: 'high'
+                },
+                notification: {
+                    requireInteraction: false,
+                    renotify: false
+                }
             }
         };
 
-        // Send only one message
+        // Send message
         const response = await admin.messaging().send(message);
         console.log('Successfully sent notification:', response);
         return { success: true };

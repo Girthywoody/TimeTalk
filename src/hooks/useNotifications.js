@@ -6,12 +6,12 @@ import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 export const useNotifications = () => {
     const [notificationPermission, setNotificationPermission] = useState('default');
     const [fcmToken, setFcmToken] = useState(null);
+    const processedMessageIds = new Set();
 
     const initializeNotifications = async () => {
         if (!auth.currentUser) return;
 
         try {
-            // Register service worker
             if ('serviceWorker' in navigator) {
                 const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
                     scope: '/',
@@ -21,19 +21,31 @@ export const useNotifications = () => {
 
                 const messaging = getMessaging();
 
-                // Only handle foreground messages if app is not visible
+                // Handle foreground messages with deduplication
                 onMessage(messaging, (payload) => {
                     console.log('Received foreground message:', payload);
                     
+                    // Check if we've already processed this message
+                    if (processedMessageIds.has(payload.messageId)) {
+                        console.log('Duplicate message prevented:', payload.messageId);
+                        return;
+                    }
+
+                    // Add message ID to processed set
+                    processedMessageIds.add(payload.messageId);
+
+                    // Clear message ID after 5 seconds
+                    setTimeout(() => {
+                        processedMessageIds.delete(payload.messageId);
+                    }, 5000);
+
+                    // Only show notification if app is not visible
                     if (document.visibilityState !== 'visible') {
-                        const notificationId = payload.data?.timestamp || Date.now().toString();
                         registration.showNotification(payload.notification.title, {
                             body: payload.notification.body,
                             icon: '/ios-icon-192.png',
                             badge: '/ios-icon-192.png',
-                            vibrate: [100, 50, 100],
-                            data: payload.data,
-                            tag: notificationId,
+                            tag: payload.messageId, // Use messageId as tag
                             renotify: false
                         });
                     }
