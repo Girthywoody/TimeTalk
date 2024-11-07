@@ -1,6 +1,8 @@
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
+console.log('Service Worker loaded');
+
 firebase.initializeApp({
     apiKey: "AIzaSyDdFtxNbwQSYGfO3pUKG8hkkxlwhlikvQQ",
     authDomain: "timetalk-13a75.firebaseapp.com",
@@ -12,8 +14,8 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
+console.log('Firebase Messaging initialized in SW');
 
-// Handle background messages
 messaging.onBackgroundMessage((payload) => {
     console.log('Received background message:', payload);
 
@@ -28,11 +30,22 @@ messaging.onBackgroundMessage((payload) => {
         vibrate: [100, 50, 100]
     };
 
+    console.log('Showing notification:', { title: notificationTitle, options: notificationOptions });
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// Handle notification clicks
+self.addEventListener('install', (event) => {
+    console.log('Service Worker installing...');
+    event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', (event) => {
+    console.log('Service Worker activating...');
+    event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('notificationclick', (event) => {
+    console.log('Notification clicked:', event);
     event.notification.close();
 
     const urlToOpen = new URL('https://time-talk.vercel.app/chat');
@@ -43,6 +56,7 @@ self.addEventListener('notificationclick', (event) => {
             includeUncontrolled: true
         })
         .then((clientList) => {
+            console.log('Found window clients:', clientList.length);
             for (const client of clientList) {
                 if (client.url.startsWith('https://time-talk.vercel.app') && 'focus' in client) {
                     return client.focus();
