@@ -1,9 +1,7 @@
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
-console.log('Service Worker loading...');
-
-const firebaseConfig = {
+firebase.initializeApp({
     apiKey: "AIzaSyDdFtxNbwQSYGfO3pUKG8hkkxlwhlikvQQ",
     authDomain: "timetalk-13a75.firebaseapp.com",
     projectId: "timetalk-13a75",
@@ -11,14 +9,10 @@ const firebaseConfig = {
     messagingSenderId: "676555846687",
     appId: "1:676555846687:web:918431d0810a41980b512a",
     measurementId: "G-4JRNMJ99HS"
-};
+});
 
-firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-console.log('Firebase Messaging initialized in SW');
-
-// Handle background messages
 messaging.onBackgroundMessage(function(payload) {
     console.log('[firebase-messaging-sw.js] Received background message:', payload);
 
@@ -26,16 +20,10 @@ messaging.onBackgroundMessage(function(payload) {
         body: payload.notification.body,
         icon: '/ios-icon-192.png',
         badge: '/ios-icon-192.png',
-        tag: `message-${Date.now()}`,
-        data: payload.data || {},
-        requireInteraction: true,
+        tag: payload.notification.tag || 'default',
         vibrate: [100, 50, 100],
-        actions: [
-            {
-                action: 'open',
-                title: 'Open Chat'
-            }
-        ]
+        requireInteraction: true,
+        data: payload.data || {}
     };
 
     return self.registration.showNotification(
@@ -44,10 +32,16 @@ messaging.onBackgroundMessage(function(payload) {
     );
 });
 
-self.addEventListener('notificationclick', function(event) {
-    console.log('[firebase-messaging-sw.js] Notification clicked:', event);
-    event.notification.close();
+self.addEventListener('install', event => {
+    event.waitUntil(self.skipWaiting());
+});
 
+self.addEventListener('activate', event => {
+    event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
     const clickAction = event.notification.data.clickAction || 'https://time-talk.vercel.app/chat';
     
     event.waitUntil(
@@ -64,14 +58,4 @@ self.addEventListener('notificationclick', function(event) {
             return clients.openWindow(clickAction);
         })
     );
-});
-
-self.addEventListener('install', event => {
-    console.log('[firebase-messaging-sw.js] Service Worker installing...');
-    event.waitUntil(self.skipWaiting());
-});
-
-self.addEventListener('activate', event => {
-    console.log('[firebase-messaging-sw.js] Service Worker activating...');
-    event.waitUntil(self.clients.claim());
 });
