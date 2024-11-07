@@ -12,45 +12,38 @@ export const useNotifications = () => {
         if (!auth.currentUser) return;
 
         try {
-            const messaging = getMessaging();
-            
-            // Request permission first
-            const permission = await Notification.requestPermission();
-            console.log('Notification permission:', permission);
-            
-            if (permission !== 'granted') {
-                throw new Error('Notification permission denied');
+            // Check existing permission first
+            const existingPermission = Notification.permission;
+            console.log('Existing notification permission:', existingPermission);
+
+            // Only request if not already granted
+            if (existingPermission !== 'granted') {
+                const permission = await Notification.requestPermission();
+                console.log('New notification permission:', permission);
+                if (permission !== 'granted') {
+                    throw new Error('Notification permission denied');
+                }
             }
 
-            // Register service worker
-            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                scope: '/',
-                updateViaCache: 'none'
-            });
+            const messaging = getMessaging();
             
-            console.log('Service Worker registered:', registration);
+            // Register service worker if not already registered
+            let registration;
+            const existingRegistration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+            
+            if (existingRegistration) {
+                console.log('Using existing service worker registration');
+                registration = existingRegistration;
+            } else {
+                console.log('Registering new service worker');
+                registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                    scope: '/',
+                    updateViaCache: 'none'
+                });
+            }
 
-            // Handle foreground messages
-            onMessage(messaging, (payload) => {
-                console.log('Received foreground message:', payload);
-                
-                // Always show notification in foreground
-                const notificationTitle = payload.notification.title;
-                const notificationOptions = {
-                    body: payload.notification.body,
-                    icon: '/ios-icon-192.png',
-                    badge: '/ios-icon-192.png',
-                    vibrate: [100, 50, 100],
-                    data: payload.data,
-                    tag: payload.data?.timestamp || Date.now().toString(),
-                    renotify: false,
-                    requireInteraction: true
-                };
-
-                registration.showNotification(notificationTitle, notificationOptions);
-            });
-
-            const token = await getToken(messaging, {
+            // Get existing token or generate new one
+            let token = await getToken(messaging, {
                 vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
                 serviceWorkerRegistration: registration
             });
@@ -58,14 +51,34 @@ export const useNotifications = () => {
             if (token) {
                 console.log('FCM Token:', token);
                 setFcmToken(token);
+                
+                // Update token in Firestore
                 await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                     fcmToken: token,
                     notificationsEnabled: true,
                     lastTokenUpdate: new Date().toISOString()
                 });
+
+                // Set up foreground message handler
+                onMessage(messaging, (payload) => {
+                    console.log('Received foreground message:', payload);
+                    
+                    // Show notification even when app is in foreground
+                    registration.showNotification(payload.notification.title, {
+                        body: payload.notification.body,
+                        icon: '/ios-icon-192.png',
+                        badge: '/ios-icon-192.png',
+                        vibrate: [100, 50, 100],
+                        data: payload.data,
+                        tag: payload.data?.timestamp || Date.now().toString(),
+                        renotify: false,
+                        requireInteraction: true
+                    });
+                });
             } else {
-                throw new Error('No FCM token received');
+                throw new Error('Failed to get FCM token');
             }
+
         } catch (error) {
             console.error('Error initializing notifications:', error);
             throw error;

@@ -206,12 +206,18 @@ git push origin main
 
   const testNotification = async () => {
     try {
+        // Check current permission status
+        console.log('Current notification permission:', Notification.permission);
+        
+        // Check if service worker is active
+        const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+        console.log('Service worker registration:', registration);
+        
         const idToken = await user.getIdToken(true);
         const timestamp = Date.now().toString();
         
         console.log('Sending test notification...');
         
-        // Send notification to yourself for testing
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
             headers: {
@@ -222,7 +228,7 @@ git push origin main
                 userId: user.uid,
                 notification: {
                     title: 'Test Notification',
-                    body: 'This is a test notification!',
+                    body: 'This is a test notification! ' + new Date().toLocaleTimeString(),
                     data: {
                         type: 'test',
                         senderId: user.uid,
