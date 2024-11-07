@@ -22,10 +22,15 @@ messaging.onBackgroundMessage(function(payload) {
         body: payload.notification.body,
         icon: '/ios-icon-192.png',
         badge: '/ios-icon-192.png',
+        sound: 'default',
         vibrate: [100, 50, 100],
-        data: payload.data,
+        data: {
+            ...payload.data,
+            clickAction: payload.notification.click_action || '/',
+            url: payload.notification.click_action || '/'
+        },
         tag: payload.data?.timestamp || Date.now().toString(),
-        renotify: false,
+        renotify: true,
         requireInteraction: true
     };
 

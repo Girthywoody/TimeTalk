@@ -35,6 +35,25 @@
       }
     </script>
 
+    <!-- iOS PWA notification support -->
+    <script>
+        // iOS PWA notification support
+        if (window.navigator && navigator.serviceWorker) {
+            navigator.serviceWorker.ready.then(registration => {
+                if ('Notification' in window) {
+                    registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc'
+                    }).then(function(subscription) {
+                        console.log('Push subscription successful:', subscription);
+                    }).catch(function(error) {
+                        console.error('Push subscription failed:', error);
+                    });
+                }
+            });
+        }
+    </script>
+
     <title>Time Talk</title>
 
     <style>

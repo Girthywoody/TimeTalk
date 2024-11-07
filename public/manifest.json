@@ -19,7 +19,15 @@
       "src": "/ios-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "categories": ["social"],
+  "shortcuts": [],
+  "screenshots": [],
+  "apple-mobile-web-app-capable": "yes",
+  "apple-mobile-web-app-status-bar-style": "default",
+  "apple-mobile-web-app-title": "TimeTalk"
 } 

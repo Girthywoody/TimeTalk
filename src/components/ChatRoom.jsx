@@ -206,18 +206,20 @@ git push origin main
 
   const testNotification = async () => {
     try {
-        // Check current permission status
-        console.log('Current notification permission:', Notification.permission);
+        console.log('Testing notification on iOS...');
         
-        // Check if service worker is active
-        const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
-        console.log('Service worker registration:', registration);
+        // Check if running as PWA
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+        console.log('Is running as PWA:', isPWA);
+        
+        // Check notification permission
+        const permission = await Notification.requestPermission();
+        console.log('Notification permission:', permission);
         
         const idToken = await user.getIdToken(true);
         const timestamp = Date.now().toString();
         
-        console.log('Sending test notification...');
-        
+        // iOS-specific notification payload
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
             headers: {
@@ -227,28 +229,32 @@ git push origin main
             body: JSON.stringify({
                 userId: user.uid,
                 notification: {
-                    title: 'Test Notification',
-                    body: 'This is a test notification! ' + new Date().toLocaleTimeString(),
+                    title: 'iOS Test Notification',
+                    body: 'Testing iOS notification: ' + new Date().toLocaleTimeString(),
+                    sound: 'default',
+                    badge: '1',
                     data: {
                         type: 'test',
                         senderId: user.uid,
-                        timestamp: timestamp
+                        timestamp: timestamp,
+                        url: '/',
+                        clickAction: '/'
                     }
                 }
             })
         });
 
         const result = await response.json();
-        console.log('Notification API response:', result);
+        console.log('iOS notification response:', result);
 
         if (!result.success) {
             throw new Error(result.error || 'Failed to send notification');
         }
 
-        toast.success('Test notification sent!');
+        toast.success('iOS test notification sent!');
     } catch (error) {
-        console.error('Error in testNotification:', error);
-        toast.error('Failed to send notification: ' + error.message);
+        console.error('Error in iOS testNotification:', error);
+        toast.error('Failed to send iOS notification: ' + error.message);
     }
 };
 
