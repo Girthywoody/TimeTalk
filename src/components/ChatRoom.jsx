@@ -204,57 +204,12 @@ git push origin main
     setIsDropdownOpen(false);
   };
 
-  const testNotification = async () => {
+  const handleTestNotification = async () => {
     try {
-        console.log('Testing notification on iOS...');
-        
-        // Check if running as PWA
-        const isPWA = window.matchMedia('(display-mode: standalone)').matches;
-        console.log('Is running as PWA:', isPWA);
-        
-        // Check notification permission
-        const permission = await Notification.requestPermission();
-        console.log('Notification permission:', permission);
-        
-        const idToken = await user.getIdToken(true);
-        const timestamp = Date.now().toString();
-        
-        // iOS-specific notification payload
-        const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}`
-            },
-            body: JSON.stringify({
-                userId: user.uid,
-                notification: {
-                    title: 'iOS Test Notification',
-                    body: 'Testing iOS notification: ' + new Date().toLocaleTimeString(),
-                    sound: 'default',
-                    badge: '1',
-                    data: {
-                        type: 'test',
-                        senderId: user.uid,
-                        timestamp: timestamp,
-                        url: '/',
-                        clickAction: '/'
-                    }
-                }
-            })
-        });
-
-        const result = await response.json();
-        console.log('iOS notification response:', result);
-
-        if (!result.success) {
-            throw new Error(result.error || 'Failed to send notification');
-        }
-
-        toast.success('iOS test notification sent!');
+        await testNotification();
+        toast.success('Test notification sent successfully!');
     } catch (error) {
-        console.error('Error in iOS testNotification:', error);
-        toast.error('Failed to send iOS notification: ' + error.message);
+        toast.error(error.message);
     }
 };
 
