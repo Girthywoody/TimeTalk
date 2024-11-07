@@ -13,49 +13,130 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage(function(payload) {
-    console.log('[firebase-messaging-sw.js] Received background message:', payload);
+// Keep track of displayed notifications to prevent duplicates
+const displayedNotifications = new Set();
 
-    const notificationOptions = {
-        body: payload.notification.body,
-        icon: '/ios-icon-192.png',
-        badge: '/ios-icon-192.png',
-        tag: payload.notification.tag || 'default',
-        vibrate: [100, 50, 100],
-        requireInteraction: true,
-        data: payload.data || {}
-    };
-
-    return self.registration.showNotification(
-        payload.notification.title,
-        notificationOptions
-    );
-});
-
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
     event.waitUntil(self.skipWaiting());
 });
 
-self.addEventListener('activate', event => {
-    event.waitUntil(self.clients.claim());
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        Promise.all([
+            self.clients.claim(),
+            // Clear old displayed notifications on activation
+            displayedNotifications.clear()
+        ])
+    );
 });
 
-self.addEventListener('notificationclick', event => {
-    event.notification.close();
-    const clickAction = event.notification.data.clickAction || 'https://time-talk.vercel.app/chat';
-    
-    event.waitUntil(
-        clients.matchAll({
-            type: 'window',
-            includeUncontrolled: true
-        })
-        .then(function(clientList) {
-            for (const client of clientList) {
-                if (client.url === clickAction && 'focus' in client) {
-                    return client.focus();
+// Handle push notifications
+self.addEventListener('push', (event) => {
+    if (!event.data) return;
+
+    try {
+        const data = event.data.json();
+        if (!data.notification) return;
+
+        const notificationId = `${data.data?.type || 'default'}-${Date.now()}`;
+        
+        if (displayedNotifications.has(notificationId)) {
+            console.log('Duplicate notification prevented:', notificationId);
+            return;
+        }
+
+        displayedNotifications.add(notificationId);
+        setTimeout(() => displayedNotifications.delete(notificationId), 60000);
+
+        const notificationOptions = {
+            ...data.notification,
+            icon: '/ios-icon-192.png',
+            badge: '/ios-icon-192.png',
+            tag: notificationId,
+            data: data.data || {},
+            requireInteraction: true,
+            vibrate: [100, 50, 100],
+            actions: [
+                {
+                    action: 'reply',
+                    title: 'Reply'
+                },
+                {
+                    action: 'mark-read',
+                    title: 'Mark as Read'
                 }
+            ]
+        };
+
+        // For message notifications, add sound
+        if (data.data?.type === 'message') {
+            notificationOptions.silent = false;
+            notificationOptions.sound = '/sounds/notification.mp3';
+        }
+
+        event.waitUntil(
+            self.registration.showNotification(
+                data.notification.title,
+                notificationOptions
+            )
+        );
+    } catch (error) {
+        console.error('Error showing notification:', error);
+    }
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    const data = event.notification.data;
+    // Base URL for the app
+    const baseUrl = 'https://time-talk.vercel.app';
+    
+    // Construct the path based on the notification type
+    let path = '/chat'; // Default to chat page
+    let queryParams = '';
+
+    if (event.action === 'reply') {
+        queryParams = `?action=reply&messageId=${data?.messageId || ''}`;
+    }
+
+    // Combine the path and query parameters
+    const urlToOpen = `${baseUrl}${path}${queryParams}`;
+
+    const promiseChain = clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true
+    })
+    .then((windowClients) => {
+        // Try to find an existing window/tab
+        let matchingClient = null;
+        
+        for (let i = 0; i < windowClients.length; i++) {
+            const client = windowClients[i];
+            // Check if the client URL starts with our base URL
+            if (client.url.startsWith(baseUrl)) {
+                matchingClient = client;
+                break;
             }
-            return clients.openWindow(clickAction);
-        })
-    );
+        }
+
+        if (matchingClient) {
+            // If we found an existing window, focus it and navigate
+            return matchingClient.focus().then((client) => {
+                // After focusing, navigate to the specific page
+                return client.navigate(urlToOpen).then((client) => client.focus());
+            });
+        } else {
+            // If no existing window, open a new one
+            return clients.openWindow(urlToOpen);
+        }
+    })
+    .catch((err) => {
+        console.error('Error handling notification click:', err);
+        // Fallback to simple window opening
+        return clients.openWindow(urlToOpen);
+    });
+
+    event.waitUntil(promiseChain);
 });
