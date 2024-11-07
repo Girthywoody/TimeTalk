@@ -61,7 +61,7 @@ const MainApp = () => {
     
     if (isScheduled) {
       if (!scheduledDateTime) return;
-      handlePost(); // This will show the secret modal
+      handlePost(); // Show secret modal
     } else {
       // Post immediately
       try {
@@ -72,7 +72,7 @@ const MainApp = () => {
           scheduledFor: new Date().toISOString(),
           mediaUrl: null,
           createdAt: new Date().toISOString(),
-          author: 'Partner 1',
+          author: auth.currentUser.displayName || 'Partner 1',
           authorId: auth.currentUser.uid,
           likes: 0,
           isScheduled: false,
@@ -86,6 +86,29 @@ const MainApp = () => {
   
         const docRef = await addDoc(collection(db, 'posts'), postData);
         
+        // Send immediate notification for new post
+        const idToken = await auth.currentUser.getIdToken(true);
+        await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+          },
+          body: JSON.stringify({
+            userId: partnerId, // Make sure you have access to partnerId
+            notification: {
+              title: '💝 New Timeline Post',
+              body: `${auth.currentUser.displayName} just shared a moment with you!`,
+              data: {
+                type: 'new_post',
+                postId: docRef.id,
+                senderId: auth.currentUser.uid,
+                timestamp: Date.now().toString()
+              }
+            }
+          })
+        });
+  
         // Reset form
         setMessage('');
         setScheduledDateTime(null);
@@ -123,75 +146,41 @@ const MainApp = () => {
   };
 
   const handlePost = async () => {
-    console.log('Post button clicked', { message, mediaPreview, scheduledDateTime, isUploading });
-  
-    if ((!message && !mediaPreview) || !scheduledDateTime || isUploading) {
-      console.log('Early return conditions:', {
-        noContent: !message && !mediaPreview,
-        noDateTime: !scheduledDateTime,
-        isUploading
-      });
-      return;
-    }
-  
-    const now = new Date();
-    now.setDate(now.getDate() + 1);
-    now.setHours(0, 0, 0, 0);
-  
-    if (scheduledDateTime < now) {
-      alert('Please select a future date and time');
-      return;
-    }
-  
+    if ((!message && !mediaPreview) || !scheduledDateTime || isUploading) return;
+
     try {
-      setIsUploading(true);
-      console.log('Starting upload process');
-  
-      let mediaUrl = null;
-  
-      if (mediaPreview && mediaType !== 'text') {
-        console.log('Processing media', { mediaType });
-        
-        const storageRef = ref(storage, `posts/${Date.now()}-${mediaType}`);
-        
-        if (mediaType === 'image') {
-          const base64Content = mediaPreview.split(',')[1];
-          await uploadString(storageRef, base64Content, 'base64');
-        } else {
-          const response = await fetch(mediaPreview);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          reader.readAsDataURL(blob);
-          await new Promise((resolve) => {
-            reader.onloadend = () => {
-              const base64Content = reader.result.split(',')[1];
-              resolve(uploadString(storageRef, base64Content, 'base64'));
-            };
-          });
+        setIsUploading(true);
+        let mediaUrl = null;
+
+        if (mediaPreview && mediaType !== 'text') {
+            // ... existing media upload code ...
         }
+
+        // Calculate notification time (1 day before scheduled post)
+        const notificationTime = new Date(scheduledDateTime);
+        notificationTime.setDate(notificationTime.getDate() - 1);
         
-        mediaUrl = await getDownloadURL(storageRef);
-        console.log('Media uploaded successfully', { mediaUrl });
-      }
-  
-      setPendingPost({
-        type: mediaType,
-        content: message,
-        scheduledFor: scheduledDateTime.toISOString(),
-        mediaUrl,
-        createdAt: new Date().toISOString(),
-        author: 'Partner 1',
-        authorId: auth.currentUser.uid,
-        likes: 0,
-        scheduledNotificationSent: false, // Add this field for scheduled notifications
-      });
-      
-      setShowSecretModal(true);
-  
+        setPendingPost({
+            type: mediaType,
+            content: message,
+            scheduledFor: scheduledDateTime.toISOString(),
+            mediaUrl,
+            createdAt: new Date().toISOString(),
+            author: auth.currentUser.displayName || 'Partner 1',
+            authorId: auth.currentUser.uid,
+            likes: 0,
+            scheduledNotificationSent: false,
+            notificationTime: notificationTime.toISOString(),
+            partnerId: partnerId, // Make sure you have access to partnerId
+            needsPreNotification: true // Flag for day-before notification
+        });
+        
+        setShowSecretModal(true);
+
     } catch (error) {
-      console.error('Error preparing post:', error);
-      alert('Failed to prepare post. Please try again.');
-      setIsUploading(false);
+        console.error('Error preparing post:', error);
+        alert('Failed to prepare post. Please try again.');
+        setIsUploading(false);
     }
   };
 

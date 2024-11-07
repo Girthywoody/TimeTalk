@@ -158,43 +158,81 @@ const SharedCalendar = () => {
     
     setIsSubmitting(true);
     try {
-      const notificationTimes = newEvent.notifications.map(minutes => {
-        const eventDate = new Date(`${newEvent.date}T${newEvent.startTime || '00:00'}`);
-        return new Date(eventDate.getTime() - (parseInt(minutes) * 60 * 1000)).toISOString();
-      });
+        // Calculate notification times
+        const notificationTimes = newEvent.notifications.map(minutes => {
+            const eventDate = new Date(`${newEvent.date}T${newEvent.startTime || '00:00'}`);
+            return new Date(eventDate.getTime() - (parseInt(minutes) * 60 * 1000)).toISOString();
+        });
 
-      const eventData = {
-        ...newEvent,
-        userId: auth.currentUser.uid,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        notificationTimes,
-        sentNotifications: [],
-        repeatConfig: newEvent.repeat !== 'never' ? {
-          type: newEvent.repeat,
-          startDate: newEvent.date
-        } : null
-      };
+        const eventData = {
+            ...newEvent,
+            userId: auth.currentUser.uid,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            notificationTimes,
+            sentNotifications: [],
+            repeatConfig: newEvent.repeat !== 'never' ? {
+                type: newEvent.repeat,
+                startDate: newEvent.date
+            } : null
+        };
 
-      await addDoc(collection(db, 'events'), eventData);
-      
-      setNewEvent({
-        title: "",
-        date: "",
-        isAllDay: false,
-        startTime: "",
-        endTime: "",
-        location: "",
-        type: "general",
-        notifications: [],
-        repeat: 'never',
-        description: ""
-      });
-      setShowEventForm(false);
+        // Add event to database
+        const docRef = await addDoc(collection(db, 'events'), eventData);
+
+        // Send notification to all participants
+        if (newEvent.participants?.length > 0) {
+            const idToken = await auth.currentUser.getIdToken(true);
+            
+            // Send to each participant
+            for (const participant of newEvent.participants) {
+                await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({
+                        userId: participant.id,
+                        notification: {
+                            title: '📅 New Calendar Event',
+                            body: `${auth.currentUser.displayName} added you to: ${newEvent.title}`,
+                            data: {
+                                type: 'calendar_invite',
+                                eventId: docRef.id,
+                                senderId: auth.currentUser.uid,
+                                timestamp: Date.now().toString(),
+                                eventDetails: {
+                                    title: newEvent.title,
+                                    date: newEvent.date,
+                                    time: newEvent.startTime || 'All day',
+                                    location: newEvent.location || 'No location specified'
+                                }
+                            }
+                        }
+                    })
+                });
+            }
+        }
+
+        // Reset form
+        setNewEvent({
+            title: "",
+            date: "",
+            isAllDay: false,
+            startTime: "",
+            endTime: "",
+            location: "",
+            type: "general",
+            notifications: [],
+            repeat: 'never',
+            description: ""
+        });
+        setShowEventForm(false);
     } catch (error) {
-      console.error("Error adding event: ", error);
+        console.error("Error adding event: ", error);
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   };
 

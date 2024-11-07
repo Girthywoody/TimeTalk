@@ -1025,58 +1025,50 @@ useEffect(() => {
         {/* Header */}
         <div className={`px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b z-10 relative`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={testNotification}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                title="Test Notification"
-              >
-                <Bell size={20} className="text-blue-500" />
-              </button>
-              {partner?.profilePhotoURL ? (
-                <img 
-                  src={partner.profilePhotoURL} 
-                  alt={partner.displayName || 'Partner'}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <span className="text-blue-500 font-medium">
-                    {partner?.displayName?.[0] || partner?.email?.[0]?.toUpperCase()}
-                  </span>
-                </div>
-              )}
-              <div>
-                <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
-                  {partner?.displayName || partner?.email?.split('@')[0]}
-                </h1>
-                <p className={`text-sm ${otherUserStatus?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
-                  {isTyping ? 'typing...' : 
-                    otherUserStatus?.isOnline ? 'Online' : 
-                    otherUserStatus?.lastSeen ? formatLastSeen(otherUserStatus.lastSeen) : 'Offline'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleNudge}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                title="Nudge Partner"
-              >
-                <Vibrate size={20} className="text-gray-500" />
-              </button>
+            <div className="flex items-center justify-between w-full px-4">
+              {/* Left side */}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title="Search Messages"
               >
-                <Search size={20} className="text-gray-500" />
+                <Search size={24} className="text-gray-500" />
               </button>
+
+              {/* Center - Partner info */}
+              <div className="flex items-center gap-3">
+                {partner?.profilePhotoURL ? (
+                  <img 
+                    src={partner.profilePhotoURL} 
+                    alt={partner.displayName || 'Partner'}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <span className="text-blue-500 font-medium">
+                      {partner?.displayName?.[0] || partner?.email?.[0]?.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
+                    {partner?.displayName || partner?.email?.split('@')[0]}
+                  </h1>
+                  <p className={`text-sm ${otherUserStatus?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
+                    {isTyping ? 'typing...' : 
+                      otherUserStatus?.isOnline ? 'Online' : 
+                      otherUserStatus?.lastSeen ? formatLastSeen(otherUserStatus.lastSeen) : 'Offline'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Right side */}
               <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                onClick={handleNudge}
+                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title="Nudge Partner"
               >
-                <MoreVertical size={20} className="text-gray-500" />
+                <Vibrate size={24} className="text-gray-500" />
               </button>
             </div>
           </div>

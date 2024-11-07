@@ -69,4 +69,104 @@ app.post('/sendNotification', async (req, res) => {
     }
 });
 
+exports.checkScheduledPosts = functions.pubsub.schedule('every 1 hours').onRun(async (context) => {
+    try {
+        const now = new Date();
+        const postsRef = admin.firestore().collection('posts');
+        
+        // 1. Check for posts that need day-before notifications
+        const preNotificationSnapshot = await postsRef
+            .where('scheduledNotificationSent', '==', false)
+            .where('notificationTime', '<=', now.toISOString())
+            .where('needsPreNotification', '==', true)
+            .get();
+
+        // 2. Check for posts that are ready to be shown
+        const postReadySnapshot = await postsRef
+            .where('scheduledFor', '<=', now.toISOString())
+            .where('postNotificationSent', '!=', true)
+            .where('isScheduled', '==', true)
+            .get();
+
+        const notifications = [];
+
+        // Handle day-before notifications for subtle hint posts
+        preNotificationSnapshot.forEach(doc => {
+            const post = doc.data();
+            
+            // Only send pre-notifications for subtle hint posts
+            if (!post.completelySecret && post.isScheduled) {
+                notifications.push({
+                    userId: post.partnerId,
+                    notification: {
+                        title: '🤫 Subtle Hint Coming Soon!',
+                        body: `${post.author} has something special coming tomorrow!`,
+                        data: {
+                            type: 'scheduled_post_reminder',
+                            postId: doc.id,
+                            senderId: post.authorId,
+                            timestamp: Date.now().toString()
+                        }
+                    },
+                    update: {
+                        scheduledNotificationSent: true
+                    }
+                });
+            }
+        });
+
+        // Handle notifications for posts that are now visible
+        postReadySnapshot.forEach(doc => {
+            const post = doc.data();
+            
+            // Don't notify for completely secret posts
+            if (!post.completelySecret) {
+                notifications.push({
+                    userId: post.partnerId,
+                    notification: {
+                        title: '💝 Scheduled Post Released!',
+                        body: `${post.author}'s scheduled moment is now on your timeline!`,
+                        data: {
+                            type: 'post_released',
+                            postId: doc.id,
+                            senderId: post.authorId,
+                            timestamp: Date.now().toString()
+                        }
+                    },
+                    update: {
+                        postNotificationSent: true
+                    }
+                });
+            }
+        });
+
+        // Send all notifications and update documents
+        await Promise.all(notifications.map(async (notif) => {
+            // Send notification
+            const idToken = await admin.auth().createCustomToken(notif.userId);
+            await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`
+                },
+                body: JSON.stringify({
+                    userId: notif.userId,
+                    notification: notif.notification
+                })
+            });
+
+            // Update document
+            if (notif.update) {
+                await postsRef.doc(notif.postId).update(notif.update);
+            }
+        }));
+
+        return null;
+    } catch (error) {
+        console.error('Error in checkScheduledPosts:', error);
+        return null;
+    }
+});
+
 exports.api = functions.https.onRequest(app);
