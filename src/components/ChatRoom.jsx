@@ -206,8 +206,12 @@ git push origin main
 
   const testNotification = async () => {
     try {
-        const auth = getAuth();
-        const idToken = await auth.currentUser.getIdToken();
+        const idToken = await user.getIdToken(true);
+        const partnerData = await getPartnerProfile();
+        
+        if (!partnerData?.uid) {
+            throw new Error('Partner not found');
+        }
 
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
@@ -216,10 +220,15 @@ git push origin main
                 'Authorization': `Bearer ${idToken}`
             },
             body: JSON.stringify({
-                userId: user.uid,
+                userId: partnerData.uid, // Send to partner instead of self
                 notification: {
-                    title: 'Test Notification',
-                    body: 'This is a test notification!'
+                    title: 'New Message',
+                    body: 'You have a new message!',
+                    data: {
+                        type: 'message',
+                        senderId: user.uid,
+                        timestamp: new Date().toISOString()
+                    }
                 }
             })
         });
@@ -232,7 +241,7 @@ git push origin main
         }
     } catch (error) {
         console.error('Error sending test notification:', error);
-        alert('Failed to send notification: ' + error.message);
+        toast.error('Failed to send notification: ' + error.message);
     }
 };
 
