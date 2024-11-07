@@ -89,7 +89,7 @@ const ChatRoom = () => {
   const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
   const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
   const [isVisible, setIsVisible] = useState(false);
-  const { user } = useAuth();
+  const { user, getPartnerProfile } = useAuth();
   const { darkMode } = useDarkMode();
   const [notificationSettings, setNotificationSettings] = useState({
     muted: false,
@@ -107,6 +107,7 @@ const ChatRoom = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [partner, setPartner] = useState(null);
 
   const otherUserInfo = {
     name: "Test", // Replace with the actual name
@@ -939,6 +940,42 @@ useEffect(() => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    const fetchPartner = async () => {
+      if (!user) return;
+      
+      try {
+        const partnerData = await getPartnerProfile();
+        if (partnerData) {
+          setPartner(partnerData);
+          // Also set up real-time listener for partner's online status
+          const partnerRef = doc(db, 'users', partnerData.uid);
+          const unsubscribe = onSnapshot(partnerRef, (doc) => {
+            if (doc.exists()) {
+              const data = doc.data();
+              if (data.lastActive) {
+                const lastActive = data.lastActive.toDate();
+                const now = new Date();
+                const diffInMinutes = Math.floor((now - lastActive) / (1000 * 60));
+                
+                setOtherUserStatus({
+                  isOnline: diffInMinutes < 2,
+                  lastSeen: lastActive
+                });
+              }
+            }
+          });
+
+          return () => unsubscribe();
+        }
+      } catch (error) {
+        console.error('Error fetching partner:', error);
+      }
+    };
+
+    fetchPartner();
+  }, [user]);
+
   return (
     <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
@@ -953,25 +990,27 @@ useEffect(() => {
               >
                 <Bell size={20} className="text-blue-500" />
               </button>
-              {otherUser?.profilePhotoURL ? (
+              {partner?.profilePhotoURL ? (
                 <img 
-                  src={otherUser.profilePhotoURL} 
-                  alt="Profile" 
+                  src={partner.profilePhotoURL} 
+                  alt={partner.displayName || 'Partner'}
                   className="w-10 h-10 rounded-full object-cover"
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                   <span className="text-blue-500 font-medium">
-                    {otherUser?.username?.[0] || otherUser?.displayName?.[0]}
+                    {partner?.displayName?.[0] || partner?.email?.[0]?.toUpperCase()}
                   </span>
                 </div>
               )}
               <div>
                 <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
-                  {otherUser?.username || otherUser?.displayName}
+                  {partner?.displayName || partner?.email?.split('@')[0]}
                 </h1>
                 <p className={`text-sm ${otherUserStatus?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
-                  {isTyping ? 'typing...' : otherUserStatus?.isOnline ? 'Online' : ''}
+                  {isTyping ? 'typing...' : 
+                    otherUserStatus?.isOnline ? 'Online' : 
+                    otherUserStatus?.lastSeen ? formatLastSeen(otherUserStatus.lastSeen) : 'Offline'}
                 </p>
               </div>
             </div>
