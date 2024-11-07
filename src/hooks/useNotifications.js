@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { toast } from 'react-toastify';
 
 export const useNotifications = () => {
     const [notificationPermission, setNotificationPermission] = useState('default');
@@ -24,30 +25,39 @@ export const useNotifications = () => {
                 // Handle foreground messages
                 onMessage(messaging, (payload) => {
                     console.log('Received foreground message:', payload);
-                    // Don't show notifications in foreground, let service worker handle all notifications
+                    
+                    // Show toast notification for foreground messages
+                    toast.info(payload.notification.body, {
+                        autoClose: 5000,
+                        onClick: () => {
+                            // Handle notification click
+                        }
+                    });
                 });
 
                 try {
                     const token = await getToken(messaging, {
-                        vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc',
+                        vapidKey: 'your-vapid-key',
                         serviceWorkerRegistration: registration
                     });
 
                     if (token) {
                         console.log('FCM Token:', token);
-                        setFcmToken(token);
                         await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                             fcmToken: token,
                             notificationsEnabled: true,
                             lastTokenUpdate: new Date().toISOString()
                         });
+                        return token;
                     }
                 } catch (tokenError) {
                     console.error('Error getting FCM token:', tokenError);
+                    throw tokenError;
                 }
             }
         } catch (error) {
             console.error('Error initializing notifications:', error);
+            throw error;
         }
     };
 

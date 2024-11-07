@@ -45,27 +45,49 @@ app.post('/sendNotification', async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader) {
-            return res.status(401).json({ error: 'Unauthorized' });
+            console.error('No authorization header');
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
         }
 
         const token = authHeader.split('Bearer ')[1];
         const decodedToken = await admin.auth().verifyIdToken(token);
 
         if (!decodedToken.uid) {
-            return res.status(401).json({ error: 'Invalid token' });
+            console.error('Invalid token');
+            return res.status(401).json({ success: false, error: 'Invalid token' });
         }
 
-        const { userId } = req.body;
+        const { userId, notification } = req.body;
         
-        const result = await sendNotificationToUser(userId, {
-            title: 'Test Notification',
-            body: 'This is a test notification!'
-        });
+        if (!userId || !notification) {
+            console.error('Missing required fields', { userId, notification });
+            return res.status(400).json({ success: false, error: 'Missing required fields' });
+        }
 
-        return res.json(result);
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
+        const userData = userDoc.data();
+        
+        if (!userData?.fcmToken) {
+            console.error('No FCM token for user:', userId);
+            return res.status(400).json({ success: false, error: 'User has no FCM token' });
+        }
+
+        const message = {
+            token: userData.fcmToken,
+            notification: {
+                title: notification.title,
+                body: notification.body
+            },
+            data: notification.data || {}
+        };
+
+        const response = await admin.messaging().send(message);
+        console.log('Successfully sent notification:', response);
+        
+        return res.json({ success: true, messageId: response });
     } catch (error) {
         console.error('Error in sendNotification endpoint:', error);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ success: false, error: error.message });
     }
 });
 

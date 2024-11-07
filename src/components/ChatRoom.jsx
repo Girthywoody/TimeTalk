@@ -205,10 +205,18 @@ git push origin main
   };
 
   const testNotification = async () => {
+    if (!user || !partner?.uid) {
+        toast.error('Cannot send notification: Missing user information');
+        return;
+    }
+
     try {
         const idToken = await user.getIdToken(true);
         const timestamp = Date.now().toString();
         
+        console.log('Sending notification to:', partner.uid);
+        console.log('Current user:', user.uid);
+
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
             headers: {
@@ -216,28 +224,36 @@ git push origin main
                 'Authorization': `Bearer ${idToken}`
             },
             body: JSON.stringify({
-                userId: partner?.uid,
+                userId: partner.uid,
                 notification: {
-                    title: '🔔 Test Notification',
+                    title: '🔔 New Message',
                     body: `${user.displayName || 'Your partner'} sent you a test notification!`,
                     data: {
-                        type: 'test',
+                        type: 'test_notification',
                         senderId: user.uid,
-                        timestamp: timestamp
+                        timestamp: timestamp,
+                        click_action: 'OPEN_CHAT'
                     }
                 }
             })
         });
 
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to send notification');
+        }
+
         const result = await response.json();
+        console.log('Notification result:', result);
+
         if (!result.success) {
-            throw new Error(result.error || 'Failed to send test notification');
+            throw new Error(result.error || 'Failed to send notification');
         }
 
         toast.success('Test notification sent!');
     } catch (error) {
         console.error('Error sending test notification:', error);
-        toast.error('Failed to send test notification');
+        toast.error(`Failed to send notification: ${error.message}`);
     }
 };
 
