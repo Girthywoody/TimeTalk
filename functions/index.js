@@ -24,41 +24,22 @@ async function sendNotificationToUser(userId, notification) {
             return { success: false, error: 'No FCM token available' };
         }
 
-        // Create message with collapse key to prevent duplicates
+        // Simplified message structure
         const message = {
             token: userData.fcmToken,
             notification: {
                 title: notification.title,
                 body: notification.body,
             },
-            // Add collapse key to group similar notifications
-            collapseKey: 'test_notification',
-            // Add Android channel for better control
-            android: {
-                priority: 'high',
-                notification: {
-                    channelId: 'test_channel'
-                }
-            },
-            // Add APNS specific configuration
-            apns: {
-                headers: {
-                    'apns-collapse-id': 'test_notification'
-                },
-                payload: {
-                    aps: {
-                        'thread-id': 'test_notification'
-                    }
-                }
-            },
-            // Add web specific configuration
             webpush: {
-                headers: {
-                    Urgency: 'high'
-                },
                 notification: {
-                    requireInteraction: false,
+                    icon: '/ios-icon-192.png',
+                    badge: '/ios-icon-192.png',
+                    tag: 'test_notification', // Use tag for grouping
                     renotify: false
+                },
+                fcmOptions: {
+                    link: 'https://time-talk.vercel.app/chat'
                 }
             }
         };
