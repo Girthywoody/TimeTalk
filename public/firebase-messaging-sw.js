@@ -19,37 +19,42 @@ const displayedNotifications = new Set();
 messaging.onBackgroundMessage((payload) => {
     console.log('Received background message:', payload);
 
-    // CRUCIAL: Unique ID generation for deduplication - DO NOT MODIFY
-    const notificationId = payload.data?.timestamp || Date.now().toString();
+    // CRUCIAL: event.waitUntil() is required to prevent duplicate notifications - DO NOT REMOVE
+    return event.waitUntil(
+        (async () => {
+            // CRUCIAL: Unique ID generation for deduplication - DO NOT MODIFY
+            const notificationId = payload.data?.timestamp || Date.now().toString();
 
-    // CRUCIAL: Duplicate check logic - DO NOT MODIFY
-    if (displayedNotifications.has(notificationId)) {
-        console.log('Duplicate notification prevented:', notificationId);
-        return;
-    }
+            // CRUCIAL: Duplicate check logic - DO NOT MODIFY
+            if (displayedNotifications.has(notificationId)) {
+                console.log('Duplicate notification prevented:', notificationId);
+                return;
+            }
 
-    // CRUCIAL: Notification tracking - DO NOT REMOVE
-    displayedNotifications.add(notificationId);
+            // CRUCIAL: Notification tracking - DO NOT REMOVE
+            displayedNotifications.add(notificationId);
 
-    // CRUCIAL: Cleanup logic - DO NOT REMOVE
-    setTimeout(() => {
-        displayedNotifications.delete(notificationId);
-    }, 5000);
+            // CRUCIAL: Cleanup logic - DO NOT REMOVE
+            setTimeout(() => {
+                displayedNotifications.delete(notificationId);
+            }, 5000);
 
-    const notificationOptions = {
-        body: payload.notification.body,
-        icon: '/ios-icon-192.png',
-        badge: '/ios-icon-192.png',
-        vibrate: [100, 50, 100],
-        data: payload.data,
-        // CRUCIAL: tag property helps prevent duplicates - DO NOT REMOVE
-        tag: notificationId,
-        renotify: false
-    };
+            const notificationOptions = {
+                body: payload.notification.body,
+                icon: '/ios-icon-192.png',
+                badge: '/ios-icon-192.png',
+                vibrate: [100, 50, 100],
+                data: payload.data,
+                // CRUCIAL: tag property helps prevent duplicates - DO NOT REMOVE
+                tag: notificationId,
+                renotify: false
+            };
 
-    // CRUCIAL: This is the actual notification display call - DO NOT MODIFY
-    return self.registration.showNotification(
-        payload.notification.title,
-        notificationOptions
+            // CRUCIAL: This is the actual notification display call - DO NOT MODIFY
+            return self.registration.showNotification(
+                payload.notification.title,
+                notificationOptions
+            );
+        })()
     );
 });
