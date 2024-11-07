@@ -12,13 +12,47 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Keep track of displayed notifications to prevent duplicates
+const displayedNotifications = new Set();
+
 messaging.onBackgroundMessage((payload) => {
     console.log('Received background message:', payload);
-    const notificationTitle = payload.notification.title;
+
+    // Create a unique ID for the notification
+    const notificationId = payload.data?.timestamp || Date.now().toString();
+
+    // Check if we've already shown this notification
+    if (displayedNotifications.has(notificationId)) {
+        console.log('Duplicate notification prevented:', notificationId);
+        return;
+    }
+
+    // Add to set of displayed notifications
+    displayedNotifications.add(notificationId);
+
+    // Clear old notifications from the set after 5 seconds
+    setTimeout(() => {
+        displayedNotifications.delete(notificationId);
+    }, 5000);
+
     const notificationOptions = {
         body: payload.notification.body,
-        icon: '/ios-icon-192.png'
+        icon: '/ios-icon-192.png',
+        badge: '/ios-icon-192.png',
+        vibrate: [100, 50, 100],
+        data: payload.data,
+        tag: notificationId, // Add a tag to group similar notifications
+        renotify: false, // Prevent renotification for the same tag
+        actions: [
+            {
+                action: 'open',
+                title: 'Open'
+            }
+        ]
     };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    return self.registration.showNotification(
+        payload.notification.title,
+        notificationOptions
+    );
 });

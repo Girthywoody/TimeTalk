@@ -211,7 +211,9 @@ git push origin main
         
         const idToken = await user.getIdToken(true);
         console.log('Got ID token');
-
+        
+        const timestamp = Date.now().toString();
+        
         console.log('Sending notification request...');
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
@@ -223,7 +225,12 @@ git push origin main
                 userId: user.uid,
                 notification: {
                     title: 'Test Notification',
-                    body: 'This is a test notification!'
+                    body: 'This is a test notification!',
+                    data: {
+                        type: 'test',
+                        senderId: user.uid,
+                        timestamp: timestamp
+                    }
                 }
             })
         });
