@@ -898,15 +898,10 @@ useEffect(() => {
   };
 
   const handleNudge = async () => {
-    if (!otherUser?.uid) {
-        console.error('Other user not found');
-        return;
-    }
-
     try {
-        const auth = getAuth();
-        const idToken = await auth.currentUser.getIdToken();
-
+        const idToken = await user.getIdToken(true);
+        const timestamp = Date.now().toString();
+        
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
             headers: {
@@ -914,21 +909,20 @@ useEffect(() => {
                 'Authorization': `Bearer ${idToken}`
             },
             body: JSON.stringify({
-                userId: otherUser.uid,
+                userId: partner?.uid,
                 notification: {
-                    title: auth.currentUser.displayName || 'Someone',
+                    title: user.displayName || 'Your partner',
                     body: 'Hey! Come answer me!',
                     data: {
                         type: 'nudge',
-                        senderId: auth.currentUser.uid,
-                        timestamp: Date.now().toString()
+                        senderId: user.uid,
+                        timestamp: timestamp
                     }
                 }
             })
         });
 
         const result = await response.json();
-        
         if (!result.success) {
             throw new Error(result.error || 'Failed to send nudge');
         }
@@ -1033,9 +1027,9 @@ useEffect(() => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button 
-                onClick={testNotification}
+                onClick={handleNudge}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                title="Test Notification"
+                title="Nudge Partner"
               >
                 <Bell size={20} className="text-blue-500" />
               </button>
