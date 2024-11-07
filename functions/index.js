@@ -24,47 +24,16 @@ async function sendNotificationToUser(userId, notification) {
             return { success: false, error: 'No FCM token available' };
         }
 
+        // Create a single message object
         const message = {
             token: userData.fcmToken,
             notification: {
                 title: notification.title,
                 body: notification.body,
             },
-            webpush: {
-                notification: {
-                    title: notification.title,
-                    body: notification.body,
-                    icon: '/ios-icon-192.png',
-                    badge: '/ios-icon-192.png',
-                    tag: 'message',
-                    vibrate: [100, 50, 100],
-                    requireInteraction: true,
-                    renotify: true,
-                    data: notification.data || {},
-                    actions: [
-                        {
-                            action: 'open',
-                            title: 'Open'
-                        }
-                    ]
-                },
-                fcmOptions: {
-                    link: 'https://time-talk.vercel.app/chat'
-                }
-            },
-            android: {
-                notification: {
-                    clickAction: 'https://time-talk.vercel.app/chat',
-                    sound: 'default'
-                }
-            },
-            apns: {
-                payload: {
-                    aps: {
-                        sound: 'default',
-                        category: 'MESSAGE'
-                    }
-                }
+            data: {
+                timestamp: Date.now().toString(),
+                ...notification.data
             }
         };
 
@@ -75,7 +44,6 @@ async function sendNotificationToUser(userId, notification) {
     } catch (error) {
         console.error('Error sending notification:', error);
         if (error.code === 'messaging/registration-token-not-registered') {
-            // Remove invalid token
             await admin.firestore().collection('users').doc(userId).update({
                 fcmToken: admin.firestore.FieldValue.delete()
             });

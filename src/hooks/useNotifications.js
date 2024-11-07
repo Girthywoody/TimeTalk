@@ -7,29 +7,6 @@ export const useNotifications = () => {
     const [notificationPermission, setNotificationPermission] = useState('default');
     const [fcmToken, setFcmToken] = useState(null);
 
-    const requestPermission = async () => {
-        try {
-            // First check if notifications are supported
-            if (!('Notification' in window)) {
-                throw new Error('This browser does not support notifications');
-            }
-
-            // Request permission
-            const permission = await Notification.requestPermission();
-            console.log('Permission request result:', permission);
-            setNotificationPermission(permission);
-
-            if (permission === 'granted') {
-                await initializeNotifications();
-            }
-
-            return permission;
-        } catch (error) {
-            console.error('Error requesting permission:', error);
-            throw error;
-        }
-    };
-
     const initializeNotifications = async () => {
         if (!auth.currentUser) return;
 
@@ -44,14 +21,12 @@ export const useNotifications = () => {
 
                 const messaging = getMessaging();
 
-                // Handle foreground messages
+                // Only handle foreground messages if app is not visible
                 onMessage(messaging, (payload) => {
                     console.log('Received foreground message:', payload);
                     
-                    // Only show notification if the app is not focused
                     if (document.visibilityState !== 'visible') {
                         const notificationId = payload.data?.timestamp || Date.now().toString();
-                        
                         registration.showNotification(payload.notification.title, {
                             body: payload.notification.body,
                             icon: '/ios-icon-192.png',
@@ -76,20 +51,15 @@ export const useNotifications = () => {
                         await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                             fcmToken: token,
                             notificationsEnabled: true,
-                            lastTokenUpdate: new Date().toISOString(),
-                            deviceType: /iPhone|iPad|iPod/.test(navigator.userAgent) ? 'ios' : 'android'
+                            lastTokenUpdate: new Date().toISOString()
                         });
                     }
                 } catch (tokenError) {
                     console.error('Error getting FCM token:', tokenError);
-                    throw tokenError;
                 }
-            } else {
-                throw new Error('Service workers are not supported');
             }
         } catch (error) {
             console.error('Error initializing notifications:', error);
-            throw error;
         }
     };
 
@@ -107,6 +77,20 @@ export const useNotifications = () => {
 
         checkPermission();
     }, [auth.currentUser]);
+
+    const requestPermission = async () => {
+        try {
+            const permission = await Notification.requestPermission();
+            setNotificationPermission(permission);
+            if (permission === 'granted') {
+                await initializeNotifications();
+            }
+            return permission;
+        } catch (error) {
+            console.error('Error requesting permission:', error);
+            throw error;
+        }
+    };
 
     return {
         notificationPermission,
