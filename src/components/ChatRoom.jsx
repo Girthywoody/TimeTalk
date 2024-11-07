@@ -99,7 +99,7 @@ const ChatRoom = () => {
   const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
   const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
   const [isVisible, setIsVisible] = useState(false);
-  const { user, getPartnerProfile } = useAuth();
+  const { user, getPartnerProfile, auth } = useAuth();
   const { darkMode } = useDarkMode();
   const [notificationSettings, setNotificationSettings] = useState({
     muted: false,
@@ -206,7 +206,7 @@ git push origin main
 
   const testNotification = async () => {
     try {
-        const idToken = await auth.currentUser.getIdToken(true);
+        const idToken = await user.getIdToken(true);
         const timestamp = Date.now().toString();
         
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
@@ -216,13 +216,13 @@ git push origin main
                 'Authorization': `Bearer ${idToken}`
             },
             body: JSON.stringify({
-                userId: partner?.uid, // Send to partner instead of self
+                userId: partner?.uid,
                 notification: {
                     title: '🔔 Test Notification',
-                    body: `${auth.currentUser.displayName || 'Your partner'} sent you a test notification!`,
+                    body: `${user.displayName || 'Your partner'} sent you a test notification!`,
                     data: {
                         type: 'test',
-                        senderId: auth.currentUser.uid,
+                        senderId: user.uid,
                         timestamp: timestamp
                     }
                 }
