@@ -28,12 +28,28 @@ async function sendNotificationToUser(userId, notification) {
             token: userData.fcmToken,
             notification: {
                 title: notification.title,
-                body: notification.body
+                body: notification.body,
+                icon: '/ios-icon-192.png',
+                badge: '/ios-icon-192.png'
+            },
+            webpush: {
+                headers: {
+                    Urgency: 'high'
+                },
+                notification: {
+                    icon: '/ios-icon-192.png',
+                    badge: '/ios-icon-192.png',
+                    vibrate: [200, 100, 200],
+                    requireInteraction: true,
+                    renotify: true
+                },
+                fcmOptions: {
+                    link: notification.data?.clickAction || '/'
+                }
             },
             data: {
-                timestamp: Date.now().toString(),
-                type: notification.data?.type || 'test',
-                senderId: notification.data?.senderId || ''
+                ...notification.data,
+                timestamp: Date.now().toString()
             }
         };
 

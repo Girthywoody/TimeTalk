@@ -25,10 +25,11 @@ export const useNotifications = () => {
         if (!auth.currentUser) return;
 
         try {
-            // Special handling for iOS
-            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            // Check if running as PWA
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                         (window.navigator.standalone === true);
             
-            if (isIOS && !isPWA) {
+            if (!isPWA) {
                 throw new Error('PWA_REQUIRED');
             }
 
@@ -40,34 +41,16 @@ export const useNotifications = () => {
                 throw new Error('PERMISSION_DENIED');
             }
 
-            // Initialize messaging
+            // Initialize messaging and get registration
             const messaging = getMessaging();
-            
-            // Register service worker with proper scope
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
                 scope: '/',
                 updateViaCache: 'none'
             });
 
-            function urlBase64ToUint8Array(base64String) {
-                const padding = '='.repeat((4 - base64String.length % 4) % 4);
-                const base64 = (base64String + padding)
-                    .replace(/\-/g, '+')
-                    .replace(/_/g, '/');
-
-                const rawData = window.atob(base64);
-                const outputArray = new Uint8Array(rawData.length);
-
-                for (let i = 0; i < rawData.length; ++i) {
-                    outputArray[i] = rawData.charCodeAt(i);
-                }
-                return outputArray;
-            }
-
             // Get FCM token
-            const vapidKey = 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc';
             const token = await getToken(messaging, {
-                vapidKey: vapidKey,
+                vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
                 serviceWorkerRegistration: registration
             });
 
@@ -81,19 +64,13 @@ export const useNotifications = () => {
             await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                 fcmToken: token,
                 notificationsEnabled: true,
-                lastTokenUpdate: new Date().toISOString(),
-                deviceType: isIOS ? 'ios' : 'other',
-                isPWA: isPWA
+                lastTokenUpdate: new Date().toISOString()
             });
 
             return token;
 
         } catch (error) {
             console.error('Error initializing notifications:', error);
-            
-            if (error.message === 'PWA_REQUIRED') {
-                alert('Please install this app to your home screen to enable notifications. Tap the share button and select "Add to Home Screen".');
-            }
             throw error;
         }
     };
@@ -138,19 +115,9 @@ export const useNotifications = () => {
     // Test notification function
     const testNotification = async () => {
         try {
-            // Debug service worker first
-            await debugServiceWorker();
-            
-            if (!isPWA) {
-                throw new Error('PWA_REQUIRED');
-            }
-
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                throw new Error('PERMISSION_DENIED');
-            }
-
+            // Initialize notifications first
             const token = await initializeNotifications();
+            
             if (!token) {
                 throw new Error('NO_TOKEN');
             }
@@ -169,8 +136,6 @@ export const useNotifications = () => {
                     notification: {
                         title: 'Test Notification',
                         body: `Test message sent at ${new Date().toLocaleTimeString()}`,
-                        sound: 'default',
-                        badge: '1',
                         data: {
                             type: 'test',
                             timestamp: Date.now().toString(),
@@ -189,9 +154,6 @@ export const useNotifications = () => {
             return true;
         } catch (error) {
             console.error('Test notification error:', error);
-            if (error.message === 'PWA_REQUIRED') {
-                alert('Please install this app to your home screen to enable notifications. Tap the share button and select "Add to Home Screen".');
-            }
             throw error;
         }
     };

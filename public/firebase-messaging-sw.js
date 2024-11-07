@@ -40,16 +40,13 @@ messaging.onBackgroundMessage(function(payload) {
         badge: '/ios-icon-192.png',
         tag: payload.data?.timestamp || Date.now().toString(),
         data: payload.data || {},
-        actions: [{
-            action: 'open',
-            title: 'Open'
-        }],
         renotify: true,
         requireInteraction: true,
-        silent: false
+        silent: false,
+        vibrate: [200, 100, 200]
     };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // Handle notification clicks
