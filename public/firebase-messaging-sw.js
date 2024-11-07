@@ -18,50 +18,40 @@ const displayedNotifications = new Set();
 messaging.onBackgroundMessage((payload) => {
     console.log('Received background message:', payload);
 
-    // Check if the app is focused
-    if (clients.matchAll) {
-        clients.matchAll({
-            type: 'window',
-            includeUncontrolled: true
-        }).then((windowClients) => {
-            // Only show notification if no client is focused
-            const clientIsFocused = windowClients.some((windowClient) => {
-                return windowClient.focused;
-            });
+    // Wrap the notification logic in event.waitUntil()
+    return event.waitUntil(
+        (async () => {
+            // Create a unique ID for the notification
+            const notificationId = payload.data?.timestamp || Date.now().toString();
 
-            if (!clientIsFocused) {
-                // Create a unique ID for the notification
-                const notificationId = payload.data?.timestamp || Date.now().toString();
-
-                // Check if we've already shown this notification
-                if (displayedNotifications.has(notificationId)) {
-                    console.log('Duplicate notification prevented:', notificationId);
-                    return;
-                }
-
-                // Add to set of displayed notifications
-                displayedNotifications.add(notificationId);
-
-                // Clear old notifications from the set after 5 seconds
-                setTimeout(() => {
-                    displayedNotifications.delete(notificationId);
-                }, 5000);
-
-                const notificationOptions = {
-                    body: payload.notification.body,
-                    icon: '/ios-icon-192.png',
-                    badge: '/ios-icon-192.png',
-                    vibrate: [100, 50, 100],
-                    data: payload.data,
-                    tag: notificationId,
-                    renotify: false
-                };
-
-                return self.registration.showNotification(
-                    payload.notification.title,
-                    notificationOptions
-                );
+            // Check if we've already shown this notification
+            if (displayedNotifications.has(notificationId)) {
+                console.log('Duplicate notification prevented:', notificationId);
+                return;
             }
-        });
-    }
+
+            // Add to set of displayed notifications
+            displayedNotifications.add(notificationId);
+
+            // Clear old notifications from the set after 5 seconds
+            setTimeout(() => {
+                displayedNotifications.delete(notificationId);
+            }, 5000);
+
+            const notificationOptions = {
+                body: payload.notification.body,
+                icon: '/ios-icon-192.png',
+                badge: '/ios-icon-192.png',
+                vibrate: [100, 50, 100],
+                data: payload.data,
+                tag: notificationId,
+                renotify: false
+            };
+
+            return self.registration.showNotification(
+                payload.notification.title,
+                notificationOptions
+            );
+        })()
+    );
 });
