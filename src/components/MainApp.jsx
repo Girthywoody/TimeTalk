@@ -221,111 +221,110 @@ const MainApp = () => {
   };
 
   return (
-    <MainAppProvider currentPage={currentPage} setCurrentPage={setCurrentPage}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <div className="max-w-2xl mx-auto p-4 space-y-6">
-          {currentPage === 'home' ? (
-            <>
-              {/* Header */}
-              <div className={`${darkMode ? 'bg-dark-800/80' : 'bg-white/80'} backdrop-blur-sm border-none shadow-lg rounded-lg`}>
-                <div className="p-4 flex flex-row items-center justify-between">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="max-w-2xl mx-auto p-4 space-y-6">
+        {currentPage === 'home' ? (
+          <>
+            {/* Header */}
+            <div className={`${darkMode ? 'bg-dark-800/80' : 'bg-white/80'} backdrop-blur-sm border-none shadow-lg rounded-lg`}>
+              <div className="p-4 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Heart className="text-rose-500" size={24} />
+                  <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
+                    Our Timeline
+                  </h1>
+                </div>
+              </div>
+            </div>
+
+            {/* Post Creation Card */}
+            <div className={`relative ${darkMode ? 'bg-dark-800/90' : 'bg-white/90'} backdrop-blur-sm shadow-lg rounded-lg border-none z-10`}>
+              <div className="p-6 space-y-4">
+                {/* Media Type Selection */}
+                <div className="flex gap-4 justify-center">
+                  {[
+                    { type: 'text', icon: MessageSquare },
+                    { type: 'image', icon: Image },
+                    { type: 'video', icon: Video }
+                  ].map(({ type, icon: Icon }) => (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        setMediaType(type);
+                        setMediaPreview(null);
+                      }}
+                      className={`p-3 rounded-full transition-all duration-200 transform hover:scale-110
+                        ${mediaType === type 
+                          ? 'bg-blue-500 text-white shadow-lg' 
+                          : 'bg-white text-gray-600 hover:bg-blue-100'}`}
+                    >
+                      <Icon size={24} />
+                    </button>
+                  ))}
+                </div>
+
+                {/* Media Capture/Preview */}
+                {mediaType !== 'text' && !mediaPreview && (
+                  <MediaCapture 
+                    mediaType={mediaType} 
+                    onMediaCapture={setMediaPreview} 
+                  />
+                )}
+                {mediaPreview && (
+                  <MediaPreview 
+                    mediaType={mediaType} 
+                    mediaUrl={mediaPreview} 
+                    onClear={clearMediaPreview} 
+                  />
+                )}
+
+                {/* Message Input */}
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Share a memory or future thought..."
+                  className={`w-full p-4 border rounded-xl resize-none h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}                
+                  />
+
+                {/* Date and Submit */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <CustomDateTimeSelector
+                      selectedDateTime={scheduledDateTime}
+                      onChange={setScheduledDateTime}
+                    />
+                  </div>
+
                   <div className="flex items-center gap-2">
-                    <Heart className="text-rose-500" size={24} />
-                    <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
-                      Our Timeline
-                    </h1>
+                    <button
+                      onClick={() => {
+                        if (!scheduledDateTime) {
+                          handlePostClick(false); // Post immediately
+                        } else {
+                          handlePost(); // Show scheduling modal
+                        }
+                      }}
+                      disabled={(!message && !mediaPreview) || isUploading}
+                      className={`px-6 py-3 rounded-xl flex items-center gap-2 
+                        transition-all duration-200 hover:transform hover:scale-105
+                        ${(!message && !mediaPreview) || isUploading
+                          ? `${darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-400'} cursor-not-allowed`
+                          : scheduledDateTime
+                            ? `${darkMode 
+                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
+                                : 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'}`
+                            : `${darkMode 
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'}`
+                        }`}
+                    >
+                      <Send size={20} />
+                      {scheduledDateTime ? 'Schedule Post' : 'Post Now'}
+                    </button>
                   </div>
                 </div>
               </div>
-
-              {/* Post Creation Card */}
-              <div className={`relative ${darkMode ? 'bg-dark-800/90' : 'bg-white/90'} backdrop-blur-sm shadow-lg rounded-lg border-none z-10`}>
-                <div className="p-6 space-y-4">
-                  {/* Media Type Selection */}
-                  <div className="flex gap-4 justify-center">
-                    {[
-                      { type: 'text', icon: MessageSquare },
-                      { type: 'image', icon: Image },
-                      { type: 'video', icon: Video }
-                    ].map(({ type, icon: Icon }) => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          setMediaType(type);
-                          setMediaPreview(null);
-                        }}
-                        className={`p-3 rounded-full transition-all duration-200 transform hover:scale-110
-                          ${mediaType === type 
-                            ? 'bg-blue-500 text-white shadow-lg' 
-                            : 'bg-white text-gray-600 hover:bg-blue-100'}`}
-                      >
-                        <Icon size={24} />
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Media Capture/Preview */}
-                  {mediaType !== 'text' && !mediaPreview && (
-                    <MediaCapture 
-                      mediaType={mediaType} 
-                      onMediaCapture={setMediaPreview} 
-                    />
-                  )}
-                  {mediaPreview && (
-                    <MediaPreview 
-                      mediaType={mediaType} 
-                      mediaUrl={mediaPreview} 
-                      onClear={clearMediaPreview} 
-                    />
-                  )}
-
-                  {/* Message Input */}
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Share a memory or future thought..."
-                    className={`w-full p-4 border rounded-xl resize-none h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}                
-                    />
-
-                  {/* Date and Submit */}
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <CustomDateTimeSelector
-                        selectedDateTime={scheduledDateTime}
-                        onChange={setScheduledDateTime}
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          if (!scheduledDateTime) {
-                            handlePostClick(false); // Post immediately
-                          } else {
-                            handlePost(); // Show scheduling modal
-                          }
-                        }}
-                        disabled={(!message && !mediaPreview) || isUploading}
-                        className={`px-6 py-3 rounded-xl flex items-center gap-2 
-                          transition-all duration-200 hover:transform hover:scale-105
-                          ${(!message && !mediaPreview) || isUploading
-                            ? `${darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-400'} cursor-not-allowed`
-                            : scheduledDateTime
-                              ? `${darkMode 
-                                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
-                                  : 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'}`
-                              : `${darkMode 
-                                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                                  : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'}`
-                          }`}
-                      >
-                        <Send size={20} />
-                        {scheduledDateTime ? 'Schedule Post' : 'Post Now'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            </div>
 
 {/* Timeline */}
 <Timeline posts={posts} />
@@ -367,8 +366,3 @@ onConfirm={handleSecretChoice}
 
 <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
 </div>
-</MainAppProvider>
-);
-};
-
-export default MainApp;
