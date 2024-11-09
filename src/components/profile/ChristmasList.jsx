@@ -3,26 +3,30 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { ArrowLeft, Plus, Trash2, Gift, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const ChristmasList = () => {
   const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState('');
   const [loading, setLoading] = useState(true);
+  const [ownerName, setOwnerName] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { userId } = useParams();
+
+  const isOwner = !userId || userId === user?.uid;
 
   useEffect(() => {
     const fetchList = async () => {
-      if (!user) return;
-
       try {
-        const userRef = doc(db, 'users', user.uid);
+        const targetUserId = userId || user?.uid;
+        const userRef = doc(db, 'users', targetUserId);
         const docSnap = await getDoc(userRef);
         
         if (docSnap.exists()) {
           const data = docSnap.data();
           setItems(data.christmasList || []);
+          setOwnerName(data.displayName || 'User');
         }
       } catch (error) {
         console.error('Error fetching Christmas list:', error);
@@ -31,11 +35,13 @@ const ChristmasList = () => {
       }
     };
 
-    fetchList();
-  }, [user]);
+    if (user) {
+      fetchList();
+    }
+  }, [user, userId]);
 
   const saveList = async (updatedItems) => {
-    if (!user) return;
+    if (!user || !isOwner) return;
 
     try {
       const userRef = doc(db, 'users', user.uid);
@@ -48,7 +54,7 @@ const ChristmasList = () => {
   };
 
   const addItem = async () => {
-    if (!newItem.trim()) return;
+    if (!newItem.trim() || !isOwner) return;
     
     const updatedItems = [...items, {
       id: Date.now(),
@@ -62,6 +68,8 @@ const ChristmasList = () => {
   };
 
   const removeItem = async (itemId) => {
+    if (!isOwner) return;
+    
     const updatedItems = items.filter(item => item.id !== itemId);
     setItems(updatedItems);
     await saveList(updatedItems);
@@ -77,10 +85,10 @@ const ChristmasList = () => {
 
   return (
     <div className="min-h-screen relative">
-      {/* Background Image */}
+      {/* Background Image - Fixed file extension from .png to .pg */}
       <div 
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-20 dark:opacity-10"
-        style={{ backgroundImage: 'url(/christmas-bg.png)' }}
+        style={{ backgroundImage: 'url(/christmas-bg.pg)' }}
       />
 
       {/* Content */}
@@ -96,35 +104,37 @@ const ChristmasList = () => {
             </button>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Gift className="w-6 h-6 text-red-500" />
-              Christmas List
+              {isOwner ? 'My Christmas List' : `${ownerName}'s Christmas List`}
             </h1>
           </div>
         </div>
 
         <div className="max-w-4xl mx-auto px-4 py-8">
-          {/* Add Item Form */}
-          <div className="mb-8">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newItem}
-                onChange={(e) => setNewItem(e.target.value)}
-                placeholder="Add an item to your list..."
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 
-                  bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-gray-900 dark:text-white 
-                  focus:outline-none focus:ring-2 focus:ring-red-500"
-                onKeyPress={(e) => e.key === 'Enter' && addItem()}
-              />
-              <button
-                onClick={addItem}
-                className="px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 
-                  transition-colors flex items-center gap-2 backdrop-blur-sm"
-              >
-                <Plus className="w-5 h-5" />
-                Add
-              </button>
+          {/* Add Item Form - Only show if user is owner */}
+          {isOwner && (
+            <div className="mb-8">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newItem}
+                  onChange={(e) => setNewItem(e.target.value)}
+                  placeholder="Add an item to your list..."
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 
+                    bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-gray-900 dark:text-white 
+                    focus:outline-none focus:ring-2 focus:ring-red-500"
+                  onKeyPress={(e) => e.key === 'Enter' && addItem()}
+                />
+                <button
+                  onClick={addItem}
+                  className="px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 
+                    transition-colors flex items-center gap-2 backdrop-blur-sm"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Items List */}
           <div className="space-y-4">
@@ -135,12 +145,14 @@ const ChristmasList = () => {
                   backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-800"
               >
                 <span className="text-gray-900 dark:text-white">{item.text}</span>
-                <button
-                  onClick={() => removeItem(item.id)}
-                  className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                {isOwner && (
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             ))}
             {items.length === 0 && (

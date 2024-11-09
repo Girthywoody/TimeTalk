@@ -67,6 +67,7 @@ const App = () => {
 
           <Route path="/profile/:userId" element={<PartnerProfilePage />} />
           <Route path="/christmas-list" element={<ChristmasList />} />
+          <Route path="/christmas-list/:userId" element={<ChristmasList />} />
         </Routes>
         
         <ToastContainer

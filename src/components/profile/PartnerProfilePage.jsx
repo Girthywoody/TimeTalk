@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, MessageCircle, Heart, Calendar, Camera, Loader2 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Heart, Calendar, Camera, Loader2, Gift } from 'lucide-react';
 
 const PartnerProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
@@ -143,6 +143,15 @@ const PartnerProfilePage = () => {
             <p className="text-2xl font-bold text-rose-500">{getDaysTogether()}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400">Days Together</p>
           </div>
+          <button
+            onClick={() => navigate(`/christmas-list/${userId}`)}
+            className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center border 
+              border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 
+              transition-colors"
+          >
+            <Gift className="w-6 h-6 text-red-500 mx-auto mb-2" />
+            <p className="text-sm text-gray-600 dark:text-gray-400">Christmas List</p>
+          </button>
         </div>
       </div>
     </div>
