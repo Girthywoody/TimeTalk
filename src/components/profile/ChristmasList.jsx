@@ -4,7 +4,6 @@ import { db } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { ArrowLeft, Plus, Trash2, Gift, Loader2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useMainApp } from '../../contexts/MainAppContext';
 
 const ChristmasList = () => {
   const [items, setItems] = useState([]);
@@ -14,7 +13,6 @@ const ChristmasList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { userId } = useParams();
-  const { setCurrentPage } = useMainApp();
 
   const isOwner = !userId || userId === user?.uid;
 
@@ -78,7 +76,7 @@ const ChristmasList = () => {
   };
 
   const handleBackClick = () => {
-    setCurrentPage('profile');
+    navigate('/');
   };
 
   if (loading) {
