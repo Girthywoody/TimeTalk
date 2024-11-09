@@ -10,18 +10,21 @@ export const useSpotify = () => {
 
   const getSpotifyToken = async () => {
     try {
-      // Check if we have a token in localStorage
+      console.log('Client ID:', import.meta.env.VITE_SPOTIFY_CLIENT_ID);
+      
       const storedToken = localStorage.getItem('spotify_access_token');
       const tokenExpiry = localStorage.getItem('spotify_token_expiry');
       
-      // If token exists and is not expired, use it
       if (storedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry)) {
         return storedToken;
       }
 
-      // If no token or expired, redirect to Spotify auth
       const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
-      const redirectUri = `${window.location.origin}/callback`;
+      if (!clientId) {
+        throw new Error('Spotify Client ID is not configured');
+      }
+
+      const redirectUri = `https://time-talk.vercel.app/callback`;
       const scope = 'user-read-recently-played';
       
       const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
