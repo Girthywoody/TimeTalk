@@ -329,6 +329,7 @@ const MainApp = () => {
 {/* Timeline */}
 <Timeline posts={posts} />
 
+
 {/* Privacy Notice */}
 <div className={`${darkMode ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-800'} border-none shadow-md rounded-lg p-4`}>
 <div className="flex items-center gap-2">
