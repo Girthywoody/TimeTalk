@@ -12,6 +12,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import PartnerProfilePage from './components/profile/PartnerProfilePage';
 import ChristmasList from './components/profile/ChristmasList';
+import { SpotifyCallback } from './components/SpotifyCallback';
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -68,6 +69,7 @@ const App = () => {
           <Route path="/profile/:userId" element={<PartnerProfilePage />} />
           <Route path="/christmas-list" element={<ChristmasList />} />
           <Route path="/christmas-list/:userId" element={<ChristmasList />} />
+          <Route path="/callback" element={<SpotifyCallback />} />
         </Routes>
         
         <ToastContainer

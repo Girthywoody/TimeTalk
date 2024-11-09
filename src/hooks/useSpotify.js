@@ -10,17 +10,24 @@ export const useSpotify = () => {
 
   const getSpotifyToken = async () => {
     try {
-      const response = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${btoa(`${import.meta.env.VITE_SPOTIFY_CLIENT_ID}:${import.meta.env.VITE_SPOTIFY_CLIENT_SECRET}`)}`,
-        },
-        body: 'grant_type=client_credentials'
-      });
+      // Check if we have a token in localStorage
+      const storedToken = localStorage.getItem('spotify_access_token');
+      const tokenExpiry = localStorage.getItem('spotify_token_expiry');
       
-      const data = await response.json();
-      return data.access_token;
+      // If token exists and is not expired, use it
+      if (storedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry)) {
+        return storedToken;
+      }
+
+      // If no token or expired, redirect to Spotify auth
+      const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
+      const redirectUri = `${window.location.origin}/callback`;
+      const scope = 'user-read-recently-played';
+      
+      const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+      
+      window.location.href = authUrl;
+      return null;
     } catch (err) {
       console.error('Error getting Spotify token:', err);
       setError('Failed to authenticate with Spotify');
