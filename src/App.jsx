@@ -12,6 +12,8 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import PartnerProfilePage from './components/profile/PartnerProfilePage';
 import ChristmasList from './components/profile/ChristmasList';
+import { MainAppProvider } from './contexts/MainAppContext';
+import { BrowserRouter } from 'react-router-dom';
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -36,39 +38,42 @@ const App = () => {
   return (
     <DarkModeProvider>
       <div className="min-h-screen bg-white dark:bg-gray-900">
-        <Routes>
-          {/* Public route */}
-          <Route 
-            path="/login" 
-            element={user ? <Navigate to="/" /> : <LoginPage />} 
-          />
+        <BrowserRouter>
+          <MainAppProvider>
+            <Routes>
+              {/* Public route */}
+              <Route 
+                path="/login" 
+                element={user ? <Navigate to="/" /> : <LoginPage />} 
+              />
 
-          {/* Protected route for profile setup */}
-          <Route
-            path="/setup"
-            element={
-              <ProtectedRoute>
-                <ProfileSetupPage />
-              </ProtectedRoute>
-            }
-          />
+              {/* Protected route for profile setup */}
+              <Route
+                path="/setup"
+                element={
+                  <ProtectedRoute>
+                    <ProfileSetupPage />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Protected routes for main app */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MainApp />
-                </>
-              </ProtectedRoute>
-            }
-          />
+              {/* Protected routes for main app */}
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <>
+                      <MainApp />
+                    </>
+                  </ProtectedRoute>
+                }
+              />
 
-          <Route path="/profile/:userId" element={<PartnerProfilePage />} />
-          <Route path="/christmas-list" element={<ChristmasList />} />
-          <Route path="/christmas-list/:userId" element={<ChristmasList />} />
-        </Routes>
+              <Route path="/profile/:userId" element={<ProtectedRoute><PartnerProfilePage /></ProtectedRoute>} />
+              <Route path="/christmas-list/:userId" element={<ProtectedRoute><ChristmasList /></ProtectedRoute>} />
+            </Routes>
+          </MainAppProvider>
+        </BrowserRouter>
         
         <ToastContainer
           position="bottom-center"

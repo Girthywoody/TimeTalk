@@ -78,6 +78,7 @@ const ChristmasList = () => {
   };
 
   const handleBackClick = () => {
+    navigate('/profile');
     setCurrentPage('profile');
   };
 

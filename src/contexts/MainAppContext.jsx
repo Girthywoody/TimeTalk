@@ -1,8 +1,10 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 const MainAppContext = createContext();
 
-export const MainAppProvider = ({ children, currentPage, setCurrentPage }) => {
+export const MainAppProvider = ({ children }) => {
+  const [currentPage, setCurrentPage] = useState('home');
+
   return (
     <MainAppContext.Provider value={{ currentPage, setCurrentPage }}>
       {children}
