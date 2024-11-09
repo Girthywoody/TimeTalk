@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Heart, Calendar, Camera, Loader2, Gift } from 'lucide-react';
+import { useMainApp } from '../../contexts/MainAppContext';
 
 const PartnerProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
@@ -10,6 +11,7 @@ const PartnerProfilePage = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { userId } = useParams();
+  const { setCurrentPage } = useMainApp();
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -42,7 +44,7 @@ const PartnerProfilePage = () => {
   };
 
   const handleBackClick = () => {
-    navigate('/profile');
+    setCurrentPage('profile');
   };
 
   if (loading) {
