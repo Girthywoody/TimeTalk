@@ -88,7 +88,7 @@ const ChristmasList = () => {
       {/* Background Image - Fixed file extension from .png to .pg */}
       <div 
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-20 dark:opacity-10"
-        style={{ backgroundImage: 'url(/christmas-bg.pg)' }}
+        style={{ backgroundImage: 'url(/christmas-bg.jpg)' }}
       />
 
       {/* Content */}
