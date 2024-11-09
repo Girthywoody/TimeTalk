@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Heart, Calendar, Camera, Loader2, Gift } from 'lucide-react';
+import { useSpotify } from '../../hooks/useSpotify';
 
 const PartnerProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
@@ -10,6 +11,7 @@ const PartnerProfilePage = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { userId } = useParams();
+  const { lastPlayed } = useSpotify();
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -165,11 +167,36 @@ const PartnerProfilePage = () => {
                 <p className="text-2xl font-bold text-rose-500">{getDaysTogether()}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Days Together</p>
               </div>
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  {lastPlayed ? (
+                    <>
+                      <img 
+                        src={lastPlayed.albumArt} 
+                        alt={`${lastPlayed.name} album art`}
+                        className="w-48 h-48 rounded-lg shadow-lg"
+                      />
+                      <div className="text-center">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {lastPlayed.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {lastPlayed.artist}
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-gray-500 dark:text-gray-400">
+                      No recent tracks
+                    </div>
+                  )}
+                </div>
+              </div>
               <button
                 onClick={() => navigate(`/christmas-list/${userId}`)}
                 className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center border 
                   border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 
-                  transition-colors"
+                  transition-colors w-full"
               >
                 <Gift className="w-6 h-6 text-red-500 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">Christmas List</p>
