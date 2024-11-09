@@ -366,3 +366,7 @@ onConfirm={handleSecretChoice}
 
 <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
 </div>
+);
+};
+
+export default MainApp;
