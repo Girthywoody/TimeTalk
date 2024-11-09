@@ -6,6 +6,7 @@ import { Settings, MessageCircle, Heart, Calendar, Gift, Camera, Loader2 } from 
 import SettingsPage from '../profile/SettingsPage';
 import QuickActions from '../profile/QuickActions'; // Add this import
 import { useNavigate } from 'react-router-dom';
+import SpotifySection from './SpotifySection';
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
@@ -171,6 +172,9 @@ const ProfilePage = () => {
             </div>
           ))}
         </div>
+
+        {/* Spotify Section */}
+        <SpotifySection />
 
         {/* Quick Actions */}
         <QuickActions />
