@@ -78,7 +78,6 @@ const ChristmasList = () => {
   };
 
   const handleBackClick = () => {
-    navigate('/profile');
     setCurrentPage('profile');
   };
 
@@ -92,7 +91,7 @@ const ChristmasList = () => {
 
   return (
     <div className="min-h-screen relative">
-      {/* Background Image - Fixed file extension from .png to .pg */}
+      {/* Background Image */}
       <div 
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-20 dark:opacity-10"
         style={{ backgroundImage: 'url(/christmas-bg.jpg)' }}
@@ -167,7 +166,7 @@ const ChristmasList = () => {
                 rounded-xl border border-gray-200 dark:border-gray-800 
                 text-gray-500 dark:text-gray-400"
               >
-                Your Christmas list is empty. Add some items!
+                {isOwner ? 'Your Christmas list is empty. Add some items!' : 'This Christmas list is empty.'}
               </div>
             )}
           </div>

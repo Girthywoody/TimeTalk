@@ -44,7 +44,6 @@ const PartnerProfilePage = () => {
   };
 
   const handleBackClick = () => {
-    navigate('/profile');
     setCurrentPage('profile');
   };
 
