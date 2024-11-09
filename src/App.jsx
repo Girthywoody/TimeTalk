@@ -11,6 +11,7 @@ import { DarkModeProvider } from './context/DarkModeContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import PartnerProfilePage from './components/profile/PartnerProfilePage';
+import ChristmasList from './components/profile/ChristmasList';
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -65,6 +66,7 @@ const App = () => {
           />
 
           <Route path="/profile/:userId" element={<PartnerProfilePage />} />
+          <Route path="/christmas-list" element={<ChristmasList />} />
         </Routes>
         
         <ToastContainer

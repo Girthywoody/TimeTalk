@@ -1,7 +1,10 @@
 import React from 'react';
-import { Heart, Calendar, Gift, Camera } from 'lucide-react';
+import { Heart, Gift, Camera, ListTodo } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const QuickActions = () => {
+  const navigate = useNavigate();
+
   const actions = [
     { 
       icon: Heart,
@@ -12,12 +15,13 @@ const QuickActions = () => {
       iconColor: 'text-rose-500'
     },
     { 
-      icon: Calendar,
-      label: 'Plan Date',
-      value: 'Weekly',
-      bgColor: 'bg-blue-500/10 dark:bg-blue-500/20',
-      textColor: 'text-blue-600 dark:text-blue-400',
-      iconColor: 'text-blue-500'
+      icon: ListTodo,
+      label: 'Christmas List',
+      value: '2024',
+      bgColor: 'bg-red-500/10 dark:bg-red-500/20',
+      textColor: 'text-red-600 dark:text-red-400',
+      iconColor: 'text-red-500',
+      onClick: () => navigate('/christmas-list')
     },
     { 
       icon: Gift,
@@ -42,6 +46,7 @@ const QuickActions = () => {
       {actions.map((action) => (
         <button
           key={action.label}
+          onClick={action.onClick}
           className={`${action.bgColor} rounded-xl p-6 transition-all duration-200 
             hover:scale-[1.02] active:scale-[0.98] group`}
         >
