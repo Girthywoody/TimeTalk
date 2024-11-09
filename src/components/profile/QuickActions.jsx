@@ -1,7 +1,7 @@
 import React from 'react';
 import { Gift, Camera, ListTodo, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useSpotify } from './hooks/useSpotify';
+import { useSpotify } from '../../../hooks/useSpotify';
 
 const QuickActions = () => {
   const navigate = useNavigate();
