@@ -99,7 +99,7 @@ const PartnerProfilePage = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid md:grid-cols-[300px_1fr] gap-8">
           {/* Left Column - Profile Info */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 h-fit sticky top-24">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 h-fit">
             <div className="flex flex-col items-center space-y-6">
               {/* Profile Photo */}
               <div className="relative">
