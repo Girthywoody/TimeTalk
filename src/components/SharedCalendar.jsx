@@ -421,30 +421,15 @@ const SharedCalendar = () => {
           </div>
 
           {/* Calendar Grid with Swipe */}
-          <AnimatePresence initial={false} mode='wait'>
-            <div className="grid grid-cols-7 gap-1 p-4">
-              {/* Day Letters */}
-              {DAYS.map((day, index) => (
-                <div
-                  key={`day-${index}`}
-                  className={`text-center text-sm font-semibold mb-2 ${
-                    darkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
-            
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={currentDate.getMonth()}
-              initial={{ x: 100 * swipeDirection, opacity: 1 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -100 * swipeDirection, opacity: 1 }}
+              initial={{ x: 300 * swipeDirection }}
+              animate={{ x: 0 }}
+              exit={{ x: -300 * swipeDirection }}
               transition={{ 
-                type: "spring",
-                stiffness: 300,
-                damping: 30
+                duration: 0.2,
+                ease: "linear"
               }}
               className="grid grid-cols-7 gap-1 px-4"
               onTouchStart={e => setTouchStart(e.touches[0].clientX)}
@@ -453,7 +438,7 @@ const SharedCalendar = () => {
                 const touchEnd = e.changedTouches[0].clientX;
                 const diff = touchStart - touchEnd;
                 
-                if (Math.abs(diff) > 50) { // minimum swipe distance
+                if (Math.abs(diff) > 50) {
                   changeMonth(diff > 0 ? 1 : -1);
                 }
                 setTouchStart(null);
