@@ -43,6 +43,8 @@ const REPEAT_OPTIONS = [
   { value: 'yearly', label: 'Every Year' }
 ];
 
+const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
 const SharedCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
@@ -420,13 +422,31 @@ const SharedCalendar = () => {
 
           {/* Calendar Grid with Swipe */}
           <AnimatePresence initial={false} mode='wait'>
+            <div className="grid grid-cols-7 gap-1 p-4">
+              {/* Day Letters */}
+              {DAYS.map((day, index) => (
+                <div
+                  key={`day-${index}`}
+                  className={`text-center text-sm font-semibold mb-2 ${
+                    darkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+            
             <motion.div
               key={currentDate.getMonth()}
-              initial={{ x: 100 * swipeDirection, opacity: 0 }}
+              initial={{ x: 100 * swipeDirection, opacity: 1 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -100 * swipeDirection, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="grid grid-cols-7 gap-1 p-4"
+              exit={{ x: -100 * swipeDirection, opacity: 1 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 300,
+                damping: 30
+              }}
+              className="grid grid-cols-7 gap-1 px-4"
               onTouchStart={e => setTouchStart(e.touches[0].clientX)}
               onTouchEnd={e => {
                 if (!touchStart) return;
