@@ -422,71 +422,99 @@ const SharedCalendar = () => {
           </div>
 
           {/* Calendar Grid with Swipe */}
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={currentDate.getMonth()}
-              initial={{ x: 300 * swipeDirection }}
-              animate={{ x: 0 }}
-              exit={{ x: -300 * swipeDirection }}
-              transition={{ 
-                duration: 0.2,
-                ease: "linear"
-              }}
-              className="grid grid-cols-7 gap-1 px-4"
-              onTouchStart={e => setTouchStart(e.touches[0].clientX)}
-              onTouchEnd={e => {
-                if (!touchStart) return;
-                const touchEnd = e.changedTouches[0].clientX;
-                const diff = touchStart - touchEnd;
-                
-                if (Math.abs(diff) > 50) {
-                  changeMonth(diff > 0 ? 1 : -1);
-                }
-                setTouchStart(null);
-              }}
-            >
-              {generateCalendarDays().map((date, index) => {
-                const dayEvents = date ? getDayEvents(date) : [];
-                const isToday = date?.toDateString() === new Date().toDateString();
-                
-                return (
-                  <div
-                    key={index}
-                    onClick={() => handleDateClick(date)}
-                    className={`aspect-square p-2 rounded-xl flex flex-col items-center justify-center
-                      ${date ? darkMode 
-                        ? 'cursor-pointer hover:bg-gray-800' 
-                        : 'cursor-pointer hover:bg-gray-50' 
-                        : ''
-                      }
-                      ${isToday ? darkMode 
-                        ? 'bg-blue-900/50' 
-                        : 'bg-blue-100' 
-                        : ''
-                      }
-                      ${dayEvents.length > 0 ? 'ring-2 ring-blue-500/50' : ''}`}
-                  >
-                    {date && (
-                      <>
-                        <span className={`text-sm ${
-                          isToday 
-                            ? 'text-blue-400 font-bold' 
-                            : darkMode 
-                              ? 'text-gray-300' 
-                              : 'text-gray-700'
-                        }`}>
-                          {date.getDate()}
-                        </span>
-                        {dayEvents.length > 0 && (
-                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1" />
-                        )}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </motion.div>
-          </AnimatePresence>
+          <div className="px-4">
+            {/* Days of week header */}
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {DAYS.map((day) => (
+                <div 
+                  key={day} 
+                  className={`text-center text-sm font-medium ${
+                    darkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={currentDate.getMonth()}
+                initial={{ 
+                  x: swipeDirection > 0 ? '100%' : '-100%',
+                  opacity: 0 
+                }}
+                animate={{ 
+                  x: 0,
+                  opacity: 1 
+                }}
+                exit={{ 
+                  x: swipeDirection > 0 ? '-100%' : '100%',
+                  opacity: 0 
+                }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20
+                }}
+                className="grid grid-cols-7 gap-1"
+                onTouchStart={e => setTouchStart(e.touches[0].clientX)}
+                onTouchEnd={e => {
+                  if (!touchStart) return;
+                  const touchEnd = e.changedTouches[0].clientX;
+                  const diff = touchStart - touchEnd;
+                  
+                  if (Math.abs(diff) > 50) {
+                    // Update swipe direction before changing month
+                    setSwipeDirection(diff > 0 ? 1 : -1);
+                    changeMonth(diff > 0 ? 1 : -1);
+                  }
+                  setTouchStart(null);
+                }}
+              >
+                {generateCalendarDays().map((date, index) => {
+                  const dayEvents = date ? getDayEvents(date) : [];
+                  const isToday = date?.toDateString() === new Date().toDateString();
+                  
+                  return (
+                    <div
+                      key={index}
+                      onClick={() => handleDateClick(date)}
+                      className={`aspect-square p-2 rounded-xl flex flex-col items-center justify-center
+                        ${date ? darkMode 
+                          ? 'cursor-pointer hover:bg-gray-800' 
+                          : 'cursor-pointer hover:bg-gray-50' 
+                          : ''
+                        }
+                        ${isToday ? darkMode 
+                          ? 'bg-blue-900/50' 
+                          : 'bg-blue-100' 
+                          : ''
+                        }
+                        ${dayEvents.length > 0 ? 'ring-2 ring-blue-500/50' : ''}`}
+                    >
+                      {date && (
+                        <>
+                          <span className={`text-sm ${
+                            isToday 
+                              ? 'text-blue-400 font-bold' 
+                              : darkMode 
+                                ? 'text-gray-300' 
+                                : 'text-gray-700'
+                          }`}>
+                            {date.getDate()}
+                          </span>
+                          {dayEvents.length > 0 && (
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1" />
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
           {/* Events List */}
           <div className={`w-full h-px ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} my-8`} />
