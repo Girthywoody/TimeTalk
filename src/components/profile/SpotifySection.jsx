@@ -6,6 +6,14 @@ const SpotifySection = () => {
   const { lastPlayed } = useSpotify();
   const token = localStorage.getItem('spotify_access_token');
 
+  const handleReconnect = () => {
+    const client_id = 'your_client_id';
+    const redirect_uri = 'your_redirect_uri';
+    const scope = 'user-read-currently-playing user-read-recently-played';
+    
+    window.location.href = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${redirect_uri}&scope=${scope}&show_dialog=true`;
+  };
+
   if (!token) {
     return (
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
@@ -17,7 +25,13 @@ const SpotifySection = () => {
         </div>
         <div className="p-6">
           <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-            Not connected to Spotify
+            <p>Not connected to Spotify</p>
+            <button
+              onClick={handleReconnect}
+              className="mt-2 px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
+            >
+              Connect Spotify
+            </button>
           </div>
         </div>
       </div>
