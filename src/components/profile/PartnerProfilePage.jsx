@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Heart, Calendar, Camera, Loader2, Gift } from 'lucide-react';
 import { useSpotify } from '../../hooks/useSpotify';
 import SpotifySection from './SpotifySection';
+import PageLayout from '../../layout/PageLayout';
 
 const PartnerProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
@@ -80,7 +81,7 @@ const PartnerProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <PageLayout>
       {/* Header with Back Button */}
       <div className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-gray-200 dark:border-gray-800 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center">
@@ -186,7 +187,7 @@ const PartnerProfilePage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

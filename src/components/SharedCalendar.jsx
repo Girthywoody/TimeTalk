@@ -24,6 +24,7 @@ import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDarkMode } from '../context/DarkModeContext';
 import ParticipantsModal from './ParticipantsModal';
+import PageLayout from '../layout/PageLayout';
 
 const NOTIFICATION_OPTIONS = [
   { value: '2880', label: '2 days before' },
@@ -344,7 +345,7 @@ const SharedCalendar = () => {
   };
 
   return (
-    <div className={`h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white'} overflow-x-hidden overflow-y-auto flex flex-col pb-16`}>
+    <PageLayout>
       {/* Main Calendar View */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -867,7 +868,7 @@ const SharedCalendar = () => {
           selectedParticipants={newEvent.participants || []}
         />
       )}
-    </div>
+    </PageLayout>
   );
 };
 

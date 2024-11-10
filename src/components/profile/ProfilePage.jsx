@@ -7,7 +7,7 @@ import SettingsPage from '../profile/SettingsPage';
 import QuickActions from '../profile/QuickActions'; // Add this import
 import { useNavigate } from 'react-router-dom';
 import SpotifySection from './SpotifySection';
-import PageLayout from '../layout/PageLayout';
+import PageLayout from '../../layout/PageLayout';
 
 const ProfilePage = () => {
   const [profileData, setProfileData] = useState(null);
