@@ -440,22 +440,13 @@ const SharedCalendar = () => {
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={currentDate.getMonth()}
-                initial={{ 
-                  x: swipeDirection > 0 ? '100%' : '-100%',
-                  opacity: 0 
-                }}
-                animate={{ 
-                  x: 0,
-                  opacity: 1 
-                }}
-                exit={{ 
-                  x: swipeDirection > 0 ? '-100%' : '100%',
-                  opacity: 0 
-                }}
+                initial={{ x: swipeDirection > 0 ? '100%' : '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: swipeDirection > 0 ? '-100%' : '100%' }}
                 transition={{ 
                   type: "spring",
-                  stiffness: 260,
-                  damping: 20
+                  stiffness: 300,
+                  damping: 30
                 }}
                 className="grid grid-cols-7 gap-1"
                 onTouchStart={e => setTouchStart(e.touches[0].clientX)}
@@ -465,7 +456,6 @@ const SharedCalendar = () => {
                   const diff = touchStart - touchEnd;
                   
                   if (Math.abs(diff) > 50) {
-                    // Update swipe direction before changing month
                     setSwipeDirection(diff > 0 ? 1 : -1);
                     changeMonth(diff > 0 ? 1 : -1);
                   }

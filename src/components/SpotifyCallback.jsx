@@ -10,12 +10,18 @@ export const SpotifyCallback = () => {
     const accessToken = params.get('access_token');
     
     if (accessToken) {
-      localStorage.setItem('spotify_access_token', accessToken);
-      // Token expires in 1 hour
-      localStorage.setItem('spotify_token_expiry', Date.now() + 3600000);
-      
-      // Redirect back to the original page
-      navigate('/');
+      fetch('https://api.spotify.com/v1/me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        localStorage.setItem('spotify_user_id', data.id);
+        localStorage.setItem('spotify_access_token', accessToken);
+        localStorage.setItem('spotify_token_expiry', Date.now() + 3600000);
+        navigate('/');
+      });
     }
   }, [navigate]);
 

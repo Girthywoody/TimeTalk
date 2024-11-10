@@ -185,6 +185,15 @@ const SettingsPage = ({ onClose, profileData }) => {
     },
   ];
 
+  const handleSpotifyConnect = async () => {
+    const spotifyUserId = localStorage.getItem('spotify_user_id');
+    if (spotifyUserId) {
+      await updateDoc(doc(db, 'users', user.uid), {
+        spotifyId: spotifyUserId
+      });
+    }
+  };
+
   return (
     <AnimatePresence>
       <motion.div
