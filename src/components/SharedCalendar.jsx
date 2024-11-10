@@ -339,9 +339,11 @@ const SharedCalendar = () => {
 
   const changeMonth = (direction) => {
     setSwipeDirection(direction);
-    const newDate = new Date(currentDate);
-    newDate.setMonth(currentDate.getMonth() + direction);
-    setCurrentDate(newDate);
+    setTimeout(() => {
+      const newDate = new Date(currentDate);
+      newDate.setMonth(currentDate.getMonth() + direction);
+      setCurrentDate(newDate);
+    }, 50);
   };
 
   return (
@@ -440,13 +442,22 @@ const SharedCalendar = () => {
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={currentDate.getMonth()}
-                initial={{ x: swipeDirection > 0 ? '100%' : '-100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: swipeDirection > 0 ? '-100%' : '100%' }}
+                initial={{ 
+                  x: swipeDirection > 0 ? '100%' : '-100%',
+                  opacity: 0 
+                }}
+                animate={{ 
+                  x: 0,
+                  opacity: 1 
+                }}
+                exit={{ 
+                  x: swipeDirection > 0 ? '-100%' : '100%',
+                  opacity: 0 
+                }}
                 transition={{ 
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 30
+                  type: "tween",
+                  duration: 0.3,
+                  ease: "easeInOut"
                 }}
                 className="grid grid-cols-7 gap-1"
                 onTouchStart={e => setTouchStart(e.touches[0].clientX)}
