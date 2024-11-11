@@ -158,6 +158,25 @@ git push origin main
   }
 `;
 
+
+// Add this to your ChatRoom component after other useEffects
+useEffect(() => {
+  const setupNotifications = async () => {
+    try {
+      await initializeNotifications();
+    } catch (error) {
+      console.error('Failed to initialize notifications:', error);
+      // Only show error if it's not already running in PWA mode
+      if (error.message !== 'Please install the app to enable notifications') {
+        toast.error('Failed to enable notifications. Please try again.');
+      }
+    }
+  };
+
+  setupNotifications();
+}, []);
+
+
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -379,36 +398,38 @@ git push origin main
   };
 
   const handleSend = async () => {
-    if ((!newMessage.trim() && !selectedFile) || !user || !userProfile) return;
-
+    if ((!newMessage.trim() && !selectedFile) || !user || !userProfile || !partner) return;
+  
     try {
       setUploading(true);
       let fileURL = null;
       let fileType = null;
       
+      // First upload the file if there is one
       if (selectedFile) {
         try {
           fileURL = await uploadFile(selectedFile);
           fileType = selectedFile.type.startsWith('image/') ? 'image' : 'file';
         } catch (error) {
           console.error('Error uploading file:', error);
-          alert('Failed to upload file. Please try again.');
-          setUploading(false);
+          toast.error('Failed to upload file. Please try again.');
           return;
         }
       }
-
+  
+      // Create the message
       const messagesRef = collection(db, 'messages');
       const messageData = {
         text: newMessage.trim() || null,
         senderId: user.uid,
+        receiverId: partner.uid, // Make sure this is set
         timestamp: serverTimestamp(),
         edited: false,
         deleted: false,
         saved: false,
         status: 'sent'
       };
-
+  
       if (fileURL) {
         messageData.type = newMessage.trim() ? 'mixed' : fileType;
         messageData.fileURL = fileURL;
@@ -417,33 +438,47 @@ git push origin main
       } else {
         messageData.type = 'text';
       }
-
+  
+      // Send the message
       const docRef = await addDoc(messagesRef, messageData);
       setLastMessageId(docRef.id);
-      
-      // Send notification
-      await sendNotification(partner.uid, {
-        title: `💌 New Message from ${user.displayName}`,
-        body: newMessage.length > 50 ? newMessage.substring(0, 47) + '...' : newMessage,
-        data: {
-          type: 'new_message',
-          messageId: docRef.id,
-          senderId: user.uid,
-          timestamp: Date.now().toString()
-        }
-      });
-      
+  
       try {
+        // Play send sound
         await sendSound.current.play();
-      } catch (err) {
-        console.log('Audio play failed:', err);
+  
+        // Send notification to partner
+        const notificationResponse = await sendNotification(partner.uid, {
+          title: `💌 Message from ${user.displayName || 'Your partner'}`,
+          body: messageData.text 
+            ? (messageData.text.length > 50 
+                ? messageData.text.substring(0, 47) + '...' 
+                : messageData.text)
+            : fileType === 'image' 
+                ? '📷 Sent you an image' 
+                : '📎 Sent you a file',
+          data: {
+            type: 'new_message',
+            messageId: docRef.id,
+            senderId: user.uid,
+            timestamp: Date.now().toString(),
+            clickAction: '/'
+          }
+        });
+  
+        console.log('Notification sent successfully:', notificationResponse);
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError);
+        // Don't show error to user since message was sent successfully
       }
-      
+  
+      // Clear inputs
       setNewMessage('');
       removeSelectedFile();
+      
     } catch (error) {
       console.error("Error sending message:", error);
-      alert('Failed to send message. Please try again.');
+      toast.error('Failed to send message. Please try again.');
     } finally {
       setUploading(false);
     }
