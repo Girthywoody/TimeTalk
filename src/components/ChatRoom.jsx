@@ -421,6 +421,18 @@ git push origin main
       const docRef = await addDoc(messagesRef, messageData);
       setLastMessageId(docRef.id);
       
+      // Send notification
+      await sendNotification(partner.uid, {
+        title: `💌 New Message from ${user.displayName}`,
+        body: newMessage.length > 50 ? newMessage.substring(0, 47) + '...' : newMessage,
+        data: {
+          type: 'new_message',
+          messageId: docRef.id,
+          senderId: user.uid,
+          timestamp: Date.now().toString()
+        }
+      });
+      
       try {
         await sendSound.current.play();
       } catch (err) {
