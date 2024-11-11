@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 
 export const SpotifyCallback = () => {
   const navigate = useNavigate();
   const [error, setError] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
+    if (!user) return;
+
     const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
     const accessToken = params.get('access_token');
@@ -28,9 +32,10 @@ export const SpotifyCallback = () => {
         return res.json();
       })
       .then(data => {
-        localStorage.setItem('spotify_user_id', data.id);
-        localStorage.setItem('spotify_access_token', accessToken);
-        localStorage.setItem('spotify_token_expiry', Date.now() + 3600000);
+        const prefix = `spotify_${user.uid}_`;
+        localStorage.setItem(`${prefix}user_id`, data.id);
+        localStorage.setItem(`${prefix}access_token`, accessToken);
+        localStorage.setItem(`${prefix}token_expiry`, Date.now() + 3600000);
         navigate('/');
       })
       .catch(err => {
@@ -41,7 +46,7 @@ export const SpotifyCallback = () => {
     } else {
       navigate('/');
     }
-  }, [navigate]);
+  }, [navigate, user]);
 
   if (error) {
     return <div className="p-4 text-center text-red-500">Error: {error}</div>;

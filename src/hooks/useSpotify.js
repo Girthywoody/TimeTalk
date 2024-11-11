@@ -5,19 +5,25 @@ import { useAuth } from './useAuth';
 const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
 const POLLING_INTERVAL = 10000; // Poll every 10 seconds
 
-export const useSpotify = () => {
+export const useSpotify = (userId = null) => {
   const [lastPlayed, setLastPlayed] = useState(null);
   const { user } = useAuth();
 
-  const checkAndRefreshToken = () => {
-    const token = localStorage.getItem('spotify_access_token');
-    const expiry = localStorage.getItem('spotify_token_expiry');
+  const getTokensForUser = (targetUserId) => {
+    const prefix = targetUserId ? `spotify_${targetUserId}_` : 'spotify_';
+    return {
+      token: localStorage.getItem(`${prefix}access_token`),
+      expiry: localStorage.getItem(`${prefix}token_expiry`),
+      userId: localStorage.getItem(`${prefix}user_id`)
+    };
+  };
+
+  const checkAndRefreshToken = (targetUserId) => {
+    const { token, expiry } = getTokensForUser(targetUserId);
     
     if (!token || !expiry) return false;
     
-    // If token is expired or will expire in next 5 minutes
     if (Date.now() > Number(expiry) - 300000) {
-      // Instead of immediately redirecting, return false and let the component handle it
       return false;
     }
     
@@ -26,17 +32,19 @@ export const useSpotify = () => {
 
   useEffect(() => {
     const fetchNowPlaying = async () => {
-      if (!checkAndRefreshToken()) {
-        // Clear tokens only if they exist
-        if (localStorage.getItem('spotify_access_token')) {
-          localStorage.removeItem('spotify_access_token');
-          localStorage.removeItem('spotify_token_expiry');
-          localStorage.removeItem('spotify_user_id');
+      const targetUserId = userId || user?.uid;
+      if (!targetUserId || !checkAndRefreshToken(targetUserId)) {
+        const { token } = getTokensForUser(targetUserId);
+        if (token) {
+          const prefix = targetUserId ? `spotify_${targetUserId}_` : 'spotify_';
+          localStorage.removeItem(`${prefix}access_token`);
+          localStorage.removeItem(`${prefix}token_expiry`);
+          localStorage.removeItem(`${prefix}user_id`);
         }
         return;
       }
       
-      const token = localStorage.getItem('spotify_access_token');
+      const { token } = getTokensForUser(targetUserId);
       
       try {
         // First try to get currently playing
@@ -84,11 +92,12 @@ export const useSpotify = () => {
       }
     };
 
-    fetchNowPlaying();
-    const interval = setInterval(fetchNowPlaying, 10000);
-
-    return () => clearInterval(interval);
-  }, [user]);
+    if (user) {
+      fetchNowPlaying();
+      const interval = setInterval(fetchNowPlaying, POLLING_INTERVAL);
+      return () => clearInterval(interval);
+    }
+  }, [user, userId]);
 
   return { lastPlayed };
 };
