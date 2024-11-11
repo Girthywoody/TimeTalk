@@ -8,10 +8,12 @@ const SpotifySection = () => {
 
   const handleReconnect = () => {
     const client_id = '42a2f6ce7af14905a55e1618e5baf746';
-    const redirect_uri = 'https://time-talk.vercel.app/callback';
+    const redirect_uri = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3000/callback'
+      : 'https://time-talk.vercel.app/callback';
     const scope = 'user-read-currently-playing user-read-recently-played';
     
-    window.location.href = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${redirect_uri}&scope=${scope}&show_dialog=true`;
+    window.location.href = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${redirect_uri}&scope=${scope}&show_dialog=false`;
   };
 
   if (!token) {

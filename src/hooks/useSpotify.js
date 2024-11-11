@@ -17,16 +17,7 @@ export const useSpotify = () => {
     
     // If token is expired or will expire in next 5 minutes
     if (Date.now() > Number(expiry) - 300000) {
-      // Clear the expired token
-      localStorage.removeItem('spotify_access_token');
-      localStorage.removeItem('spotify_token_expiry');
-      
-      // Redirect to Spotify auth
-      const client_id = 'your_client_id';
-      const redirect_uri = 'your_redirect_uri';
-      const scope = 'user-read-currently-playing user-read-recently-played';
-      
-      window.location.href = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${redirect_uri}&scope=${scope}&show_dialog=true`;
+      // Instead of immediately redirecting, return false and let the component handle it
       return false;
     }
     
@@ -35,7 +26,15 @@ export const useSpotify = () => {
 
   useEffect(() => {
     const fetchNowPlaying = async () => {
-      if (!checkAndRefreshToken()) return;
+      if (!checkAndRefreshToken()) {
+        // Clear tokens only if they exist
+        if (localStorage.getItem('spotify_access_token')) {
+          localStorage.removeItem('spotify_access_token');
+          localStorage.removeItem('spotify_token_expiry');
+          localStorage.removeItem('spotify_user_id');
+        }
+        return;
+      }
       
       const token = localStorage.getItem('spotify_access_token');
       
