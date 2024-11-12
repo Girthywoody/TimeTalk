@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Check, X, CircleDot } from 'lucide-react';
 import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -83,49 +81,69 @@ const SyncdGame = () => {
   return (
     <PageLayout>
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-        <Card className="w-96 bg-gray-900/40 backdrop-blur-xl border border-gray-700">
-          <CardContent className="p-8">
-            <h2 className="text-2xl font-bold mb-6 text-center">{question || "What should we eat?"}</h2>
-            
-            <div className="space-y-4">
-              {!answer && (
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => submitAnswer("Option 1")}
-                    className="p-4 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
-                  >
-                    Option 1
-                  </button>
-                  <button
-                    onClick={() => submitAnswer("Option 2")}
-                    className="p-4 rounded-lg bg-purple-500 text-white hover:bg-purple-600"
-                  >
-                    Option 2
-                  </button>
-                </div>
-              )}
+        <div className="w-96 bg-gray-900/40 backdrop-blur-xl border border-gray-700 rounded-xl">
+          <div className="p-8">
+            {!showResult ? (
+              <div className="space-y-8">
+                <h2 className="text-2xl font-bold mb-6 text-center">{question || "What should we eat?"}</h2>
+                
+                <div className="space-y-4">
+                  {!answer && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        onClick={() => submitAnswer("Option 1")}
+                        className="p-4 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
+                      >
+                        Option 1
+                      </button>
+                      <button
+                        onClick={() => submitAnswer("Option 2")}
+                        className="p-4 rounded-lg bg-purple-500 text-white hover:bg-purple-600"
+                      >
+                        Option 2
+                      </button>
+                    </div>
+                  )}
 
-              {answer && !partnerAnswer && (
-                <div className="text-center text-gray-600 dark:text-gray-400">
-                  Waiting for partner's answer...
-                </div>
-              )}
+                  {answer && !partnerAnswer && (
+                    <div className="text-center text-gray-600 dark:text-gray-400">
+                      Waiting for partner's answer...
+                    </div>
+                  )}
 
-              {answer && partnerAnswer && (
-                <div className="text-center">
-                  <h3 className="text-xl font-bold mb-4">Results:</h3>
-                  <div className="space-y-2">
-                    <p>Your answer: {answer}</p>
-                    <p>Partner's answer: {partnerAnswer}</p>
-                    <p className="font-bold mt-4">
-                      {answer === partnerAnswer ? "You're in sync! 🎉" : "Not quite in sync 😅"}
-                    </p>
-                  </div>
+                  {answer && partnerAnswer && (
+                    <div className="text-center">
+                      <h3 className="text-xl font-bold mb-4">Results:</h3>
+                      <div className="space-y-2">
+                        <p>Your answer: {answer}</p>
+                        <p>Partner's answer: {partnerAnswer}</p>
+                        <p className="font-bold mt-4">
+                          {answer === partnerAnswer ? "You're in sync! 🎉" : "Not quite in sync 😅"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {showResult && (
+                <button
+                  className={`
+                    w-full h-12 mt-4 text-lg font-semibold
+                    bg-gradient-to-r from-blue-500 to-purple-600
+                    hover:from-blue-600 hover:to-purple-700
+                    transition-all duration-300
+                    rounded-xl shadow-lg shadow-purple-500/30
+                    hover:shadow-purple-500/50
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    border border-purple-400/20
+                    text-white
+                  `}
+                  onClick={handleLock}
+                  disabled={!selectedAnswer || (selectedAnswer === 'other' && !customAnswer.trim()) || isLocked}
+                >
+                  Lock In Answer
+                </button>
+              </div>
+            ) : (
               <motion.div
                 className="text-center space-y-8"
                 initial={{ opacity: 0, y: 20 }}
@@ -164,19 +182,20 @@ const SyncdGame = () => {
                   )}
                 </div>
                 
-                <Button
+                <button
                   className="w-full h-12 bg-gradient-to-r from-gray-700 to-gray-600 
-                             hover:from-gray-600 hover:to-gray-500 rounded-xl
-                             shadow-lg shadow-gray-900/50 hover:shadow-gray-900/70
-                             transition-all duration-300 text-lg font-semibold"
+                           hover:from-gray-600 hover:to-gray-500 rounded-xl
+                           shadow-lg shadow-gray-900/50 hover:shadow-gray-900/70
+                           transition-all duration-300 text-lg font-semibold
+                           text-white"
                   onClick={resetGame}
                 >
                   Play Again
-                </Button>
+                </button>
               </motion.div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </PageLayout>
   );
