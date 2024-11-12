@@ -210,37 +210,40 @@ const Timeline = ({ posts }) => {
   };
 
   const renderPost = (post) => {
-    if (post.isScheduled && !isPostVisible(post.scheduledFor)) {
-      return (
-        <div className="relative group">
-          <div className={`absolute inset-0 ${
-            darkMode 
-              ? 'bg-gradient-to-b from-dark-700/80 to-dark-800/80' 
-              : 'bg-gradient-to-b from-gray-100/80 to-gray-200/80'
-            } backdrop-blur-sm rounded-lg flex items-center justify-center z-10`}>
-            <div className="text-center p-6 transform transition-all duration-300 group-hover:scale-105">
-              <Clock size={32} className={`mx-auto mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-              <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} font-medium`}>
-                Scheduled for: {post.scheduledForFormatted}
-              </p>
-              <div className="mt-2 flex items-center justify-center gap-2 text-gray-400">
-                <Lock size={14} />
-                <span className="text-sm">Content hidden</span>
-              </div>
+    if (post.isScheduled && 
+        (!isPostVisible(post.scheduledFor) || post.completelySecret)) {
+        return (
+            <div className="relative group">
+                <div className={`absolute inset-0 ${
+                    darkMode 
+                        ? 'bg-gradient-to-b from-dark-700/80 to-dark-800/80' 
+                        : 'bg-gradient-to-b from-gray-100/80 to-gray-200/80'
+                    } backdrop-blur-sm rounded-lg flex items-center justify-center z-10`}>
+                    <div className="text-center p-6 transform transition-all duration-300 group-hover:scale-105">
+                        <Clock size={32} className={`mx-auto mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                        <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} font-medium`}>
+                            Scheduled for: {post.scheduledForFormatted}
+                        </p>
+                        <div className="mt-2 flex items-center justify-center gap-2 text-gray-400">
+                            <Lock size={14} />
+                            <span className="text-sm">Content hidden</span>
+                        </div>
+                    </div>
+                </div>
+                
+                {!post.completelySecret && (
+                    <div className="filter blur-sm pointer-events-none">
+                        <div className="p-6">
+                            <div className={`h-6 ${darkMode ? 'bg-dark-700' : 'bg-gray-200'} rounded w-1/3 mb-4`}></div>
+                            <div className="space-y-2">
+                                <div className={`h-4 ${darkMode ? 'bg-dark-700' : 'bg-gray-200'} rounded w-full`}></div>
+                                <div className={`h-4 ${darkMode ? 'bg-dark-700' : 'bg-gray-200'} rounded w-2/3`}></div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
-          </div>
-          
-          <div className="filter blur-sm pointer-events-none">
-            <div className="p-6">
-              <div className={`h-6 ${darkMode ? 'bg-dark-700' : 'bg-gray-200'} rounded w-1/3 mb-4`}></div>
-              <div className="space-y-2">
-                <div className={`h-4 ${darkMode ? 'bg-dark-700' : 'bg-gray-200'} rounded w-full`}></div>
-                <div className={`h-4 ${darkMode ? 'bg-dark-700' : 'bg-gray-200'} rounded w-2/3`}></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
+        );
     }
 
     return (

@@ -60,8 +60,7 @@ const MainApp = () => {
   const handlePostClick = async (isScheduled) => {
     if (!message && !mediaPreview) return;
     
-    if (isScheduled) {
-      if (!scheduledDateTime) return;
+    if (isScheduled && scheduledDateTime) {
       handlePost(); // Show secret modal
     } else {
       // Post immediately
@@ -85,31 +84,8 @@ const MainApp = () => {
           postData.mediaUrl = mediaUrl;
         }
   
-        const docRef = await addDoc(collection(db, 'posts'), postData);
+        await addDoc(collection(db, 'posts'), postData);
         
-        // Send immediate notification for new post
-        const idToken = await auth.currentUser.getIdToken(true);
-        await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`
-          },
-          body: JSON.stringify({
-            userId: partnerId, // Make sure you have access to partnerId
-            notification: {
-              title: '💝 New Timeline Post',
-              body: `${auth.currentUser.displayName} just shared a moment with you!`,
-              data: {
-                type: 'new_post',
-                postId: docRef.id,
-                senderId: auth.currentUser.uid,
-                timestamp: Date.now().toString()
-              }
-            }
-          })
-        });
-  
         // Reset form
         setMessage('');
         setScheduledDateTime(null);
@@ -154,7 +130,7 @@ const MainApp = () => {
         let mediaUrl = null;
 
         if (mediaPreview && mediaType !== 'text') {
-            // ... existing media upload code ...
+            mediaUrl = await uploadMedia(mediaPreview, mediaType);
         }
 
         // Calculate notification time (1 day before scheduled post)
@@ -172,11 +148,11 @@ const MainApp = () => {
             likes: 0,
             scheduledNotificationSent: false,
             notificationTime: notificationTime.toISOString(),
-            partnerId: partnerId, // Make sure you have access to partnerId
-            needsPreNotification: true // Flag for day-before notification
+            isScheduled: true
         });
         
         setShowSecretModal(true);
+        setIsUploading(false);
 
     } catch (error) {
         console.error('Error preparing post:', error);
@@ -187,33 +163,28 @@ const MainApp = () => {
 
   const handleSecretChoice = async (isCompletelySecret, isScheduled) => {
     try {
-      const finalPost = {
-        ...pendingPost,
-        completelySecret: isCompletelySecret,
-        isScheduled: isScheduled,
-        published: !isScheduled,
-        // If it's completely secret, we don't set scheduledNotificationSent
-        // This way the cloud function won't send notifications for secret posts
-        ...(isCompletelySecret ? {} : { scheduledNotificationSent: false })
-      };
-  
-      console.log('Creating Firestore document with data:', finalPost);
-  
-      const docRef = await addDoc(collection(db, 'posts'), finalPost);
-      console.log('Post created with ID:', docRef.id);
-  
-      setMessage('');
-      setScheduledDateTime(null);
-      setMediaPreview(null);
-      setMediaType('text');
-      setShowSecretModal(false);
-      setPendingPost(null);
-      setIsUploading(false);
-  
+        const finalPost = {
+            ...pendingPost,
+            completelySecret: isCompletelySecret,
+            isScheduled: true,
+            published: false
+        };
+
+        await addDoc(collection(db, 'posts'), finalPost);
+
+        // Reset form
+        setMessage('');
+        setScheduledDateTime(null);
+        setMediaPreview(null);
+        setMediaType('text');
+        setShowSecretModal(false);
+        setPendingPost(null);
+        setIsUploading(false);
+
     } catch (error) {
-      console.error('Error creating post:', error);
-      alert('Failed to create post. Please try again.');
-      setIsUploading(false);
+        console.error('Error creating post:', error);
+        alert('Failed to create post. Please try again.');
+        setIsUploading(false);
     }
   };
 
