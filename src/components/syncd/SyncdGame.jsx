@@ -14,7 +14,32 @@ const SyncdGame = () => {
   const [showResult, setShowResult] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [partnerAnswer, setPartnerAnswer] = useState(null);
+  const [question, setQuestion] = useState("Should we eat takeout?"); // Default question
   const { user, getPartnerProfile } = useAuth();
+
+  const answers = [
+    { 
+      id: 'yes', 
+      icon: <Check size={24} />, 
+      gradient: 'from-emerald-400 to-green-500',
+      shadowColor: 'shadow-emerald-500/50',
+      hoverGlow: 'hover:shadow-emerald-500/50'
+    },
+    { 
+      id: 'no', 
+      icon: <X size={24} />, 
+      gradient: 'from-rose-400 to-red-500',
+      shadowColor: 'shadow-rose-500/50',
+      hoverGlow: 'hover:shadow-rose-500/50'
+    },
+    { 
+      id: 'other', 
+      icon: <CircleDot size={24} />, 
+      gradient: 'from-violet-400 to-purple-500',
+      shadowColor: 'shadow-violet-500/50',
+      hoverGlow: 'hover:shadow-violet-500/50'
+    }
+  ];
 
   useEffect(() => {
     const loadGame = async () => {
@@ -25,6 +50,7 @@ const SyncdGame = () => {
       const unsubscribe = onSnapshot(gameRef, (doc) => {
         if (doc.exists()) {
           const data = doc.data();
+          if (data.question) setQuestion(data.question);
           if (data.answers?.[partner.uid]) {
             setPartnerAnswer(data.answers[partner.uid]);
             if (isLocked) setShowResult(true);
@@ -50,6 +76,7 @@ const SyncdGame = () => {
     const answer = selectedAnswer === 'other' ? customAnswer : selectedAnswer;
 
     await setDoc(gameRef, {
+      question,
       answers: {
         [user.uid]: answer
       },
@@ -60,12 +87,27 @@ const SyncdGame = () => {
     startCountdown();
   };
 
+  const startCountdown = () => {
+    setCountdown(3);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setShowResult(true);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   const resetGame = async () => {
     const partner = await getPartnerProfile();
     if (!partner) return;
 
     const gameRef = doc(db, 'syncd_games', `${user.uid}_${partner.uid}`);
     await setDoc(gameRef, {
+      question: "",
       answers: {},
       timestamp: new Date()
     });
@@ -76,6 +118,7 @@ const SyncdGame = () => {
     setCountdown(null);
     setShowResult(false);
     setPartnerAnswer(null);
+    setQuestion("Should we eat takeout?"); // Reset to default question
   };
 
   return (
@@ -85,63 +128,122 @@ const SyncdGame = () => {
           <div className="p-8">
             {!showResult ? (
               <div className="space-y-8">
-                <h2 className="text-2xl font-bold mb-6 text-center">{question || "What should we eat?"}</h2>
+                <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-purple-400 to-pink-600 text-transparent bg-clip-text">
+                  {question}
+                </h2>
                 
-                <div className="space-y-4">
-                  {!answer && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
-                        onClick={() => submitAnswer("Option 1")}
-                        className="p-4 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
+                <div className="grid grid-cols-3 gap-6">
+                  {answers.map((answer) => (
+                    <motion.div
+                      key={answer.id}
+                      whileHover={!isLocked ? { scale: 1.05 } : {}}
+                      whileTap={!isLocked ? { scale: 0.95 } : {}}
+                      className="perspective-1000"
+                    >
+                      <motion.button
+                        className={`w-full group relative ${
+                          !isLocked ? 'cursor-pointer' : 'cursor-default'
+                        }`}
+                        onClick={() => !isLocked && setSelectedAnswer(answer.id)}
+                        disabled={isLocked}
+                        whileHover={{ rotateY: 15 }}
                       >
-                        Option 1
-                      </button>
-                      <button
-                        onClick={() => submitAnswer("Option 2")}
-                        className="p-4 rounded-lg bg-purple-500 text-white hover:bg-purple-600"
-                      >
-                        Option 2
-                      </button>
-                    </div>
-                  )}
-
-                  {answer && !partnerAnswer && (
-                    <div className="text-center text-gray-600 dark:text-gray-400">
-                      Waiting for partner's answer...
-                    </div>
-                  )}
-
-                  {answer && partnerAnswer && (
-                    <div className="text-center">
-                      <h3 className="text-xl font-bold mb-4">Results:</h3>
-                      <div className="space-y-2">
-                        <p>Your answer: {answer}</p>
-                        <p>Partner's answer: {partnerAnswer}</p>
-                        <p className="font-bold mt-4">
-                          {answer === partnerAnswer ? "You're in sync! 🎉" : "Not quite in sync 😅"}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                        <div
+                          className={`
+                            w-full h-20 rounded-xl 
+                            ${selectedAnswer === answer.id 
+                              ? `bg-gradient-to-br ${answer.gradient} shadow-lg ${answer.shadowColor}` 
+                              : 'bg-gray-800 hover:bg-gray-700'
+                            }
+                            transition-all duration-300 ease-out
+                            flex items-center justify-center
+                            border border-gray-600/30
+                            ${!isLocked ? answer.hoverGlow : ''}
+                            hover:shadow-xl hover:-translate-y-1
+                          `}
+                        >
+                          {answer.icon}
+                        </div>
+                      </motion.button>
+                      <p className={`
+                        text-center mt-3 font-medium capitalize
+                        ${selectedAnswer === answer.id 
+                          ? 'text-white' 
+                          : 'text-gray-400'
+                        }
+                      `}>
+                        {answer.id}
+                      </p>
+                    </motion.div>
+                  ))}
                 </div>
 
-                <button
-                  className={`
-                    w-full h-12 mt-4 text-lg font-semibold
-                    bg-gradient-to-r from-blue-500 to-purple-600
-                    hover:from-blue-600 hover:to-purple-700
-                    transition-all duration-300
-                    rounded-xl shadow-lg shadow-purple-500/30
-                    hover:shadow-purple-500/50
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    border border-purple-400/20
-                    text-white
-                  `}
-                  onClick={handleLock}
-                  disabled={!selectedAnswer || (selectedAnswer === 'other' && !customAnswer.trim()) || isLocked}
-                >
-                  Lock In Answer
-                </button>
+                <AnimatePresence>
+                  {selectedAnswer === 'other' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="relative"
+                    >
+                      <input
+                        type="text"
+                        placeholder="Type your answer..."
+                        value={customAnswer}
+                        onChange={(e) => setCustomAnswer(e.target.value)}
+                        onFocus={() => setInputFocused(true)}
+                        onBlur={() => setInputFocused(false)}
+                        disabled={isLocked}
+                        className={`
+                          w-full py-2 px-4
+                          bg-gray-800
+                          text-white text-lg
+                          placeholder-gray-500
+                          rounded-xl
+                          border-2
+                          ${inputFocused 
+                            ? 'border-purple-500' 
+                            : 'border-gray-600'
+                          }
+                          focus:outline-none
+                          transition-all duration-300
+                          disabled:opacity-50
+                          disabled:cursor-not-allowed
+                        `}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {countdown ? (
+                  <motion.div
+                    className="text-6xl font-bold text-center bg-gradient-to-r from-blue-400 to-purple-600 text-transparent bg-clip-text"
+                    key={countdown}
+                    initial={{ scale: 2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                  >
+                    {countdown}
+                  </motion.div>
+                ) : (
+                  <button
+                    className={`
+                      w-full h-12 text-lg font-semibold
+                      bg-gradient-to-r from-blue-500 to-purple-600
+                      hover:from-blue-600 hover:to-purple-700
+                      text-white
+                      transition-all duration-300
+                      rounded-xl shadow-lg shadow-purple-500/30
+                      hover:shadow-purple-500/50
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                      border border-purple-400/20
+                    `}
+                    onClick={handleLock}
+                    disabled={!selectedAnswer || (selectedAnswer === 'other' && !customAnswer.trim()) || isLocked}
+                  >
+                    Lock In Answer
+                  </button>
+                )}
               </div>
             ) : (
               <motion.div
