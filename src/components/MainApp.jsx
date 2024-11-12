@@ -191,6 +191,7 @@ const MainApp = () => {
         ...pendingPost,
         completelySecret: isCompletelySecret,
         isScheduled: isScheduled,
+        published: !isScheduled,
         // If it's completely secret, we don't set scheduledNotificationSent
         // This way the cloud function won't send notifications for secret posts
         ...(isCompletelySecret ? {} : { scheduledNotificationSent: false })

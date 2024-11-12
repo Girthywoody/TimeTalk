@@ -97,4 +97,24 @@ app.post('/sendNotification', async (req, res) => {
     }
 });
 
+exports.publishScheduledPosts = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
+  const now = new Date();
+  
+  const scheduledPosts = await db.collection('posts')
+    .where('isScheduled', '==', true)
+    .where('scheduledFor', '<=', now.toISOString())
+    .get();
+
+  const batch = db.batch();
+  
+  scheduledPosts.docs.forEach((doc) => {
+    batch.update(doc.ref, {
+      isScheduled: false,
+      publishedAt: now.toISOString()
+    });
+  });
+
+  await batch.commit();
+});
+
 exports.api = functions.https.onRequest(app);

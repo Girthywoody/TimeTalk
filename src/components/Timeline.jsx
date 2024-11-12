@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Clock, Video, Image, MessageSquare, Mic, Lock, MoreVertical, Trash, Edit, Share, Flag } from 'lucide-react';
-import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { deleteDoc, doc, updateDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import CustomDateTimeSelector from './CustomDateTimeSelector';
 import { useDarkMode } from '../context/DarkModeContext';
@@ -108,6 +108,26 @@ const Timeline = ({ posts }) => {
   const [editModal, setEditModal] = useState({ isOpen: false, post: null });
   const { darkMode } = useDarkMode();
 
+  useEffect(() => {
+    // Query for scheduled posts that need to be published
+    const scheduledPostsQuery = query(
+      collection(db, 'posts'),
+      where('isScheduled', '==', true),
+      where('scheduledFor', '<=', new Date().toISOString())
+    );
+
+    const unsubscribe = onSnapshot(scheduledPostsQuery, (snapshot) => {
+      snapshot.docs.forEach(async (doc) => {
+        // Update the post to mark it as published
+        await updateDoc(doc.ref, {
+          isScheduled: false,
+          publishedAt: new Date().toISOString()
+        });
+      });
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleMenuClick = (event, postId) => {
     event.stopPropagation();
@@ -287,36 +307,46 @@ const Timeline = ({ posts }) => {
     <>
       <div className="space-y-4" onClick={handleClickOutside}>
         {[...posts]
-    .filter(post => !post.completelySecret)
-    .sort((a, b) => {
-      const aDate = new Date(a.scheduledFor);
-      const bDate = new Date(b.scheduledFor);
-      const now = new Date();
-      
-      // If both posts are past their scheduled time, show most recent first
-      if (aDate <= now && bDate <= now) {
-        return bDate - aDate;
-      }
-      
-      // If both are scheduled for the future, show earliest first
-      if (aDate > now && bDate > now) {
-        return aDate - bDate;
-      }
-      
-      // If one is past and one is future, show past first
-      return aDate <= now ? -1 : 1;
-    })
-    .map((post) => (
-          <div 
-            key={post.id} 
-            className={`${
-              darkMode ? 'bg-dark-800/90' : 'bg-white/90'
-            } backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200 
-            border-none overflow-hidden transform hover:-translate-y-1 rounded-lg`}
-          >
-            {renderPost(post)}
-          </div>
-        ))}
+          .filter(post => {
+            // Don't show completely secret posts
+            if (post.completelySecret) return false;
+            
+            // If it's not scheduled, show it
+            if (!post.isScheduled) return true;
+            
+            // If it's scheduled, only show if the time has passed
+            const scheduledTime = new Date(post.scheduledFor);
+            return scheduledTime <= new Date();
+          })
+          .sort((a, b) => {
+            const aDate = new Date(a.scheduledFor);
+            const bDate = new Date(b.scheduledFor);
+            const now = new Date();
+            
+            // If both posts are past their scheduled time, show most recent first
+            if (aDate <= now && bDate <= now) {
+              return bDate - aDate;
+            }
+            
+            // If both are scheduled for the future, show earliest first
+            if (aDate > now && bDate > now) {
+              return aDate - bDate;
+            }
+            
+            // If one is past and one is future, show past first
+            return aDate <= now ? -1 : 1;
+          })
+          .map((post) => (
+            <div 
+              key={post.id} 
+              className={`${
+                darkMode ? 'bg-dark-800/90' : 'bg-white/90'
+              } backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200 
+              border-none overflow-hidden transform hover:-translate-y-1 rounded-lg`}
+            >
+              {renderPost(post)}
+            </div>
+          ))}
       </div>
       <EditPostModal
         isOpen={editModal.isOpen}

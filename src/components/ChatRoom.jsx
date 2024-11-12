@@ -46,6 +46,7 @@ import {
   BellRing
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 
 const MESSAGES_LIMIT = 100;
@@ -118,6 +119,7 @@ const ChatRoom = () => {
   const [typingTimeout, setTypingTimeout] = useState(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [partner, setPartner] = useState(null);
+  const navigate = useNavigate();
 
   const otherUserInfo = {
     name: "Test", // Replace with the actual name
@@ -1053,20 +1055,28 @@ useEffect(() => {
               >
                 <Bell size={20} className="text-blue-500" />
               </button>
-              {partner?.profilePhotoURL ? (
-                <img 
-                  src={partner.profilePhotoURL} 
-                  alt={partner.displayName || 'Partner'}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <span className="text-blue-500 font-medium">
-                    {partner?.displayName?.[0] || partner?.email?.[0]?.toUpperCase()}
-                  </span>
-                </div>
-              )}
-              <div>
+              <button
+                onClick={() => navigate(`/profile/${partner?.uid}`)}
+                className="hover:opacity-80 transition-opacity"
+              >
+                {partner?.profilePhotoURL ? (
+                  <img 
+                    src={partner.profilePhotoURL} 
+                    alt={partner.displayName || 'Partner'}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <span className="text-blue-500 font-medium">
+                      {partner?.displayName?.[0] || partner?.email?.[0]?.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </button>
+              <button
+                onClick={() => navigate(`/profile/${partner?.uid}`)}
+                className="text-left hover:opacity-80 transition-opacity"
+              >
                 <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
                   {partner?.displayName || partner?.email?.split('@')[0]}
                 </h1>
@@ -1075,7 +1085,7 @@ useEffect(() => {
                     otherUserStatus?.isOnline ? 'Online' : 
                     otherUserStatus?.lastSeen ? formatLastSeen(otherUserStatus.lastSeen) : 'Offline'}
                 </p>
-              </div>
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
