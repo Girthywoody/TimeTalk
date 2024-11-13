@@ -133,7 +133,6 @@ const MainApp = () => {
             mediaUrl = await uploadMedia(mediaPreview, mediaType);
         }
 
-        // Calculate notification time (1 day before scheduled post)
         const notificationTime = new Date(scheduledDateTime);
         notificationTime.setDate(notificationTime.getDate() - 1);
         
@@ -143,8 +142,8 @@ const MainApp = () => {
             scheduledFor: scheduledDateTime.toISOString(),
             mediaUrl,
             createdAt: new Date().toISOString(),
-            author: auth.currentUser.displayName || 'Partner 1',
-            authorId: auth.currentUser.uid,
+            username: auth.currentUser.displayName || 'Anonymous',
+            userId: auth.currentUser.uid,
             likes: 0,
             scheduledNotificationSent: false,
             notificationTime: notificationTime.toISOString(),

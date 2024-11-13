@@ -217,34 +217,74 @@ const Timeline = ({ posts }) => {
       return null;
     }
 
-    // Show placeholder for subtle hint posts
+    // Show improved placeholder for subtle hint posts
     if (isScheduledAndPending && !post.completelySecret) {
       return (
-        <div className={`p-6 ${darkMode ? 'bg-gray-800/50' : 'bg-gray-100/50'} rounded-lg`}>
-          <div className="flex items-center gap-2">
-            <Clock size={20} className="text-gray-400" />
-            <p className="text-gray-500">
-              {post.author} scheduled a post for {post.scheduledForFormatted}
-            </p>
+        <div className={`relative p-6 ${darkMode ? 'bg-gray-800/90' : 'bg-white/90'}`}>
+          {/* Header with username and scheduled time */}
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className={`font-semibold text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                {post.username}
+              </h3>
+              <div className="flex items-center gap-2 mt-1">
+                <Clock size={16} className={`${darkMode ? 'text-blue-400' : 'text-blue-500'}`} />
+                <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Scheduled for {post.scheduledForFormatted}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="mt-4 space-y-2">
-            <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" />
-            <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse" />
+
+          {/* Placeholder content */}
+          <div className={`mt-4 p-4 rounded-lg border ${
+            darkMode 
+              ? 'bg-gray-700/50 border-gray-600' 
+              : 'bg-gray-50/50 border-gray-200'
+          }`}>
+            <div className="flex items-center gap-3 mb-3">
+              <Clock size={20} className={`${darkMode ? 'text-blue-400' : 'text-blue-500'}`} />
+              <p className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                A surprise is waiting...
+              </p>
+            </div>
+            
+            {/* Show media type hint if present */}
+            {post.type !== 'text' && (
+              <div className={`flex items-center gap-2 text-sm ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                {post.type === 'image' && <Image size={16} />}
+                {post.type === 'video' && <Video size={16} />}
+                <span>Contains {post.type}</span>
+              </div>
+            )}
+            
+            {/* Animated placeholder lines */}
+            <div className="mt-3 space-y-2">
+              <div className={`h-2 rounded animate-pulse ${
+                darkMode ? 'bg-gray-600' : 'bg-gray-200'
+              } w-3/4`} />
+              <div className={`h-2 rounded animate-pulse ${
+                darkMode ? 'bg-gray-600' : 'bg-gray-200'
+              } w-1/2`} />
+            </div>
           </div>
         </div>
       );
     }
 
+    // Regular post display remains the same...
     return (
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-              {post.author}
+              {post.username}
             </h3>
             <div className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
               <Clock size={16} />
-              <span>Scheduled for: {post.scheduledForFormatted}</span>
+              <span>{post.scheduledForFormatted}</span>
             </div>
           </div>
           <div className="relative">
@@ -265,7 +305,9 @@ const Timeline = ({ posts }) => {
         </div>
         
         {post.content && (
-          <p className="text-gray-700 leading-relaxed mb-4">{post.content}</p>
+          <p className={`leading-relaxed mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            {post.content}
+          </p>
         )}
         
         {post.mediaUrl && renderMedia(post)}
