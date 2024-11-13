@@ -30,6 +30,7 @@ const MainApp = () => {
   const [pendingPost, setPendingPost] = useState(null);
   const { darkMode } = useDarkMode();  // Add this line to get darkMode
   const [isScheduleMode, setIsScheduleMode] = useState(false);
+  const [user, setUser] = useState(null);
 
 
   useEffect(() => {
@@ -52,6 +53,15 @@ const MainApp = () => {
         })
       }));
       setPosts(newPosts);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+        setUser(user);
+        console.log('Auth state changed:', user?.uid); // Debug log
     });
 
     return () => unsubscribe();
@@ -141,20 +151,19 @@ const MainApp = () => {
         const notificationTime = new Date(scheduledDateTime);
         notificationTime.setDate(notificationTime.getDate() - 1);
         
-        setPendingPost({
+        const newPost = {
             type: mediaType,
             content: message,
             scheduledFor: scheduledDateTime.toISOString(),
             mediaUrl,
             createdAt: new Date().toISOString(),
-            username: auth.currentUser.displayName || 'Anonymous',
             userId: auth.currentUser.uid,
+            username: auth.currentUser.displayName || 'Anonymous',
             likes: 0,
-            scheduledNotificationSent: false,
-            notificationTime: notificationTime.toISOString(),
             isScheduled: true
-        });
-        
+        };
+
+        setPendingPost(newPost);
         setShowSecretModal(true);
         setIsUploading(false);
 
@@ -166,18 +175,33 @@ const MainApp = () => {
   };
 
   const handleSecretChoice = async (isCompletelySecret, isScheduled) => {
+    if (!auth.currentUser) {
+        console.error('No authenticated user');
+        alert('Please sign in to create a post');
+        return;
+    }
+
     try {
+        console.log('Creating post with user:', auth.currentUser.uid); // Debug log
+
         const finalPost = {
-            ...pendingPost,
-            completelySecret: isCompletelySecret,
-            isScheduled: true,
-            published: false,
+            type: mediaType,
+            content: message,
+            scheduledFor: scheduledDateTime.toISOString(),
+            mediaUrl: pendingPost?.mediaUrl || null,
+            createdAt: new Date().toISOString(),
             userId: auth.currentUser.uid,
             username: auth.currentUser.displayName || 'Anonymous',
-            createdAt: new Date().toISOString()
+            likes: 0,
+            isScheduled: true,
+            completelySecret: isCompletelySecret,
+            published: false
         };
 
-        await addDoc(collection(db, 'posts'), finalPost);
+        console.log('Attempting to create post:', finalPost); // Debug log
+
+        const docRef = await addDoc(collection(db, 'posts'), finalPost);
+        console.log('Post created with ID:', docRef.id); // Debug log
 
         // Reset form
         setMessage('');
@@ -189,7 +213,7 @@ const MainApp = () => {
         setIsUploading(false);
 
     } catch (error) {
-        console.error('Error creating post:', error);
+        console.error('Detailed error:', error); // More detailed error logging
         alert('Failed to create post. Please try again.');
         setIsUploading(false);
     }
