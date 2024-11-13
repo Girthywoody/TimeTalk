@@ -300,33 +300,22 @@ const Timeline = ({ posts }) => {
       <div className="space-y-4" onClick={handleClickOutside}>
         {[...posts]
           .filter(post => {
-            // Don't show completely secret posts
-            if (post.completelySecret) return false;
-            
-            // If it's not scheduled, show it
+            // Show all non-scheduled posts
             if (!post.isScheduled) return true;
             
-            // If it's scheduled, only show if the time has passed
-            const scheduledTime = new Date(post.scheduledFor);
-            return scheduledTime <= new Date();
+            // Hide completely secret scheduled posts until their time
+            if (post.completelySecret && post.isScheduled) {
+              const scheduledTime = new Date(post.scheduledFor);
+              return scheduledTime <= new Date();
+            }
+            
+            // Show all subtle hint posts (they'll be rendered as placeholders if not time yet)
+            return true;
           })
           .sort((a, b) => {
             const aDate = new Date(a.scheduledFor);
             const bDate = new Date(b.scheduledFor);
-            const now = new Date();
-            
-            // If both posts are past their scheduled time, show most recent first
-            if (aDate <= now && bDate <= now) {
-              return bDate - aDate;
-            }
-            
-            // If both are scheduled for the future, show earliest first
-            if (aDate > now && bDate > now) {
-              return aDate - bDate;
-            }
-            
-            // If one is past and one is future, show past first
-            return aDate <= now ? -1 : 1;
+            return bDate - aDate; // Most recent first
           })
           .map((post) => (
             <div 
