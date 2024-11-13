@@ -13,10 +13,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import PartnerProfilePage from './components/profile/PartnerProfilePage';
 import ChristmasList from './components/profile/ChristmasList';
 import { SpotifyCallback } from './components/SpotifyCallback';
+import SyncdGame from './components/syncd/SyncdGame';
 
 const App = () => {
   const { user, loading } = useAuth();
-
   useEffect(() => {
     // Check if the app is installed as PWA
     const isPWA = window.matchMedia('(display-mode: standalone)').matches;
@@ -70,6 +70,7 @@ const App = () => {
           <Route path="/christmas-list" element={<ChristmasList />} />
           <Route path="/christmas-list/:userId" element={<ChristmasList />} />
           <Route path="/callback" element={<SpotifyCallback />} />
+          <Route path="/syncd" element={<SyncdGame />} />
         </Routes>
         
         <ToastContainer
