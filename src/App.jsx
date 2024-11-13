@@ -13,7 +13,6 @@ import 'react-toastify/dist/ReactToastify.css';
 import PartnerProfilePage from './components/profile/PartnerProfilePage';
 import ChristmasList from './components/profile/ChristmasList';
 import { SpotifyCallback } from './components/SpotifyCallback';
-import SyncdGame from './components/profile/SyncdGame';
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -55,45 +54,22 @@ const App = () => {
             }
           />
 
-          {/* Protected routes */}
-          <Route
-            path="/profile/:userId"
-            element={
-              <ProtectedRoute>
-                <PartnerProfilePage />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/christmas-list/:userId"
-            element={
-              <ProtectedRoute>
-                <ChristmasList />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/syncd"
-            element={
-              <ProtectedRoute>
-                <SyncdGame />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route path="/callback" element={<SpotifyCallback />} />
-
-          {/* Main app route should be last */}
+          {/* Protected routes for main app */}
           <Route
             path="/*"
             element={
               <ProtectedRoute>
-                <MainApp />
+                <>
+                  <MainApp />
+                </>
               </ProtectedRoute>
             }
           />
+
+          <Route path="/profile/:userId" element={<PartnerProfilePage />} />
+          <Route path="/christmas-list" element={<ChristmasList />} />
+          <Route path="/christmas-list/:userId" element={<ChristmasList />} />
+          <Route path="/callback" element={<SpotifyCallback />} />
         </Routes>
         
         <ToastContainer

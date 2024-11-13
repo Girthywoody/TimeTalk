@@ -1,5 +1,5 @@
 import React from 'react';
-import { Gift, MessageCircle, Calendar, Camera, Shuffle } from 'lucide-react';
+import { Gift, MessageCircle, Calendar, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -12,12 +12,6 @@ const QuickActions = () => {
       icon: Gift,
       label: 'Christmas List',
       onClick: () => navigate(`/christmas-list/${user.uid}`),
-      enabled: true
-    },
-    {
-      icon: Shuffle,
-      label: "Sync'd",
-      onClick: () => navigate('/syncd'),
       enabled: true
     },
     {
