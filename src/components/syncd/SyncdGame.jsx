@@ -4,11 +4,13 @@ import { db } from '../../firebase';
 import { doc, setDoc, onSnapshot, deleteDoc, getDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import DecisionGame from './DecisionGame';
+import { useNavigate } from 'react-router-dom';
 
 const SyncdGame = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [gameState, setGameState] = useState(null);
   const [partnerAnswer, setPartnerAnswer] = useState(null);
   const [partnerId, setPartnerId] = useState(null);
@@ -111,6 +113,15 @@ const SyncdGame = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <button
+        onClick={() => navigate('/profile')}
+        className="absolute top-4 left-4 p-2 rounded-full bg-gray-900/40 
+                   hover:bg-gray-800/60 transition-colors duration-200
+                   border border-gray-700/50 backdrop-blur-sm"
+      >
+        <ArrowLeft className="w-6 h-6 text-gray-300" />
+      </button>
+      
       <DecisionGame 
         onAnswer={handleAnswer}
         onReset={handleReset}
