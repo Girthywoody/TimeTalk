@@ -76,14 +76,18 @@ const MainApp = () => {
       // Post immediately
       try {
         setIsUploading(true);
+        // Get the user's profile data first
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        const userData = userDoc.data();
+
         const postData = {
           type: mediaType,
           content: message,
           scheduledFor: new Date().toISOString(),
           mediaUrl: null,
           createdAt: new Date().toISOString(),
-          author: auth.currentUser.displayName || 'Partner 1',
-          authorId: auth.currentUser.uid,
+          username: userData?.displayName || auth.currentUser.displayName,
+          userId: auth.currentUser.uid,
           likes: 0,
           isScheduled: false,
           completelySecret: false
