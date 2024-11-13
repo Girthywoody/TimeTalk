@@ -61,7 +61,7 @@ const MainApp = () => {
     if (!message && !mediaPreview) return;
     
     if (isScheduled && scheduledDateTime) {
-      handlePost(); // Show secret modal
+      setShowSecretModal(true); // Show secret modal for scheduling options
     } else {
       // Post immediately
       try {
@@ -333,6 +333,13 @@ const MainApp = () => {
       <div className="fixed bottom-0 left-0 right-0 h-[env(safe-area-inset-bottom)] bg-gray-50 dark:bg-gray-950 z-[49]" />
 
       <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
+
+      <SecretPostModal 
+        isOpen={showSecretModal}
+        onClose={() => setShowSecretModal(false)}
+        onConfirm={handleSecretChoice}
+        darkMode={darkMode}
+      />
     </div>
   );
 };
