@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, CircleDot } from 'lucide-react';
 
@@ -9,6 +9,12 @@ const DecisionGame = ({ onAnswer, onReset, gameState, partnerAnswer }) => {
   const [countdown, setCountdown] = useState(null);
   const [showResult, setShowResult] = useState(false);
   
+  useEffect(() => {
+    if (isLocked && gameState && Object.keys(gameState).length === 2) {
+      startCountdown();
+    }
+  }, [gameState, isLocked]);
+
   const answers = [
     { 
       id: 'yes', 
@@ -48,7 +54,6 @@ const DecisionGame = ({ onAnswer, onReset, gameState, partnerAnswer }) => {
     }
     setIsLocked(true);
     onAnswer(selectedAnswer, customAnswer);
-    startCountdown();
   };
 
   const startCountdown = () => {
@@ -115,6 +120,17 @@ const DecisionGame = ({ onAnswer, onReset, gameState, partnerAnswer }) => {
       >
         Play Again
       </button>
+    </motion.div>
+  );
+
+  const renderWaitingMessage = () => (
+    <motion.div
+      className="text-xl font-semibold text-center text-purple-400"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      Waiting for partner...
     </motion.div>
   );
 
@@ -205,7 +221,7 @@ const DecisionGame = ({ onAnswer, onReset, gameState, partnerAnswer }) => {
                 )}
               </AnimatePresence>
 
-              {countdown ? (
+              {isLocked && !countdown ? renderWaitingMessage() : countdown ? (
                 <motion.div
                   className="text-6xl font-bold text-center bg-gradient-to-r from-blue-400 to-purple-600 text-transparent bg-clip-text"
                   key={countdown}
