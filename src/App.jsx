@@ -55,23 +55,45 @@ const App = () => {
             }
           />
 
-          {/* Protected routes for main app */}
+          {/* Protected routes */}
           <Route
-            path="/*"
+            path="/profile/:userId"
             element={
               <ProtectedRoute>
-                <>
-                  <MainApp />
-                </>
+                <PartnerProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/christmas-list/:userId"
+            element={
+              <ProtectedRoute>
+                <ChristmasList />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/syncd"
+            element={
+              <ProtectedRoute>
+                <SyncdGame />
               </ProtectedRoute>
             }
           />
 
-          <Route path="/profile/:userId" element={<PartnerProfilePage />} />
-          <Route path="/christmas-list" element={<ChristmasList />} />
-          <Route path="/syncd" element={<SyncdGame />} />
-          <Route path="/christmas-list/:userId" element={<ChristmasList />} />
           <Route path="/callback" element={<SpotifyCallback />} />
+
+          {/* Main app route should be last */}
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <MainApp />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
         
         <ToastContainer
