@@ -230,7 +230,7 @@ const Timeline = ({ posts }) => {
               <div className="flex items-center gap-2 mt-1">
                 <Clock size={16} className={`${darkMode ? 'text-blue-400' : 'text-blue-500'}`} />
                 <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Scheduled for {post.scheduledForFormatted}
+                  {post.username} scheduled a post for {post.scheduledForFormatted}
                 </span>
               </div>
             </div>
