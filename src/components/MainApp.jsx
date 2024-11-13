@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Image, MessageSquare, Video, Lock, Send, Heart, X, EyeOff } from 'lucide-react';
-import { collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, getDoc, doc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import MediaCapture from './MediaCapture';
@@ -182,8 +182,10 @@ const MainApp = () => {
     }
 
     try {
-        console.log('Creating post with user:', auth.currentUser.uid); // Debug log
-
+        // Get the user's profile data first
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        const userData = userDoc.data();
+        
         const finalPost = {
             type: mediaType,
             content: message,
@@ -191,17 +193,17 @@ const MainApp = () => {
             mediaUrl: pendingPost?.mediaUrl || null,
             createdAt: new Date().toISOString(),
             userId: auth.currentUser.uid,
-            username: auth.currentUser.displayName || 'Anonymous',
+            username: userData?.displayName || auth.currentUser.displayName,
             likes: 0,
             isScheduled: true,
             completelySecret: isCompletelySecret,
             published: false
         };
 
-        console.log('Attempting to create post:', finalPost); // Debug log
+        console.log('Attempting to create post:', finalPost);
 
         const docRef = await addDoc(collection(db, 'posts'), finalPost);
-        console.log('Post created with ID:', docRef.id); // Debug log
+        console.log('Post created with ID:', docRef.id);
 
         // Reset form
         setMessage('');
@@ -213,7 +215,7 @@ const MainApp = () => {
         setIsUploading(false);
 
     } catch (error) {
-        console.error('Detailed error:', error); // More detailed error logging
+        console.error('Error creating post:', error);
         alert('Failed to create post. Please try again.');
         setIsUploading(false);
     }
