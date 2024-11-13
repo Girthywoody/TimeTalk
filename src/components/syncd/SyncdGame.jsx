@@ -16,7 +16,10 @@ const SyncdGame = () => {
 
   // Fetch partner ID on mount
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     const fetchPartnerId = async () => {
       try {
@@ -36,7 +39,7 @@ const SyncdGame = () => {
 
   // Listen for game state changes
   useEffect(() => {
-    if (!partnerId) return;
+    if (!user || !partnerId) return;
 
     const gameRef = doc(db, 'syncdGames', `${user.uid}_${partnerId}`);
     const unsubscribe = onSnapshot(gameRef, (doc) => {
@@ -44,7 +47,6 @@ const SyncdGame = () => {
         const data = doc.data();
         setGameState(data);
         
-        // Check if partner has answered
         if (data[partnerId]) {
           setPartnerAnswer(data[partnerId]);
         }
@@ -52,7 +54,7 @@ const SyncdGame = () => {
     });
 
     return () => unsubscribe();
-  }, [user.uid, partnerId]);
+  }, [user, partnerId]);
 
   const handleAnswer = async (answer, customAnswer = '') => {
     if (!partnerId) {
