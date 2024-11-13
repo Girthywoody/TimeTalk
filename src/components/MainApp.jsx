@@ -123,6 +123,11 @@ const MainApp = () => {
   };
 
   const handlePost = async () => {
+    if (!auth.currentUser) {
+        alert('Please sign in to create a post');
+        return;
+    }
+
     if ((!message && !mediaPreview) || !scheduledDateTime || isUploading) return;
 
     try {
@@ -166,7 +171,10 @@ const MainApp = () => {
             ...pendingPost,
             completelySecret: isCompletelySecret,
             isScheduled: true,
-            published: false
+            published: false,
+            userId: auth.currentUser.uid,
+            username: auth.currentUser.displayName || 'Anonymous',
+            createdAt: new Date().toISOString()
         };
 
         await addDoc(collection(db, 'posts'), finalPost);
