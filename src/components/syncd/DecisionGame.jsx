@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Check, X, CircleDot } from 'lucide-react';
-import { Input } from "@/components/ui/input"
 
 const DecisionGame = ({ onAnswer, onReset, gameState, partnerAnswer }) => {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -109,7 +106,7 @@ const DecisionGame = ({ onAnswer, onReset, gameState, partnerAnswer }) => {
         )}
       </div>
       
-      <Button
+      <button
         className="w-full h-12 bg-gradient-to-r from-gray-700 to-gray-600"
         onClick={() => {
           resetGame();
@@ -117,14 +114,14 @@ const DecisionGame = ({ onAnswer, onReset, gameState, partnerAnswer }) => {
         }}
       >
         Play Again
-      </Button>
+      </button>
     </motion.div>
   );
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <Card className="w-96 bg-gray-900/40 backdrop-blur-xl border border-gray-700">
-        <CardContent className="p-8">
+      <div className="w-96 bg-gray-900/40 backdrop-blur-xl border border-gray-700 rounded-xl">
+        <div className="p-8">
           {!showResult ? (
             <div className="space-y-8">
               <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-purple-400 to-pink-600 text-transparent bg-clip-text">
@@ -194,7 +191,7 @@ const DecisionGame = ({ onAnswer, onReset, gameState, partnerAnswer }) => {
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <Input
+                    <input
                       type="text"
                       placeholder="Enter your custom answer..."
                       value={customAnswer}
@@ -224,9 +221,9 @@ const DecisionGame = ({ onAnswer, onReset, gameState, partnerAnswer }) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <Button
+                  <button
                     className={`
-                      w-full h-12 mt-4 text-lg font-semibold
+                      w-full h-12 mt-4 text-lg font-semibold text-white
                       bg-gradient-to-r from-blue-500 to-purple-600
                       hover:from-blue-600 hover:to-purple-700
                       transition-all duration-300
@@ -239,13 +236,13 @@ const DecisionGame = ({ onAnswer, onReset, gameState, partnerAnswer }) => {
                     disabled={!selectedAnswer || (selectedAnswer === 'other' && !customAnswer.trim()) || isLocked}
                   >
                     Lock In Answer
-                  </Button>
+                  </button>
                 </motion.div>
               )}
             </div>
           ) : renderResults()}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

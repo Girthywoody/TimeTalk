@@ -49,25 +49,28 @@ const SyncdGame = () => {
       return;
     }
 
-    const gameRef = doc(db, 'syncdGames', `${user.uid}_${partnerId}`);
-    const gameDoc = await getDoc(gameRef);
-    
-    const myAnswer = {
-      answer,
-      customAnswer,
-      timestamp: new Date().toISOString()
-    };
+    try {
+      const gameRef = doc(db, 'syncdGames', `${user.uid}_${partnerId}`);
+      const gameDoc = await getDoc(gameRef);
+      
+      const myAnswer = {
+        answer,
+        customAnswer,
+        timestamp: new Date().toISOString()
+      };
 
-    if (!gameDoc.exists()) {
-      // Create new game
-      await setDoc(gameRef, {
-        [user.uid]: myAnswer
-      });
-    } else {
-      // Update existing game
-      await setDoc(gameRef, {
-        [user.uid]: myAnswer
-      }, { merge: true });
+      if (!gameDoc.exists()) {
+        await setDoc(gameRef, {
+          [user.uid]: myAnswer
+        });
+      } else {
+        await setDoc(gameRef, {
+          [user.uid]: myAnswer
+        }, { merge: true });
+      }
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+      toast.error('Failed to submit answer. Please try again.');
     }
   };
 
