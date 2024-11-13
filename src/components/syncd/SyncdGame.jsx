@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import { doc, setDoc, onSnapshot, deleteDoc, getDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
+import { Loader2 } from 'lucide-react';
 import DecisionGame from './DecisionGame';
 
 const SyncdGame = () => {
@@ -11,17 +12,27 @@ const SyncdGame = () => {
   const [gameState, setGameState] = useState(null);
   const [partnerAnswer, setPartnerAnswer] = useState(null);
   const [partnerId, setPartnerId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Fetch partner ID on mount
   useEffect(() => {
+    if (!user) return;
+
     const fetchPartnerId = async () => {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists() && userDoc.data().partnerId) {
-        setPartnerId(userDoc.data().partnerId);
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists() && userDoc.data().partnerId) {
+          setPartnerId(userDoc.data().partnerId);
+        }
+      } catch (error) {
+        console.error('Error fetching partner:', error);
+        toast.error('Failed to load partner information');
+      } finally {
+        setLoading(false);
       }
     };
     fetchPartnerId();
-  }, [user.uid]);
+  }, [user]);
 
   // Listen for game state changes
   useEffect(() => {
@@ -82,6 +93,19 @@ const SyncdGame = () => {
     setGameState(null);
     setPartnerAnswer(null);
   };
+
+  if (!user || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <Loader2 className="w-8 h-8 text-purple-500" />
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
