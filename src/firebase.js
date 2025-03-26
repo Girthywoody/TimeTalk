@@ -65,21 +65,48 @@ export const requestNotificationPermission = async () => {
     try {
         if (!messaging) return null;
 
-        // First, check if service worker is registered
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        console.log('Service Worker registered:', registration);
-
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            // Get token only after permission is granted
-            const token = await getToken(messaging, {
-                vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc',
-                serviceWorkerRegistration: registration
+        // First, check if service worker is already registered
+        let registration;
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        const existingRegistration = registrations.find(reg => reg.scope.includes(window.location.origin));
+        
+        if (existingRegistration) {
+            registration = existingRegistration;
+            console.log('Using existing Service Worker registration:', registration);
+        } else {
+            // Register a new service worker
+            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                scope: '/',
+                updateViaCache: 'none'
             });
-            console.log('FCM Token:', token);
-            return token;
+            console.log('New Service Worker registered:', registration);
         }
-        return null;
+
+        // Request notification permission
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            console.log('Notification permission denied');
+            return null;
+        }
+
+        // Get token with the correct registration
+        const token = await getToken(messaging, {
+            vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc',
+            serviceWorkerRegistration: registration
+        });
+        
+        console.log('FCM Token obtained:', token);
+        
+        // Save token to user's document
+        if (auth.currentUser) {
+            const userRef = doc(db, 'users', auth.currentUser.uid);
+            await updateDoc(userRef, {
+                fcmToken: token,
+                lastTokenUpdate: new Date().toISOString()
+            });
+        }
+        
+        return token;
     } catch (error) {
         console.error('Notification permission error:', error);
         return null;

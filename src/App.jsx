@@ -14,17 +14,45 @@ import PartnerProfilePage from './components/profile/PartnerProfilePage';
 import ChristmasList from './components/profile/ChristmasList';
 import { SpotifyCallback } from './components/SpotifyCallback';
 import SyncdGame from './components/syncd/SyncdGame';
+import { requestNotificationPermission } from './firebase';
+
+
+
 
 const App = () => {
   const { user, loading } = useAuth();
   useEffect(() => {
     // Check if the app is installed as PWA
     const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+    
     if (!isPWA && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
       // Show installation prompt for iOS users
       alert('To enable notifications, please add this app to your home screen by clicking the share button and selecting "Add to Home Screen".');
     }
   }, []); // Empty dependency array means this runs once when component mounts
+
+  
+
+  const initializeNotifications = async () => {
+    // Check if the app is installed as PWA
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    
+    if (isPWA && Notification.permission !== 'granted') {
+      try {
+        // Try to get permission on startup
+        const permission = await Notification.requestPermission();
+        console.log('Notification permission status:', permission);
+        
+        if (permission === 'granted') {
+          // Get token if permission granted
+          const token = await requestNotificationPermission();
+          console.log('Notification token obtained:', token);
+        }
+      } catch (err) {
+        console.error('Failed to initialize notifications:', err);
+      }
+    }
+  };
 
   if (loading) {
     return (

@@ -208,16 +208,12 @@ git push origin main
 
   const testNotification = async () => {
     try {
-        // Verify PWA mode
-        const isPWA = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-        if (!isPWA) {
-            throw new Error('Please open the app from your home screen to enable notifications');
-        }
-
-        // Request permission
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            throw new Error('Notification permission denied');
+        // Verify permission first
+        if (Notification.permission !== 'granted') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                throw new Error('Notification permission denied');
+            }
         }
 
         // Get FCM token
@@ -225,6 +221,8 @@ git push origin main
         if (!token) {
             throw new Error('Failed to get notification token');
         }
+
+        console.log('Sending test notification with token:', token);
 
         // Send test notification
         const idToken = await auth.currentUser.getIdToken(true);
@@ -239,8 +237,11 @@ git push origin main
                 notification: {
                     title: 'Test Notification',
                     body: 'This is a test notification from TimeTalk',
+                    icon: '/ios-icon-192.png',
+                    badge: '/ios-icon-192.png',
                     sound: 'default',
-                    badge: '1',
+                    priority: 'high',
+                    vibrate: [200, 100, 200],
                     data: {
                         type: 'test',
                         timestamp: Date.now().toString(),
@@ -257,9 +258,10 @@ git push origin main
         }
 
         console.log('Test notification sent successfully');
+        alert('Test notification sent. You should receive it shortly.');
     } catch (error) {
         console.error('Test notification failed:', error);
-        throw error;
+        alert('Failed to send test notification: ' + error.message);
     }
 };
 
@@ -921,6 +923,11 @@ useEffect(() => {
 
   const handleNudge = async () => {
     try {
+        if (!partner || !partner.uid) {
+            toast.error('Partner information not available');
+            return;
+        }
+        
         const idToken = await user.getIdToken(true);
         const timestamp = Date.now().toString();
         
@@ -931,14 +938,20 @@ useEffect(() => {
                 'Authorization': `Bearer ${idToken}`
             },
             body: JSON.stringify({
-                userId: partner?.uid,
+                userId: partner.uid,
                 notification: {
                     title: user.displayName || 'Your partner',
                     body: 'Hey! Come answer me!',
+                    icon: '/ios-icon-192.png',
+                    badge: '/ios-icon-192.png',
+                    vibrate: [200, 100, 200],
+                    sound: 'default',
+                    priority: 'high',
                     data: {
                         type: 'nudge',
                         senderId: user.uid,
-                        timestamp: timestamp
+                        timestamp: timestamp,
+                        clickAction: '/'
                     }
                 }
             })
