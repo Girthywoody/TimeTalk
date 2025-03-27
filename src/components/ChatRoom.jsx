@@ -446,11 +446,8 @@ useEffect(() => {
       }
       
       // Send notification to partner if they exist
-      if (partner && partner.uid) {
+      if (partner && partner.uid && !otherUserStatus?.isOnline) {
         try {
-          // Import the notification utility
-          const { sendNotification } = await import('src/utils/notifications');
-          
           const notificationData = {
             title: userProfile.displayName || 'Your partner',
             body: messageData.type === 'image' ? '📷 Image' : 
@@ -967,9 +964,6 @@ useEffect(() => {
         toast.error('Partner information not available');
         return;
       }
-      
-      // Import the notification utility
-      const { sendNotification } = await import('src/utils/notifications');
       
       const result = await sendNotification(partner.uid, {
         title: userProfile?.displayName || user.displayName || 'Your partner',
