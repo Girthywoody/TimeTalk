@@ -11,6 +11,7 @@ import {
   getDocs,
   getDoc,
   updateDoc,
+  setDoc,
   where,
   Timestamp
 } from 'firebase/firestore';
@@ -397,12 +398,16 @@ useEffect(() => {
   };
 
   const handleSend = async () => {
+    // Create a local variable to track if we're already sending
+    if (uploading) return;
+    
     console.log("Partner info when sending message:", { 
       partnerExists: !!partner, 
       partnerId: partner?.uid,
       otherUserStatus,
       isOtherUserOnline: otherUserStatus?.isOnline
     });
+    
     if ((!newMessage.trim() && !selectedFile) || !user || !userProfile) return;
   
     try {
@@ -995,21 +1000,43 @@ useEffect(() => {
     });
   }, [user, otherUser]);
 
+
   const updateTypingStatus = () => {
     if (!user) return;
-
+  
     const typingRef = doc(db, 'typing', user.uid);
-    updateDoc(typingRef, {
-      timestamp: serverTimestamp()
-    });
-
+    
+    // Check if document exists first, create if it doesn't
+    getDoc(typingRef)
+      .then((docSnap) => {
+        if (docSnap.exists()) {
+          // Update existing document
+          updateDoc(typingRef, {
+            timestamp: serverTimestamp()
+          });
+        } else {
+          // Create new document
+          setDoc(typingRef, {
+            timestamp: serverTimestamp(),
+            userId: user.uid
+          });
+        }
+      })
+      .catch(error => {
+        console.error("Error updating typing status:", error);
+      });
+  
     // Clear previous timeout
     if (typingTimeout) clearTimeout(typingTimeout);
     
     // Set new timeout
     const timeout = setTimeout(() => {
-      updateDoc(typingRef, {
-        timestamp: null
+      getDoc(typingRef).then(docSnap => {
+        if (docSnap.exists()) {
+          updateDoc(typingRef, {
+            timestamp: null
+          }).catch(err => console.error("Error clearing typing status:", err));
+        }
       });
     }, 3000);
     
@@ -1593,21 +1620,25 @@ useEffect(() => {
               
               <div className="flex items-center gap-2">
                 <div className={`flex-1 ${darkMode ? 'bg-gray-700' : 'bg-[#F8F9FE]'} rounded-full flex items-center pl-4 pr-2`}>
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={handleInputChange}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
+                // Replace your current input onKeyPress handler with this:
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={handleInputChange}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      // Prevent multiple rapid submissions
+                      if (!uploading) {
                         handleSend();
                       }
-                    }}
-                    placeholder="Message"
-                    className={`flex-1 bg-transparent border-none py-2 ${
-                      darkMode ? 'text-white placeholder-gray-400' : 'text-gray-800 placeholder-gray-500'
-                    } focus:outline-none`}
-                  />
+                    }
+                  }}
+                  placeholder="Message"
+                  className={`flex-1 bg-transparent border-none py-2 ${
+                    darkMode ? 'text-white placeholder-gray-400' : 'text-gray-800 placeholder-gray-500'
+                  } focus:outline-none`}
+                />
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
