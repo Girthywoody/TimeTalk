@@ -6,7 +6,7 @@ import {
   onAuthStateChanged
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
-import { auth, db, isAllowedEmail, ALLOWED_USERS } from '../firebase';
+import { auth, db } from '../firebase';
 
 export const useAuth = () => {
   const [user, setUser] = useState(null);
@@ -38,11 +38,6 @@ export const useAuth = () => {
 
   const login = async (email, password) => {
     try {
-      // Check if email is allowed
-      if (!isAllowedEmail(email)) {
-        throw new Error('This app is restricted to specific users only.');
-      }
-
       const result = await signInWithEmailAndPassword(auth, email, password);
       await result.user.getIdToken(true);
       return result;
@@ -54,23 +49,12 @@ export const useAuth = () => {
 
   const signup = async (email, password) => {
     try {
-      // Check if email is allowed
-      if (!isAllowedEmail(email)) {
-        throw new Error('This app is restricted to specific users only.');
-      }
-
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Get partner info based on email
-      const partnerConfig = Object.values(ALLOWED_USERS).find(user => 
-        user.email !== email
-      );
-
-      // Create initial user profile with partner link
+      // Create initial user profile
       await setDoc(doc(db, 'users', result.user.uid), {
         email: email,
         createdAt: new Date().toISOString(),
-        partnerId: partnerConfig?.partnerId || null,
         // Add any other initial profile fields
       });
 
