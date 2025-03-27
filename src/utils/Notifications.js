@@ -1,4 +1,3 @@
-// In a new file: src/utils/notifications.js
 import { auth } from '../firebase';
 
 export const sendNotification = async (userId, { title, body, data = {} }) => {
