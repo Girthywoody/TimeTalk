@@ -204,6 +204,84 @@ useEffect(() => {
       });
     }
   }, [searchQuery]);
+
+  // Replace your notification status check with this more robust implementation
+// This prevents errors from undefined array access and React mount issues
+
+// Define this as a separate function in your ChatRoom component
+const checkNotificationStatus = async () => {
+  // Only check if the component is still mounted and user exists
+  if (!user) return;
+  
+  try {
+    // Check current permission without asking
+    if (Notification.permission === 'granted') {
+      try {
+        const { requestNotificationPermission } = await import('../firebase');
+        const token = await requestNotificationPermission();
+        if (token) {
+          console.log('Notification token obtained:', token);
+        } else {
+          console.warn('Permission granted but token not obtained');
+        }
+      } catch (error) {
+        console.error('Error getting notification token:', error);
+      }
+    } else if (Notification.permission === 'default' && !localStorage.getItem('notification_asked')) {
+      // Only show prompt once per session
+      localStorage.setItem('notification_asked', 'true');
+      
+      // Use toast instead of alert for better UX
+      toast.info(
+        'Enable notifications to get message alerts?',
+        {
+          onClick: async () => {
+            try {
+              const permission = await Notification.requestPermission();
+              if (permission === 'granted') {
+                const { requestNotificationPermission } = await import('../firebase');
+                const token = await requestNotificationPermission();
+                if (token) {
+                  toast.success('Notifications enabled successfully');
+                }
+              }
+            } catch (error) {
+              console.error('Error requesting permission:', error);
+            }
+          },
+          autoClose: 10000,
+          closeButton: true
+        }
+      );
+    }
+  } catch (error) {
+    console.error('Notification check failed:', error);
+  }
+};
+
+// Then update your useEffect
+useEffect(() => {
+  let mounted = true;
+  
+  // Only run once when component mounts
+  if (user && mounted) {
+    // Small timeout to ensure component is fully mounted
+    const timer = setTimeout(() => {
+      if (mounted) {
+        checkNotificationStatus();
+      }
+    }, 2000);
+    
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
+  }
+  
+  return () => {
+    mounted = false;
+  };
+}, [user]); // Only depend on user
   
 
   const handleMuteNotifications = (duration) => {
@@ -234,50 +312,79 @@ useEffect(() => {
     setIsDropdownOpen(false);
   };
 
-  const testNotification = async () => {
-    try {
-        // Verify permission first
-        if (Notification.permission !== 'granted') {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                throw new Error('Notification permission denied');
-            }
-        }
+// Replace your testNotification function with this more robust version
 
-        // Get FCM token
-        const token = await requestNotificationPermission();
-        if (!token) {
-            throw new Error('Failed to get notification token');
-        }
-
-        console.log('Sending test notification with token:', token);
-
-        // Send test notification using a direct approach
-        const idToken = await auth.currentUser.getIdToken(true);
-        const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/simpleNotification', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}`
-            },
-            body: JSON.stringify({
-                userId: auth.currentUser.uid,
-                title: 'Test Notification',
-                body: 'This is a test notification from TimeTalk'
-            })
+const testNotification = async () => {
+  try {
+    // Show loading toast
+    const loadingToastId = toast.loading('Sending test notification...');
+    
+    // Verify permission first
+    if (Notification.permission !== 'granted') {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        toast.update(loadingToastId, {
+          render: 'Notification permission denied',
+          type: 'error',
+          isLoading: false,
+          autoClose: 5000
         });
-
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.error || 'Failed to send notification');
-        }
-
-        console.log('Test notification sent successfully');
-        alert('Test notification sent. You should receive it shortly.');
-    } catch (error) {
-        console.error('Test notification failed:', error);
-        alert('Failed to send test notification: ' + error.message);
+        return;
+      }
     }
+
+    // Import modules dynamically to prevent undefined errors
+    const { requestNotificationPermission, auth } = await import('../firebase');
+    
+    // Get FCM token
+    const token = await requestNotificationPermission();
+    if (!token) {
+      toast.update(loadingToastId, {
+        render: 'Failed to get notification token',
+        type: 'error',
+        isLoading: false,
+        autoClose: 5000
+      });
+      return;
+    }
+
+    console.log('Sending test notification with token:', token);
+
+    // Send test notification
+    const idToken = await auth.currentUser.getIdToken(true);
+    const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/simpleNotification', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: JSON.stringify({
+        userId: auth.currentUser.uid,
+        title: 'Test Notification',
+        body: 'This is a test notification from TimeTalk',
+        data: {
+          type: 'test',
+          timestamp: Date.now()
+        }
+      })
+    });
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to send notification');
+    }
+
+    console.log('Test notification sent successfully');
+    toast.update(loadingToastId, {
+      render: 'Test notification sent successfully',
+      type: 'success',
+      isLoading: false,
+      autoClose: 5000
+    });
+  } catch (error) {
+    console.error('Test notification failed:', error);
+    toast.error('Failed to send test notification: ' + error.message);
+  }
 };
 
   useEffect(() => {
@@ -397,136 +504,100 @@ useEffect(() => {
     }
   };
 
-  const handleSend = async () => {
-    // Create a local variable to track if we're already sending
-    if (uploading) return;
+
+const handleSend = async () => {
+  // Create a local variable to track if we're already sending
+  if (uploading) return;
+  
+  // Check for valid input and user state
+  if ((!newMessage.trim() && !selectedFile) || !user || !userProfile) return;
+
+  try {
+    setUploading(true);
+    let fileURL = null;
+    let fileType = null;
     
-    console.log("Partner info when sending message:", { 
-      partnerExists: !!partner, 
-      partnerId: partner?.uid,
-      otherUserStatus,
-      isOtherUserOnline: otherUserStatus?.isOnline
-    });
-    
-    if ((!newMessage.trim() && !selectedFile) || !user || !userProfile) return;
-  
-    try {
-      setUploading(true);
-      let fileURL = null;
-      let fileType = null;
-      
-      if (selectedFile) {
-        try {
-          fileURL = await uploadFile(selectedFile);
-          fileType = selectedFile.type.startsWith('image/') ? 'image' : 'file';
-        } catch (error) {
-          console.error('Error uploading file:', error);
-          alert('Failed to upload file. Please try again.');
-          setUploading(false);
-          return;
-        }
-      }
-  
-      const messagesRef = collection(db, 'messages');
-      const messageData = {
-        text: newMessage.trim() || null,
-        senderId: user.uid,
-        timestamp: serverTimestamp(),
-        edited: false,
-        deleted: false,
-        saved: false,
-        status: 'sent'
-      };
-  
-      if (fileURL) {
-        messageData.type = newMessage.trim() ? 'mixed' : fileType;
-        messageData.fileURL = fileURL;
-        messageData.fileName = selectedFile.name;
-        messageData.fileType = selectedFile.type;
-      } else {
-        messageData.type = 'text';
-      }
-  
-      const docRef = await addDoc(messagesRef, messageData);
-      setLastMessageId(docRef.id);
-      
+    // Handle file upload if present
+    if (selectedFile) {
       try {
-        await sendSound.current.play();
-      } catch (err) {
-        console.log('Audio play failed:', err);
-      }
-      
-
-// Simplified notification logic
-if (partner?.uid) {
-  try {
-    const notificationData = {
-      title: userProfile.displayName || 'Your partner',
-      body: messageData.type === 'image' ? '📷 Image' : 
-           messageData.type === 'file' ? '📎 File' :
-           messageData.text || 'New message',
-      data: {
-        type: 'message',
-        messageId: docRef.id,
-        messageType: messageData.type
-      }
-    };
-    
-    await sendNotification(partner.uid, notificationData);
-  } catch (error) {
-    console.error('Failed to send notification:', error);
-  }
-}
-
-// Define this as a separate function outside handleSend
-const checkNotificationStatus = async () => {
-  try {
-    if (Notification.permission === 'granted') {
-      const token = await requestNotificationPermission();
-      if (token) {
-        toast.success('Notifications are enabled');
-      } else {
-        toast.error('Failed to register for notifications');
-      }
-    } else {
-      toast.warning('Please enable notifications for message alerts');
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        const token = await requestNotificationPermission();
-        if (token) {
-          toast.success('Notifications enabled successfully');
-        }
+        fileURL = await uploadFile(selectedFile);
+        fileType = selectedFile.type.startsWith('image/') ? 'image' : 'file';
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        toast.error('Failed to upload file. Please try again.');
+        setUploading(false);
+        return;
       }
     }
+
+    // Create message document
+    const messagesRef = collection(db, 'messages');
+    const messageData = {
+      text: newMessage.trim() || null,
+      senderId: user.uid,
+      timestamp: serverTimestamp(),
+      edited: false,
+      deleted: false,
+      saved: false,
+      status: 'sent'
+    };
+
+    if (fileURL) {
+      messageData.type = newMessage.trim() ? 'mixed' : fileType;
+      messageData.fileURL = fileURL;
+      messageData.fileName = selectedFile.name;
+      messageData.fileType = selectedFile.type;
+    } else {
+      messageData.type = 'text';
+    }
+
+    const docRef = await addDoc(messagesRef, messageData);
+    setLastMessageId(docRef.id);
+    
+    try {
+      await sendSound.current.play();
+    } catch (err) {
+      console.log('Audio play failed:', err);
+    }
+    
+    // Send notification only if we have a valid partner
+    if (partner && partner.uid) {
+      try {
+        const notificationData = {
+          title: userProfile.displayName || 'Your partner',
+          body: messageData.type === 'image' ? '📷 Image' : 
+               messageData.type === 'file' ? '📎 File' :
+               messageData.text || 'New message',
+          data: {
+            type: 'message',
+            messageId: docRef.id,
+            messageType: messageData.type
+          }
+        };
+        
+        // Only send notification if partner exists and is not online
+        if (!otherUserStatus?.isOnline) {
+          console.log('Sending notification to partner:', partner.uid);
+          await sendNotification(partner.uid, notificationData);
+        } else {
+          console.log('Partner is online, skipping notification');
+        }
+      } catch (error) {
+        console.error('Failed to send notification:', error);
+        // Continue with message sending even if notification fails
+      }
+    }
+    
+    setNewMessage('');
+    removeSelectedFile();
+    
   } catch (error) {
-    console.error('Notification check failed:', error);
-    toast.error('Notification setup failed');
+    console.error("Error sending message:", error);
+    toast.error('Failed to send message');
+  } finally {
+    setUploading(false);
   }
 };
-
-// Then add this useEffect
-useEffect(() => {
-  // Check notification status when component mounts
-  if (user) {
-    checkNotificationStatus();
-  }
-}, [user]);
-
-// Then call this function in your useEffect
-useEffect(() => {
-  // Check notification status when component mounts
-  checkNotificationStatus();
-}, []);
-      
-      setNewMessage('');
-      removeSelectedFile();
-    } catch (error) {
-      console.error("Error sending message:", error);
-      alert('Failed to send message. Please try again.');
-    } finally {
-      setUploading(false);
-    }
-  };
 
 
   const handleEditMessage = async (messageId, newText) => {
