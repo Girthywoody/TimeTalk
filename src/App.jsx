@@ -62,7 +62,7 @@ useEffect(() => {
         });
       }
       
-      //
+      //j
       // Request permission if needed
       if (Notification.permission === 'default') {
         const permission = await Notification.requestPermission();
