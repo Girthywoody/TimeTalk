@@ -30,24 +30,24 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // Handle background messages
-messaging.onBackgroundMessage(function(payload) {
-    console.log('[firebase-messaging-sw.js] Received background message:', payload);
+// messaging.onBackgroundMessage(function(payload) {
+//     console.log('[firebase-messaging-sw.js] Received background message:', payload);
     
-    const notificationTitle = payload.notification?.title || 'New Message';
-    const notificationOptions = {
-        body: payload.notification?.body || 'You have a new notification',
-        icon: '/ios-icon-192.png',
-        badge: '/ios-icon-192.png',
-        tag: payload.data?.timestamp || Date.now().toString(),
-        data: payload.data || {},
-        renotify: true,
-        requireInteraction: true,
-        silent: false,
-        vibrate: [200, 100, 200]
-    };
+//     const notificationTitle = payload.notification?.title || 'New Message';
+//     const notificationOptions = {
+//         body: payload.notification?.body || 'You have a new notification',
+//         icon: '/ios-icon-192.png',
+//         badge: '/ios-icon-192.png',
+//         tag: payload.data?.timestamp || Date.now().toString(),
+//         data: payload.data || {},
+//         renotify: true,
+//         requireInteraction: true,
+//         silent: false,
+//         vibrate: [200, 100, 200]
+//     };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
-});
+//     self.registration.showNotification(notificationTitle, notificationOptions);
+// });
 
 // Add to firebase-messaging-sw.js
 self.addEventListener('notificationclick', function(event) {
@@ -76,23 +76,6 @@ self.addEventListener('notificationclick', function(event) {
             
             return client.focus();
           }
-        }
-        
-        // If no existing window/tab, open a new one
-        if (clients.openWindow) {
-          return clients.openWindow(clickAction).then(client => {
-            // Wait a moment for the window to load then send the message
-            setTimeout(() => {
-              if (client) {
-                client.postMessage({
-                  type: 'notificationClick',
-                  notification: {
-                    data: notificationData
-                  }
-                });
-              }
-            }, 1000);
-          });
         }
       })
     );

@@ -24,7 +24,7 @@ export const sendNotification = async (userId, notificationData) => {
     setTimeout(() => localStorage.removeItem(cacheKey), 5000);
     
     try {
-      // Get the auth instance dynamically to prevent potential undefined errors
+      // Rest of your existing code...
       const { auth } = await import('../firebase');
       
       if (!auth.currentUser) {
@@ -58,4 +58,4 @@ export const sendNotification = async (userId, notificationData) => {
       console.error('Notification sending failed:', error);
       return { success: false, error: error.message };
     }
-  };
+};
