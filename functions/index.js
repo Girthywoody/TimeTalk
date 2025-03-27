@@ -120,6 +120,7 @@ app.post('/sendNotification', async (req, res) => {
 });
 
 app.post('/simpleNotification', async (req, res) => {
+    console.log('Received simple notification request:', req.body);
     try {
         // Authenticate the request
         const authHeader = req.headers.authorization;
