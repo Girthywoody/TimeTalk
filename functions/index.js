@@ -24,6 +24,9 @@ async function sendNotificationToUser(userId, notification) {
             return { success: false, error: 'No FCM token available' };
         }
 
+        // Log the notification object received from client
+        console.log('Notification received from client:', notification);
+
         // Create a properly formatted FCM message
         const message = {
             token: userData.fcmToken,
@@ -62,11 +65,18 @@ async function sendNotificationToUser(userId, notification) {
             data: notification.data || {}
         };
 
+        // Log the message before sending
+        console.log('Message to be sent to FCM:', JSON.stringify(message, null, 2));
+        
         const response = await admin.messaging().send(message);
         console.log('Successfully sent notification:', response);
         return { success: true };
     } catch (error) {
-        console.error('Error sending notification:', error);
+        // Log the detailed error
+        console.error('Error sending notification:', error.code, error.message);
+        if (error.details) {
+            console.error('Error details:', error.details);
+        }
         return { success: false, error: error.message };
     }
 }
@@ -87,11 +97,15 @@ app.post('/sendNotification', async (req, res) => {
 
         const { userId, notification } = req.body;
         
-        // Use the provided notification or fallback to test notification
-        const notificationToSend = notification || {
-            title: 'Test Notification',
-            body: 'This is a test notification!',
-            data: {
+        // Extract necessary fields from the notification object
+        const notificationToSend = {
+            title: notification?.title || 'Test Notification',
+            body: notification?.body || 'This is a test notification!',
+            // Do not include icon or badge here
+            sound: notification?.sound || 'default',
+            vibrate: notification?.vibrate || [200, 100, 200],
+            priority: notification?.priority || 'high',
+            data: notification?.data || {
                 type: 'test',
                 senderId: decodedToken.uid,
                 timestamp: Date.now().toString()
