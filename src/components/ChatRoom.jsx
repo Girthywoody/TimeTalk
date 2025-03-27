@@ -922,6 +922,7 @@ useEffect(() => {
     };
   };
 
+
   const handleNudge = async () => {
     try {
         if (!partner || !partner.uid) {
@@ -943,7 +944,7 @@ useEffect(() => {
                 notification: {
                     title: user.displayName || 'Your partner',
                     body: 'Hey! Come answer me!',
-                    // Remove icon and badge fields
+                    // Remove icon and badge from here
                     vibrate: [200, 100, 200],
                     sound: 'default',
                     priority: 'high',

@@ -30,7 +30,6 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // Handle background messages
-// Handle background messages
 messaging.onBackgroundMessage(function(payload) {
     console.log('[firebase-messaging-sw.js] Received background message:', payload);
     
@@ -48,6 +47,58 @@ messaging.onBackgroundMessage(function(payload) {
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Handle push events directly (important for iOS)
+self.addEventListener('push', function(event) {
+    console.log('[Service Worker] Push received:', event);
+
+    if (event.data) {
+        try {
+            let payload;
+            try {
+                payload = event.data.json();
+            } catch (e) {
+                // If not JSON, try text
+                const text = event.data.text();
+                try {
+                    payload = JSON.parse(text);
+                } catch (e2) {
+                    // Use text as is
+                    payload = {
+                        notification: {
+                            title: 'New Notification',
+                            body: text
+                        }
+                    };
+                }
+            }
+            
+            console.log('[Service Worker] Push payload:', payload);
+
+            const notificationTitle = payload.notification?.title || 'New Message';
+            const notificationOptions = {
+                body: payload.notification?.body || 'You have a new notification',
+                icon: '/ios-icon-192.png',
+                badge: '/ios-icon-192.png',
+                tag: payload.data?.timestamp || Date.now().toString(),
+                data: payload.data || {},
+                actions: [{
+                    action: 'open',
+                    title: 'Open'
+                }],
+                renotify: true,
+                requireInteraction: true,
+                silent: false
+            };
+
+            event.waitUntil(
+                self.registration.showNotification(notificationTitle, notificationOptions)
+            );
+        } catch (error) {
+            console.error('[Service Worker] Error handling push event:', error);
+        }
+    }
 });
 
 // Handle push events directly (important for iOS)

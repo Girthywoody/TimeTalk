@@ -24,6 +24,7 @@ async function sendNotificationToUser(userId, notification) {
             return { success: false, error: 'No FCM token available' };
         }
 
+        // Create a properly formatted FCM message
         const message = {
             token: userData.fcmToken,
             notification: {
@@ -58,10 +59,7 @@ async function sendNotificationToUser(userId, notification) {
                     }
                 }
             },
-            data: {
-                ...notification.data,
-                timestamp: notification.data?.timestamp || Date.now().toString()
-            }
+            data: notification.data || {}
         };
 
         const response = await admin.messaging().send(message);
