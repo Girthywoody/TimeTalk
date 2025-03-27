@@ -1,12 +1,5 @@
 import { auth } from '../firebase';
 
-// 1. First, let's fix your Notifications.js utility function
-// This is a more robust version that prevents duplicate calls
-
-// In notifications.js
-import { auth } from '../firebase';
-
-// This improved version uses a better mechanism to prevent duplicates
 export const sendNotification = async (userId, notificationData) => {
     if (!userId) {
       console.error('Invalid user ID for notification');
