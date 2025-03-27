@@ -101,6 +101,17 @@ self.addEventListener('notificationclick', function(event) {
 
 // Handle push events directly (important for iOS)
 self.addEventListener('push', function(event) {
+    const now = Date.now();
+    const lastPushTimestamp = self.lastPushTimestamp || 0;
+    
+    // Ignore pushes that arrive within 2 seconds of each other
+    if (now - lastPushTimestamp < 2000) {
+        console.log('[Service Worker] Ignoring duplicate push notification');
+        return;
+    }
+    
+    self.lastPushTimestamp = now;
+    
     console.log('[Service Worker] Push received:', event);
 
     if (event.data) {
@@ -151,30 +162,6 @@ self.addEventListener('push', function(event) {
     }
 });
 
-// Handle notification clicks
-self.addEventListener('notificationclick', function(event) {
-    console.log('[Service Worker] Notification click received:', event);
-
-    event.notification.close();
-
-    const clickAction = event.notification.data?.clickAction || '/';
-    
-    event.waitUntil(
-        clients.matchAll({
-            type: 'window',
-            includeUncontrolled: true
-        }).then(function(clientList) {
-            for (const client of clientList) {
-                if (client.url === clickAction && 'focus' in client) {
-                    return client.focus();
-                }
-            }
-            if (clients.openWindow) {
-                return clients.openWindow(clickAction);
-            }
-        })
-    );
-});
 
 
 

@@ -9,23 +9,19 @@ export const sendNotification = async (userId, notificationData) => {
       return { success: false, error: 'Invalid user ID' };
     }
     
-    // Prevent multiple identical notifications within a short time window
-    const cacheKey = `notification_${userId}_${notificationData.title}_${Date.now()}`;
-    if (window.recentNotifications && window.recentNotifications[cacheKey]) {
+    // Use a more unique cache key with message content hash
+    const contentHash = `${notificationData.title}_${notificationData.body}`.substring(0, 20);
+    const cacheKey = `notification_${userId}_${contentHash}`;
+    
+    // Use localStorage for more persistent duplicate prevention
+    if (localStorage.getItem(cacheKey)) {
       console.log('Duplicate notification prevented');
       return { success: true, duplicate: true };
     }
     
-    // Store this notification attempt in cache
-    if (!window.recentNotifications) window.recentNotifications = {};
-    window.recentNotifications[cacheKey] = true;
-    
-    // Clear this cache entry after 5 seconds
-    setTimeout(() => {
-      if (window.recentNotifications && window.recentNotifications[cacheKey]) {
-        delete window.recentNotifications[cacheKey];
-      }
-    }, 5000);
+    // Store this notification attempt in localStorage with 5-second expiry
+    localStorage.setItem(cacheKey, Date.now().toString());
+    setTimeout(() => localStorage.removeItem(cacheKey), 5000);
     
     try {
       // Get the auth instance dynamically to prevent potential undefined errors

@@ -259,7 +259,7 @@ const checkNotificationStatus = async () => {
   }
 };
 
-// Then update your useEffect
+// Replace this useEffect block in ChatRoom.jsx (around line 144-184)
 useEffect(() => {
   let mounted = true;
   
@@ -312,7 +312,6 @@ useEffect(() => {
     setIsDropdownOpen(false);
   };
 
-// Replace your testNotification function with this more robust version
 
 const testNotification = async () => {
   try {
@@ -560,33 +559,46 @@ const handleSend = async () => {
       console.log('Audio play failed:', err);
     }
     
-    // Send notification only if we have a valid partner
-    if (partner && partner.uid) {
-      try {
-        const notificationData = {
-          title: userProfile.displayName || 'Your partner',
-          body: messageData.type === 'image' ? '📷 Image' : 
-               messageData.type === 'file' ? '📎 File' :
-               messageData.text || 'New message',
-          data: {
-            type: 'message',
-            messageId: docRef.id,
-            messageType: messageData.type
-          }
-        };
-        
-        // Only send notification if partner exists and is not online
-        if (!otherUserStatus?.isOnline) {
-          console.log('Sending notification to partner:', partner.uid);
-          await sendNotification(partner.uid, notificationData);
-        } else {
-          console.log('Partner is online, skipping notification');
-        }
-      } catch (error) {
-        console.error('Failed to send notification:', error);
-        // Continue with message sending even if notification fails
+// Inside handleSend function, modify the notification sending part:
+if (partner && partner.uid) {
+  try {
+    const notificationData = {
+      title: userProfile.displayName || 'Your partner',
+      body: messageData.type === 'image' ? '📷 Image' : 
+           messageData.type === 'file' ? '📎 File' :
+           messageData.text || 'New message',
+      data: {
+        type: 'message',
+        messageId: docRef.id,
+        messageType: messageData.type
       }
+    };
+    
+    // Only send notification if partner exists and is not online
+    if (!otherUserStatus?.isOnline) {
+      // Check if notification was recently sent to this user
+      const notificationCacheKey = `message_notification_${partner.uid}_${Date.now()}`;
+      const recentNotification = sessionStorage.getItem(notificationCacheKey);
+      
+      if (!recentNotification) {
+        console.log('Sending notification to partner:', partner.uid);
+        await sendNotification(partner.uid, notificationData);
+        
+        // Set cache to prevent duplicate notifications
+        sessionStorage.setItem(notificationCacheKey, 'true');
+        setTimeout(() => {
+          sessionStorage.removeItem(notificationCacheKey);
+        }, 5000);
+      } else {
+        console.log('Skipping duplicate notification');
+      }
+    } else {
+      console.log('Partner is online, skipping notification');
     }
+  } catch (error) {
+    console.error('Failed to send notification:', error);
+  }
+}
     
     setNewMessage('');
     removeSelectedFile();
