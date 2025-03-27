@@ -574,28 +574,32 @@ if (partner && partner.uid) {
       }
     };
     
-    // Check if notification was recently sent to this user to prevent duplicates
-    const notificationCacheKey = `message_notification_${partner.uid}_${Date.now()}`;
-    const recentNotification = sessionStorage.getItem(notificationCacheKey);
+    // Use a more specific cache key with the message ID to prevent duplicates
+    const notificationCacheKey = `notification_sent_${docRef.id}`;
     
-    if (!recentNotification) {
+    // Check if we've already sent a notification for this specific message
+    if (!localStorage.getItem(notificationCacheKey)) {
       // Send notification in these cases:
       // 1. Partner is offline (not active in last 2 minutes)
       // 2. Document is not visible (user has app in background or different tab)
       if (!otherUserStatus?.isOnline || document.visibilityState !== 'visible') {
-        console.log('Sending notification to partner:', partner.uid);
-        // await sendNotification(partner.uid, notificationData);
+        console.log('Sending notification to partner:', partner.uid, 'for message:', docRef.id);
         
-        // Set cache to prevent duplicate notifications
-        sessionStorage.setItem(notificationCacheKey, 'true');
+        // Set the flag BEFORE sending the notification to prevent race conditions
+        localStorage.setItem(notificationCacheKey, 'true');
+        
+        // Send the actual notification
+        await sendNotification(partner.uid, notificationData);
+        
+        // Keep the record for a reasonable amount of time (1 hour)
         setTimeout(() => {
-          sessionStorage.removeItem(notificationCacheKey);
-        }, 5000);
+          localStorage.removeItem(notificationCacheKey);
+        }, 60 * 60 * 1000);
       } else {
-        console.log('Partner is online and has app visible, skipping notification');
+        console.log('Partner is online and has app visible, skipping notification for message:', docRef.id);
       }
     } else {
-      console.log('Skipping duplicate notification');
+      console.log('Already sent notification for message:', docRef.id);
     }
   } catch (error) {
     console.error('Failed to send notification:', error);
