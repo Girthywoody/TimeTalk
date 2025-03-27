@@ -51,7 +51,6 @@ import {
   BellRing
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
 
 
 const MESSAGES_LIMIT = 100;
