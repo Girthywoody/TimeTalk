@@ -239,7 +239,6 @@ git push origin main
                 notification: {
                     title: 'Test Notification',
                     body: 'This is a test notification from TimeTalk',
-                    // Remove icon and badge from here
                     sound: 'default',
                     priority: 'high',
                     vibrate: [200, 100, 200],
