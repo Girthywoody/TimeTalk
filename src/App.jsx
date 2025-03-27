@@ -60,6 +60,26 @@ useEffect(() => {
   handleNotificationClick();
 }, []);
 
+// Add to your useEffect in App.jsx
+useEffect(() => {
+  if (user) {
+    // Request notification permission after a slight delay
+    const timer = setTimeout(() => {
+      if (Notification.permission !== 'granted') {
+        requestNotificationPermission()
+          .then(token => {
+            console.log('Notification token:', token);
+          })
+          .catch(err => {
+            console.error('Notification permission error:', err);
+          });
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }
+}, [user]);
+
   const initializeNotifications = async () => {
     // Check if the app is installed as PWA
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;

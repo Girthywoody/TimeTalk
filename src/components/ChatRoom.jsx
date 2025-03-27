@@ -8,6 +8,7 @@ import {
   onSnapshot, 
   serverTimestamp,
   doc,
+  getDocs,
   getDoc,
   updateDoc,
   where,
@@ -450,26 +451,95 @@ useEffect(() => {
         console.log('Audio play failed:', err);
       }
       
-      // Send notification to partner if they exist
-      if (partner && partner.uid) {
-        try {
-          const notificationData = {
-            title: userProfile.displayName || 'Your partner',
-            body: messageData.type === 'image' ? '📷 Image' : 
-                 messageData.type === 'file' ? '📎 File' :
-                 messageData.text || 'New message',
-            data: {
-              type: 'message',
-              messageId: docRef.id,
-              messageType: messageData.type
-            }
-          };
-          
-          await sendNotification(partner.uid, notificationData);
-        } catch (error) {
-          console.error('Failed to send notification:', error);
+// In handleSend function, modify the notification part:
+
+// Send notification to partner if they exist
+if (partner?.uid) {
+  try {
+    const notificationData = {
+      title: userProfile.displayName || 'Your partner',
+      body: messageData.type === 'image' ? '📷 Image' : 
+           messageData.type === 'file' ? '📎 File' :
+           messageData.text || 'New message',
+      data: {
+        type: 'message',
+        messageId: docRef.id,
+        messageType: messageData.type
+      }
+    };
+    
+    await sendNotification(partner.uid, notificationData);
+  } catch (error) {
+    console.error('Failed to send notification:', error);
+  }
+} else {
+  // Fallback - try to find the other user if partner isn't set
+  try {
+    const usersRef = collection(db, 'users');
+    const usersSnapshot = await getDocs(usersRef);
+    
+    usersSnapshot.forEach(async (doc) => {
+      // Skip current user
+      if (doc.id !== user.uid) {
+        const notificationData = {
+          title: userProfile.displayName || 'Your partner',
+          body: messageData.type === 'image' ? '📷 Image' : 
+               messageData.type === 'file' ? '📎 File' :
+               messageData.text || 'New message',
+          data: {
+            type: 'message',
+            messageId: docRef.id,
+            messageType: messageData.type
+          }
+        };
+        
+        await sendNotification(doc.id, notificationData);
+      }
+    });
+  } catch (error) {
+    console.error('Failed to send fallback notification:', error);
+  }
+}
+
+// Define this as a separate function outside handleSend
+const checkNotificationStatus = async () => {
+  try {
+    if (Notification.permission === 'granted') {
+      const token = await requestNotificationPermission();
+      if (token) {
+        toast.success('Notifications are enabled');
+      } else {
+        toast.error('Failed to register for notifications');
+      }
+    } else {
+      toast.warning('Please enable notifications for message alerts');
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const token = await requestNotificationPermission();
+        if (token) {
+          toast.success('Notifications enabled successfully');
         }
       }
+    }
+  } catch (error) {
+    console.error('Notification check failed:', error);
+    toast.error('Notification setup failed');
+  }
+};
+
+// Then add this useEffect
+useEffect(() => {
+  // Check notification status when component mounts
+  if (user) {
+    checkNotificationStatus();
+  }
+}, [user]);
+
+// Then call this function in your useEffect
+useEffect(() => {
+  // Check notification status when component mounts
+  checkNotificationStatus();
+}, []);
       
       setNewMessage('');
       removeSelectedFile();
@@ -647,77 +717,88 @@ useEffect(() => {
     });
   };
 
-  useEffect(() => {
-    if (!user) return;
+  // In ChatRoom.jsx, modify the useEffect that fetches messages to also set the partner
 
-    const messagesRef = collection(db, 'messages');
-    const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - MESSAGE_EXPIRATION_TIME);
+useEffect(() => {
+  if (!user) return;
 
-    const q = query(
-      messagesRef,
-      where('timestamp', '>', Timestamp.fromDate(twentyFourHoursAgo)),
-      orderBy('timestamp', 'desc'),
-      limit(MESSAGES_LIMIT)
-    );
+  const messagesRef = collection(db, 'messages');
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - MESSAGE_EXPIRATION_TIME);
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const newMessages = [];
-      const uniqueUserIds = new Set();
+  const q = query(
+    messagesRef,
+    where('timestamp', '>', Timestamp.fromDate(twentyFourHoursAgo)),
+    orderBy('timestamp', 'desc'),
+    limit(MESSAGES_LIMIT)
+  );
 
-      snapshot.docChanges().forEach((change) => {
-        if (
-          change.type === 'added' && 
-          change.doc.data().senderId !== user.uid &&
-          change.doc.id !== lastMessageId
-        ) {
-          receiveSound.current.play().catch(err => console.log('Audio play failed:', err));
-        }
-      });
+  const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const newMessages = [];
+    const uniqueUserIds = new Set();
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const messageTimestamp = data.timestamp?.toDate();
-        
-        if (data.saved || (messageTimestamp && (now - messageTimestamp) < MESSAGE_EXPIRATION_TIME)) {
-          uniqueUserIds.add(data.senderId);
-          newMessages.push({
-            id: doc.id,
-            ...data,
-            timestamp: messageTimestamp
-          });
-        }
-      });
-
-      const newProfiles = { ...chatProfiles };
-      for (const userId of uniqueUserIds) {
-        if (!newProfiles[userId]) {
-          try {
-            const userDoc = await getDoc(doc(db, 'users', userId));
-            if (userDoc.exists()) {
-              newProfiles[userId] = userDoc.data();
-            }
-          } catch (error) {
-            console.error(`Error fetching profile for user ${userId}:`, error);
-          }
-        }
+    snapshot.docChanges().forEach((change) => {
+      if (
+        change.type === 'added' && 
+        change.doc.data().senderId !== user.uid &&
+        change.doc.id !== lastMessageId
+      ) {
+        receiveSound.current.play().catch(err => console.log('Audio play failed:', err));
       }
-
-      if (Object.keys(newProfiles).length > Object.keys(chatProfiles).length) {
-        setChatProfiles(newProfiles);
-      }
-
-      const messagesWithProfiles = newMessages.map(msg => ({
-        ...msg,
-        senderProfile: newProfiles[msg.senderId]
-      }));
-
-      setMessages(messagesWithProfiles.reverse());
-      setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [user, lastMessageId]);
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const messageTimestamp = data.timestamp?.toDate();
+      
+      if (data.saved || (messageTimestamp && (now - messageTimestamp) < MESSAGE_EXPIRATION_TIME)) {
+        uniqueUserIds.add(data.senderId);
+        newMessages.push({
+          id: doc.id,
+          ...data,
+          timestamp: messageTimestamp
+        });
+      }
+    });
+
+    const newProfiles = { ...chatProfiles };
+    for (const userId of uniqueUserIds) {
+      if (!newProfiles[userId]) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', userId));
+          if (userDoc.exists()) {
+            newProfiles[userId] = userDoc.data();
+            
+            // Set partner if this user is not the current user
+            if (userId !== user.uid) {
+              setPartner({
+                uid: userId,
+                ...userDoc.data()
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching profile for user ${userId}:`, error);
+        }
+      }
+    }
+
+    // The rest of your code remains the same
+    if (Object.keys(newProfiles).length > Object.keys(chatProfiles).length) {
+      setChatProfiles(newProfiles);
+    }
+
+    const messagesWithProfiles = newMessages.map(msg => ({
+      ...msg,
+      senderProfile: newProfiles[msg.senderId]
+    }));
+
+    setMessages(messagesWithProfiles.reverse());
+    setLoading(false);
+  });
+
+  return () => unsubscribe();
+}, [user, lastMessageId]);
 
   useEffect(() => {
     if (!user) return;
@@ -1003,17 +1084,78 @@ useEffect(() => {
 
   useEffect(() => {
     const fetchAndTrackPartner = async () => {
+      if (!user) return;
+      
       try {
-        // Existing code...
+        // Look for other users in the database
+        const usersRef = collection(db, 'users');
+        const usersSnapshot = await getDocs(usersRef);
         
-        // Add this check to update isPartnerActive
-        if (data.lastActive) {
-          const lastActive = data.lastActive.toDate();
-          const now = new Date();
-          const diffInMinutes = Math.floor((now - lastActive) / (1000 * 60));
-          
-          setIsPartnerActive(diffInMinutes < 2);
-          // Rest of existing code...
+        // Find a user that isn't the current user
+        usersSnapshot.forEach(userDoc => {
+          if (userDoc.id !== user.uid) {
+            const data = userDoc.data();
+            
+            // Set partner data
+            setPartner({
+              uid: userDoc.id,
+              ...data
+            });
+            
+            // Check if partner is active
+            if (data.lastActive) {
+              const lastActive = data.lastActive.toDate();
+              const now = new Date();
+              const diffInMinutes = Math.floor((now - lastActive) / (1000 * 60));
+              
+              setIsPartnerActive(diffInMinutes < 2);
+              
+              // Set other user status
+              if (diffInMinutes < 2) {
+                setOtherUserStatus({ isOnline: true });
+              } else {
+                setOtherUserStatus({
+                  isOnline: false,
+                  lastSeen: lastActive
+                });
+              }
+            }
+          }
+        });
+        
+        // Set up a listener for partner status updates
+        if (partner?.uid) {
+          const partnerRef = doc(db, 'users', partner.uid);
+          return onSnapshot(partnerRef, (doc) => {
+            if (doc.exists()) {
+              const data = doc.data();
+              
+              // Update partner data
+              setPartner(current => ({
+                ...current,
+                ...data
+              }));
+              
+              // Check if partner is active
+              if (data.lastActive) {
+                const lastActive = data.lastActive.toDate();
+                const now = new Date();
+                const diffInMinutes = Math.floor((now - lastActive) / (1000 * 60));
+                
+                setIsPartnerActive(diffInMinutes < 2);
+                
+                // Update other user status
+                if (diffInMinutes < 2) {
+                  setOtherUserStatus({ isOnline: true });
+                } else {
+                  setOtherUserStatus({
+                    isOnline: false,
+                    lastSeen: lastActive
+                  });
+                }
+              }
+            }
+          });
         }
       } catch (error) {
         console.error('Error setting up partner tracking:', error);
@@ -1021,7 +1163,7 @@ useEffect(() => {
     };
   
     fetchAndTrackPartner();
-  }, [user]);
+  }, [user, partner?.uid]);
 
   useEffect(() => {
     const promptNotifications = async () => {
