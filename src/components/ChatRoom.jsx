@@ -574,26 +574,21 @@ if (partner && partner.uid) {
       }
     };
     
-    // Only send notification if partner exists and is not online
-    if (!otherUserStatus?.isOnline) {
-      // Check if notification was recently sent to this user
-      const notificationCacheKey = `message_notification_${partner.uid}_${Date.now()}`;
-      const recentNotification = sessionStorage.getItem(notificationCacheKey);
+    // Send notification regardless of online status
+    const notificationCacheKey = `message_notification_${partner.uid}_${Date.now()}`;
+    const recentNotification = sessionStorage.getItem(notificationCacheKey);
+    
+    if (!recentNotification) {
+      console.log('Sending notification to partner:', partner.uid);
+      await sendNotification(partner.uid, notificationData);
       
-      if (!recentNotification) {
-        console.log('Sending notification to partner:', partner.uid);
-        await sendNotification(partner.uid, notificationData);
-        
-        // Set cache to prevent duplicate notifications
-        sessionStorage.setItem(notificationCacheKey, 'true');
-        setTimeout(() => {
-          sessionStorage.removeItem(notificationCacheKey);
-        }, 5000);
-      } else {
-        console.log('Skipping duplicate notification');
-      }
+      // Set cache to prevent duplicate notifications
+      sessionStorage.setItem(notificationCacheKey, 'true');
+      setTimeout(() => {
+        sessionStorage.removeItem(notificationCacheKey);
+      }, 5000);
     } else {
-      console.log('Partner is online, skipping notification');
+      console.log('Skipping duplicate notification');
     }
   } catch (error) {
     console.error('Failed to send notification:', error);
