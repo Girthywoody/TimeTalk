@@ -226,9 +226,9 @@ git push origin main
 
         console.log('Sending test notification with token:', token);
 
-        // Send test notification - SIMPLIFIED PAYLOAD
+        // Send test notification using a direct approach
         const idToken = await auth.currentUser.getIdToken(true);
-        const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
+        const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/simpleNotification', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -236,13 +236,8 @@ git push origin main
             },
             body: JSON.stringify({
                 userId: auth.currentUser.uid,
-                title: 'Test Notification', // Notice we moved these to top level
-                body: 'This is a test notification from TimeTalk',
-                data: {
-                    type: 'test',
-                    timestamp: Date.now().toString(),
-                    clickAction: '/'
-                }
+                title: 'Test Notification',
+                body: 'This is a test notification from TimeTalk'
             })
         });
 
