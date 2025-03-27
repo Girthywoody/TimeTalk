@@ -21,7 +21,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { db, storage } from '../firebase';
 import { requestNotificationPermission, auth } from '../firebase';
-import { sendNotification } from 'src/utils/notifications';
+import { sendNotification } from '../utils/Notifications';
 
 
 
