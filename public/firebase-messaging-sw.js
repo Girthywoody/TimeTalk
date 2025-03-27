@@ -49,7 +49,7 @@ messaging.onBackgroundMessage(function(payload) {
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// Single consolidated notification click handler
+// Add to firebase-messaging-sw.js
 self.addEventListener('notificationclick', function(event) {
     console.log('[Service Worker] Notification click received:', event);
   
@@ -96,9 +96,10 @@ self.addEventListener('notificationclick', function(event) {
         }
       })
     );
-});
+  });
 
-// Handle push events
+
+// Handle push events directly (important for iOS)
 self.addEventListener('push', function(event) {
     console.log('[Service Worker] Push received:', event);
 
@@ -149,6 +150,33 @@ self.addEventListener('push', function(event) {
         }
     }
 });
+
+// Handle notification clicks
+self.addEventListener('notificationclick', function(event) {
+    console.log('[Service Worker] Notification click received:', event);
+
+    event.notification.close();
+
+    const clickAction = event.notification.data?.clickAction || '/';
+    
+    event.waitUntil(
+        clients.matchAll({
+            type: 'window',
+            includeUncontrolled: true
+        }).then(function(clientList) {
+            for (const client of clientList) {
+                if (client.url === clickAction && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(clickAction);
+            }
+        })
+    );
+});
+
+
 
 self.addEventListener('error', function(event) {
     console.error('[firebase-messaging-sw.js] Error:', event.error);
