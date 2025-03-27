@@ -21,6 +21,66 @@ import { requestNotificationPermission } from './firebase';
 
 const App = () => {
   const { user, loading } = useAuth();
+  
+  useEffect(() => {
+    // Check if the app is installed as PWA
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+    
+    if (user) {
+      // Only initialize notifications once
+      const initializeNotifications = async () => {
+        try {
+          // Check if we've already requested permission
+          if (Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            console.log('Notification permission status:', permission);
+            
+            if (permission === 'granted') {
+              const token = await requestNotificationPermission();
+              console.log('Notification token obtained:', token);
+            }
+          } else if (Notification.permission === 'granted') {
+            // If permission is already granted, just get the token
+            const token = await requestNotificationPermission();
+            console.log('Notification token obtained:', token);
+          }
+        } catch (err) {
+          console.error('Failed to initialize notifications:', err);
+        }
+      };
+
+      // Small delay to ensure component is fully mounted
+      const timer = setTimeout(initializeNotifications, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
+  // Handle notification clicks
+  useEffect(() => {
+    const handleNotificationClick = () => {
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data?.type === 'notificationClick') {
+            const data = event.data.notification?.data;
+            
+            if (data) {
+              // Handle different notification types
+              if (data.type === 'message') {
+                // Navigate to chat
+                window.location.href = '/';
+              } else if (data.type === 'nudge') {
+                // Navigate to chat with a special flag to show animation
+                window.location.href = '/?nudged=true';
+              }
+            }
+          }
+        });
+      }
+    };
+
+    handleNotificationClick();
+  }, []);
+
   useEffect(() => {
     // Check if the app is installed as PWA
     const isPWA = window.matchMedia('(display-mode: standalone)').matches;
@@ -33,73 +93,6 @@ const App = () => {
       alert('To enable notifications, please add this app to your home screen by clicking the share button and selecting "Add to Home Screen".');
     }
   }, [user]); // Empty dependency array means this runs once when component mounts
-
-  // Add to App.jsx, inside the App component
-useEffect(() => {
-  const handleNotificationClick = () => {
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data?.type === 'notificationClick') {
-          const data = event.data.notification?.data;
-          
-          if (data) {
-            // Handle different notification types
-            if (data.type === 'message') {
-              // Navigate to chat
-              window.location.href = '/';
-            } else if (data.type === 'nudge') {
-              // Navigate to chat with a special flag to show animation
-              window.location.href = '/?nudged=true';
-            }
-          }
-        }
-      });
-    }
-  };
-
-  handleNotificationClick();
-}, []);
-
-// Add to your useEffect in App.jsx
-useEffect(() => {
-  if (user) {
-    // Request notification permission after a slight delay
-    const timer = setTimeout(() => {
-      if (Notification.permission !== 'granted') {
-        requestNotificationPermission()
-          .then(token => {
-            console.log('Notification token:', token);
-          })
-          .catch(err => {
-            console.error('Notification permission error:', err);
-          });
-      }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }
-}, [user]);
-
-  const initializeNotifications = async () => {
-    // Check if the app is installed as PWA
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    
-    if (isPWA && Notification.permission !== 'granted') {
-      try {
-        // Try to get permission on startup
-        const permission = await Notification.requestPermission();
-        console.log('Notification permission status:', permission);
-        
-        if (permission === 'granted') {
-          // Get token if permission granted
-          const token = await requestNotificationPermission();
-          console.log('Notification token obtained:', token);
-        }
-      } catch (err) {
-        console.error('Failed to initialize notifications:', err);
-      }
-    }
-  };
 
   if (loading) {
     return (

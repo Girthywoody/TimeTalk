@@ -1,7 +1,8 @@
 import { auth } from '../firebase';
 
-// 1. First, let's fix your Notifications.js utility function
-// This is a more robust version that prevents duplicate calls
+// Cache for recent notifications to prevent duplicates
+const notificationCache = new Map();
+const CACHE_DURATION = 5000; // 5 seconds
 
 export const sendNotification = async (userId, notificationData) => {
     if (!userId) {
@@ -9,23 +10,27 @@ export const sendNotification = async (userId, notificationData) => {
       return { success: false, error: 'Invalid user ID' };
     }
     
-    // Prevent multiple identical notifications within a short time window
-    const cacheKey = `notification_${userId}_${notificationData.title}_${Date.now()}`;
-    if (window.recentNotifications && window.recentNotifications[cacheKey]) {
+    
+    // Create a unique key for this notification
+    const cacheKey = `${userId}_${notificationData.title}_${notificationData.body}_${Date.now()}`;
+    
+    // Check if this notification was recently sent
+    const cachedNotification = notificationCache.get(cacheKey);
+    if (cachedNotification && Date.now() - cachedNotification.timestamp < CACHE_DURATION) {
       console.log('Duplicate notification prevented');
       return { success: true, duplicate: true };
     }
     
-    // Store this notification attempt in cache
-    if (!window.recentNotifications) window.recentNotifications = {};
-    window.recentNotifications[cacheKey] = true;
+    // Store this notification in cache
+    notificationCache.set(cacheKey, {
+      timestamp: Date.now(),
+      data: notificationData
+    });
     
-    // Clear this cache entry after 5 seconds
+    // Clean up old cache entries
     setTimeout(() => {
-      if (window.recentNotifications && window.recentNotifications[cacheKey]) {
-        delete window.recentNotifications[cacheKey];
-      }
-    }, 5000);
+      notificationCache.delete(cacheKey);
+    }, CACHE_DURATION);
     
     try {
       // Get the auth instance dynamically to prevent potential undefined errors
@@ -62,4 +67,4 @@ export const sendNotification = async (userId, notificationData) => {
       console.error('Notification sending failed:', error);
       return { success: false, error: error.message };
     }
-  };
+};
