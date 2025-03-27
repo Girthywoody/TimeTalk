@@ -396,6 +396,12 @@ useEffect(() => {
   };
 
   const handleSend = async () => {
+    console.log("Partner info when sending message:", { 
+      partnerExists: !!partner, 
+      partnerId: partner?.uid,
+      otherUserStatus,
+      isOtherUserOnline: otherUserStatus?.isOnline
+    });
     if ((!newMessage.trim() && !selectedFile) || !user || !userProfile) return;
   
     try {
@@ -445,7 +451,7 @@ useEffect(() => {
       }
       
       // Send notification to partner if they exist
-      if (partner && partner.uid && !otherUserStatus?.isOnline) {
+      if (partner && partner.uid) {
         try {
           const notificationData = {
             title: userProfile.displayName || 'Your partner',
@@ -462,7 +468,6 @@ useEffect(() => {
           await sendNotification(partner.uid, notificationData);
         } catch (error) {
           console.error('Failed to send notification:', error);
-          // Don't need to alert the user about this error
         }
       }
       
