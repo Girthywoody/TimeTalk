@@ -226,7 +226,7 @@ git push origin main
 
         console.log('Sending test notification with token:', token);
 
-        // Send test notification
+        // Send test notification - SIMPLIFIED PAYLOAD
         const idToken = await auth.currentUser.getIdToken(true);
         const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
             method: 'POST',
@@ -236,18 +236,12 @@ git push origin main
             },
             body: JSON.stringify({
                 userId: auth.currentUser.uid,
-                notification: {
-                    title: 'Test Notification',
-                    body: 'This is a test notification from TimeTalk',
-                    sound: 'default',
-                    priority: 'high',
-                    vibrate: [200, 100, 200],
-                    data: {
-                        type: 'test',
-                        timestamp: Date.now().toString(),
-                        url: '/',
-                        clickAction: '/'
-                    }
+                title: 'Test Notification', // Notice we moved these to top level
+                body: 'This is a test notification from TimeTalk',
+                data: {
+                    type: 'test',
+                    timestamp: Date.now().toString(),
+                    clickAction: '/'
                 }
             })
         });
@@ -940,18 +934,13 @@ useEffect(() => {
             },
             body: JSON.stringify({
                 userId: partner.uid,
-                notification: {
-                    title: user.displayName || 'Your partner',
-                    body: 'Hey! Come answer me!',
-                    vibrate: [200, 100, 200],
-                    sound: 'default',
-                    priority: 'high',
-                    data: {
-                        type: 'nudge',
-                        senderId: user.uid,
-                        timestamp: timestamp,
-                        clickAction: '/'
-                    }
+                title: user.displayName || 'Your partner',
+                body: 'Hey! Come answer me!',
+                data: {
+                    type: 'nudge',
+                    senderId: user.uid,
+                    timestamp: timestamp,
+                    clickAction: '/'
                 }
             })
         });

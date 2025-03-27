@@ -95,30 +95,91 @@ app.post('/sendNotification', async (req, res) => {
             return res.status(401).json({ error: 'Invalid token' });
         }
 
-        const { userId, notification } = req.body;
+        // Extract fields from request
+        const { userId, title, body, data, notification } = req.body;
         
-        // Extract necessary fields from the notification object
-        const notificationToSend = {
-            title: notification?.title || 'Test Notification',
-            body: notification?.body || 'This is a test notification!',
-            // Do not include icon or badge here
-            sound: notification?.sound || 'default',
-            vibrate: notification?.vibrate || [200, 100, 200],
-            priority: notification?.priority || 'high',
-            data: notification?.data || {
-                type: 'test',
-                senderId: decodedToken.uid,
-                timestamp: Date.now().toString()
-            }
+        // Support both old and new format
+        const notificationTitle = title || notification?.title || 'New Notification';
+        const notificationBody = body || notification?.body || 'You have a new notification';
+        const notificationData = data || notification?.data || {
+            type: 'general',
+            timestamp: Date.now().toString()
         };
 
-        const result = await sendNotificationToUser(userId, notificationToSend);
+        const result = await sendNotificationToUser(userId, {
+            title: notificationTitle,
+            body: notificationBody,
+            data: notificationData
+        });
+        
         return res.json(result);
     } catch (error) {
         console.error('Error in sendNotification endpoint:', error);
         return res.status(500).json({ error: error.message });
     }
 });
+
+// Updated sendNotificationToUser
+async function sendNotificationToUser(userId, info) {
+    try {
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
+        const userData = userDoc.data();
+        
+        if (!userData?.fcmToken) {
+            console.log('No FCM token for user:', userId);
+            return { success: false, error: 'No FCM token available' };
+        }
+
+        // Create a properly formatted FCM message
+        const message = {
+            token: userData.fcmToken,
+            notification: {
+                title: info.title,
+                body: info.body
+            },
+            webpush: {
+                headers: {
+                    Urgency: 'high'
+                },
+                notification: {
+                    icon: '/ios-icon-192.png',
+                    badge: '/ios-icon-192.png',
+                    vibrate: [200, 100, 200],
+                    requireInteraction: true,
+                    renotify: true
+                },
+                fcmOptions: {
+                    link: info.data?.clickAction || '/'
+                }
+            },
+            android: {
+                notification: {
+                    icon: '/ios-icon-192.png',
+                    priority: 'high'
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: 'default'
+                    }
+                }
+            },
+            data: info.data || {}
+        };
+
+        const response = await admin.messaging().send(message);
+        console.log('Successfully sent notification:', response);
+        return { success: true };
+    } catch (error) {
+        console.error('Error sending notification:', error);
+        // Check for detailed error information
+        if (error.errorInfo) {
+            console.error('Error details:', error.errorInfo);
+        }
+        return { success: false, error: error.message };
+    }
+}
 
 exports.publishScheduledPosts = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
   const now = new Date();
