@@ -574,19 +574,26 @@ if (partner && partner.uid) {
       }
     };
     
-    // Send notification regardless of online status
+    // Check if notification was recently sent to this user to prevent duplicates
     const notificationCacheKey = `message_notification_${partner.uid}_${Date.now()}`;
     const recentNotification = sessionStorage.getItem(notificationCacheKey);
     
     if (!recentNotification) {
-      console.log('Sending notification to partner:', partner.uid);
-      await sendNotification(partner.uid, notificationData);
-      
-      // Set cache to prevent duplicate notifications
-      sessionStorage.setItem(notificationCacheKey, 'true');
-      setTimeout(() => {
-        sessionStorage.removeItem(notificationCacheKey);
-      }, 5000);
+      // Send notification in these cases:
+      // 1. Partner is offline (not active in last 2 minutes)
+      // 2. Document is not visible (user has app in background or different tab)
+      if (!otherUserStatus?.isOnline || document.visibilityState !== 'visible') {
+        console.log('Sending notification to partner:', partner.uid);
+        await sendNotification(partner.uid, notificationData);
+        
+        // Set cache to prevent duplicate notifications
+        sessionStorage.setItem(notificationCacheKey, 'true');
+        setTimeout(() => {
+          sessionStorage.removeItem(notificationCacheKey);
+        }, 5000);
+      } else {
+        console.log('Partner is online and has app visible, skipping notification');
+      }
     } else {
       console.log('Skipping duplicate notification');
     }
@@ -594,7 +601,6 @@ if (partner && partner.uid) {
     console.error('Failed to send notification:', error);
   }
 }
-
     
     setNewMessage('');
     removeSelectedFile();
