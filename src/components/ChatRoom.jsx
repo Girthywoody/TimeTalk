@@ -20,6 +20,8 @@ import { useDarkMode } from '../context/DarkModeContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { db, storage } from '../firebase';
+import { requestNotificationPermission, auth } from '../firebase';
+
 import { 
   Send, 
   Loader2, 
@@ -237,8 +239,7 @@ git push origin main
                 notification: {
                     title: 'Test Notification',
                     body: 'This is a test notification from TimeTalk',
-                    icon: '/ios-icon-192.png',
-                    badge: '/ios-icon-192.png',
+                    // Remove icon and badge
                     sound: 'default',
                     priority: 'high',
                     vibrate: [200, 100, 200],
@@ -264,7 +265,6 @@ git push origin main
         alert('Failed to send test notification: ' + error.message);
     }
 };
-
   useEffect(() => {
     // Add styles to head
     const styleSheet = document.createElement("style");
@@ -942,8 +942,7 @@ useEffect(() => {
                 notification: {
                     title: user.displayName || 'Your partner',
                     body: 'Hey! Come answer me!',
-                    icon: '/ios-icon-192.png',
-                    badge: '/ios-icon-192.png',
+                    // Remove icon and badge fields
                     vibrate: [200, 100, 200],
                     sound: 'default',
                     priority: 'high',

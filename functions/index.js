@@ -28,9 +28,7 @@ async function sendNotificationToUser(userId, notification) {
             token: userData.fcmToken,
             notification: {
                 title: notification.title,
-                body: notification.body,
-                icon: '/ios-icon-192.png',
-                badge: '/ios-icon-192.png'
+                body: notification.body
             },
             webpush: {
                 headers: {
@@ -39,7 +37,7 @@ async function sendNotificationToUser(userId, notification) {
                 notification: {
                     icon: '/ios-icon-192.png',
                     badge: '/ios-icon-192.png',
-                    vibrate: [200, 100, 200],
+                    vibrate: notification.vibrate || [200, 100, 200],
                     requireInteraction: true,
                     renotify: true
                 },
@@ -47,9 +45,22 @@ async function sendNotificationToUser(userId, notification) {
                     link: notification.data?.clickAction || '/'
                 }
             },
+            android: {
+                notification: {
+                    icon: '/ios-icon-192.png',
+                    priority: notification.priority || 'high'
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: notification.sound || 'default'
+                    }
+                }
+            },
             data: {
                 ...notification.data,
-                timestamp: Date.now().toString()
+                timestamp: notification.data?.timestamp || Date.now().toString()
             }
         };
 
