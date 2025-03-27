@@ -122,6 +122,8 @@ const ChatRoom = () => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [partner, setPartner] = useState(null);
   const navigate = useNavigate();
+  const [isPartnerActive, setIsPartnerActive] = useState(false);
+
 
   const otherUserInfo = {
     name: "Test", // Replace with the actual name
@@ -161,6 +163,26 @@ git push origin main
     transition: all 0.5s ease-out !important;
   }
 `;
+
+const location = useLocation();
+const [showNudgeAnimation, setShowNudgeAnimation] = useState(false);
+
+useEffect(() => {
+  // Check for nudge parameters
+  const params = new URLSearchParams(location.search);
+  if (params.get('nudged') === 'true') {
+    // Show nudge animation
+    setShowNudgeAnimation(true);
+    
+    // Clear the parameter from URL to avoid showing animation on refresh
+    window.history.replaceState({}, document.title, location.pathname);
+    
+    // Hide animation after a few seconds
+    setTimeout(() => {
+      setShowNudgeAnimation(false);
+    }, 3000);
+  }
+}, [location]);
 
   useEffect(() => {
     if (darkMode) {
@@ -373,7 +395,7 @@ git push origin main
 
   const handleSend = async () => {
     if ((!newMessage.trim() && !selectedFile) || !user || !userProfile) return;
-
+  
     try {
       setUploading(true);
       let fileURL = null;
@@ -390,7 +412,7 @@ git push origin main
           return;
         }
       }
-
+  
       const messagesRef = collection(db, 'messages');
       const messageData = {
         text: newMessage.trim() || null,
@@ -401,7 +423,7 @@ git push origin main
         saved: false,
         status: 'sent'
       };
-
+  
       if (fileURL) {
         messageData.type = newMessage.trim() ? 'mixed' : fileType;
         messageData.fileURL = fileURL;
@@ -410,7 +432,7 @@ git push origin main
       } else {
         messageData.type = 'text';
       }
-
+  
       const docRef = await addDoc(messagesRef, messageData);
       setLastMessageId(docRef.id);
       
@@ -418,6 +440,31 @@ git push origin main
         await sendSound.current.play();
       } catch (err) {
         console.log('Audio play failed:', err);
+      }
+      
+      // Send notification to partner if they exist
+      if (partner && partner.uid) {
+        try {
+          // Import the notification utility
+          const { sendNotification } = await import('src/utils/notifications');
+          
+          const notificationData = {
+            title: userProfile.displayName || 'Your partner',
+            body: messageData.type === 'image' ? '📷 Image' : 
+                 messageData.type === 'file' ? '📎 File' :
+                 messageData.text || 'New message',
+            data: {
+              type: 'message',
+              messageId: docRef.id,
+              messageType: messageData.type
+            }
+          };
+          
+          await sendNotification(partner.uid, notificationData);
+        } catch (error) {
+          console.error('Failed to send notification:', error);
+          // Don't need to alert the user about this error
+        }
       }
       
       setNewMessage('');
@@ -913,44 +960,34 @@ useEffect(() => {
 
   const handleNudge = async () => {
     try {
-        if (!partner || !partner.uid) {
-            toast.error('Partner information not available');
-            return;
+      if (!partner || !partner.uid) {
+        toast.error('Partner information not available');
+        return;
+      }
+      
+      // Import the notification utility
+      const { sendNotification } = await import('src/utils/notifications');
+      
+      const result = await sendNotification(partner.uid, {
+        title: userProfile?.displayName || user.displayName || 'Your partner',
+        body: '👋 Hey! Come answer me!',
+        data: {
+          type: 'nudge',
+          priority: 'high',
+          vibrate: [200, 100, 200, 100, 200]  // Special vibration pattern for nudges
         }
-        
-        const idToken = await user.getIdToken(true);
-        const timestamp = Date.now().toString();
-        
-        const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}`
-            },
-            body: JSON.stringify({
-                userId: partner.uid,
-                title: user.displayName || 'Your partner',
-                body: 'Hey! Come answer me!',
-                data: {
-                    type: 'nudge',
-                    senderId: user.uid,
-                    timestamp: timestamp,
-                    clickAction: '/'
-                }
-            })
-        });
-
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.error || 'Failed to send nudge');
-        }
-
+      });
+  
+      if (result.success) {
         toast.success('Nudge sent!');
+      } else {
+        throw new Error('Failed to send nudge');
+      }
     } catch (error) {
-        console.error('Error sending nudge:', error);
-        toast.error('Failed to send nudge');
+      console.error('Error sending nudge:', error);
+      toast.error('Failed to send nudge');
     }
-};
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -966,55 +1003,22 @@ useEffect(() => {
   useEffect(() => {
     const fetchAndTrackPartner = async () => {
       try {
-        // Get partner's profile
-        const partnerData = await getPartnerProfile();
-        if (partnerData) {
-          setPartner(partnerData);
+        // Existing code...
+        
+        // Add this check to update isPartnerActive
+        if (data.lastActive) {
+          const lastActive = data.lastActive.toDate();
+          const now = new Date();
+          const diffInMinutes = Math.floor((now - lastActive) / (1000 * 60));
           
-          // Set up real-time listener for partner's status
-          const partnerRef = doc(db, 'users', partnerData.uid);
-          const unsubscribe = onSnapshot(partnerRef, (doc) => {
-            if (doc.exists()) {
-              const data = doc.data();
-              if (data.lastActive) {
-                const lastActive = data.lastActive.toDate();
-                const now = new Date();
-                const diffInMinutes = Math.floor((now - lastActive) / (1000 * 60));
-                
-                setOtherUserStatus({
-                  isOnline: diffInMinutes < 2,
-                  lastSeen: lastActive
-                });
-              }
-            }
-          });
-
-          // Update current user's status
-          const updateStatus = async () => {
-            const userRef = doc(db, 'users', user.uid);
-            await updateDoc(userRef, {
-              lastActive: serverTimestamp()
-            });
-          };
-
-          // Update status immediately and then every minute
-          updateStatus();
-          const intervalId = setInterval(updateStatus, 60000);
-
-          return () => {
-            unsubscribe();
-            clearInterval(intervalId);
-            // Set offline status when component unmounts
-            updateDoc(doc(db, 'users', user.uid), {
-              lastActive: serverTimestamp()
-            });
-          };
+          setIsPartnerActive(diffInMinutes < 2);
+          // Rest of existing code...
         }
       } catch (error) {
         console.error('Error setting up partner tracking:', error);
       }
     };
-
+  
     fetchAndTrackPartner();
   }, [user]);
 

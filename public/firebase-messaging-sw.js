@@ -49,6 +49,55 @@ messaging.onBackgroundMessage(function(payload) {
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
+// Add to firebase-messaging-sw.js
+self.addEventListener('notificationclick', function(event) {
+    console.log('[Service Worker] Notification click received:', event);
+  
+    event.notification.close();
+  
+    const clickAction = event.notification.data?.clickAction || '/';
+    const notificationData = event.notification.data || {};
+    
+    event.waitUntil(
+      clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true
+      }).then(function(clientList) {
+        // Try to find an existing window/tab
+        for (const client of clientList) {
+          if (client.url.startsWith(self.registration.scope) && 'focus' in client) {
+            // Post a message to the client
+            client.postMessage({
+              type: 'notificationClick',
+              notification: {
+                data: notificationData
+              }
+            });
+            
+            return client.focus();
+          }
+        }
+        
+        // If no existing window/tab, open a new one
+        if (clients.openWindow) {
+          return clients.openWindow(clickAction).then(client => {
+            // Wait a moment for the window to load then send the message
+            setTimeout(() => {
+              if (client) {
+                client.postMessage({
+                  type: 'notificationClick',
+                  notification: {
+                    data: notificationData
+                  }
+                });
+              }
+            }, 1000);
+          });
+        }
+      })
+    );
+  });
+
 
 // Handle push events directly (important for iOS)
 self.addEventListener('push', function(event) {

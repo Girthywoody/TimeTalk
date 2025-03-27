@@ -34,7 +34,31 @@ const App = () => {
     }
   }, [user]); // Empty dependency array means this runs once when component mounts
 
-  
+  // Add to App.jsx, inside the App component
+useEffect(() => {
+  const handleNotificationClick = () => {
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'notificationClick') {
+          const data = event.data.notification?.data;
+          
+          if (data) {
+            // Handle different notification types
+            if (data.type === 'message') {
+              // Navigate to chat
+              window.location.href = '/';
+            } else if (data.type === 'nudge') {
+              // Navigate to chat with a special flag to show animation
+              window.location.href = '/?nudged=true';
+            }
+          }
+        }
+      });
+    }
+  };
+
+  handleNotificationClick();
+}, []);
 
   const initializeNotifications = async () => {
     // Check if the app is installed as PWA
