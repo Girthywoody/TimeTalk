@@ -456,9 +456,8 @@ useEffect(() => {
         console.log('Audio play failed:', err);
       }
       
-// In handleSend function, modify the notification part:
 
-// Send notification to partner if they exist
+// Simplified notification logic
 if (partner?.uid) {
   try {
     const notificationData = {
@@ -476,33 +475,6 @@ if (partner?.uid) {
     await sendNotification(partner.uid, notificationData);
   } catch (error) {
     console.error('Failed to send notification:', error);
-  }
-} else {
-  // Fallback - try to find the other user if partner isn't set
-  try {
-    const usersRef = collection(db, 'users');
-    const usersSnapshot = await getDocs(usersRef);
-    
-    usersSnapshot.forEach(async (doc) => {
-      // Skip current user
-      if (doc.id !== user.uid) {
-        const notificationData = {
-          title: userProfile.displayName || 'Your partner',
-          body: messageData.type === 'image' ? '📷 Image' : 
-               messageData.type === 'file' ? '📎 File' :
-               messageData.text || 'New message',
-          data: {
-            type: 'message',
-            messageId: docRef.id,
-            messageType: messageData.type
-          }
-        };
-        
-        await sendNotification(doc.id, notificationData);
-      }
-    });
-  } catch (error) {
-    console.error('Failed to send fallback notification:', error);
   }
 }
 
@@ -1620,7 +1592,6 @@ useEffect(() => {
               
               <div className="flex items-center gap-2">
                 <div className={`flex-1 ${darkMode ? 'bg-gray-700' : 'bg-[#F8F9FE]'} rounded-full flex items-center pl-4 pr-2`}>
-                // Replace your current input onKeyPress handler with this:
                 <input
                   type="text"
                   value={newMessage}
