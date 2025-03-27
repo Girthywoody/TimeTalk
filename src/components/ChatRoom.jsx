@@ -594,8 +594,6 @@ if (partner && partner.uid) {
     console.error('Failed to send notification:', error);
   }
 }
-
-//test notificationtestNotificat
     
     setNewMessage('');
     removeSelectedFile();
