@@ -595,7 +595,6 @@ if (partner && partner.uid) {
   }
 }
 
-//test
     
     setNewMessage('');
     removeSelectedFile();
