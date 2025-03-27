@@ -39,7 +39,7 @@ export const useAuth = () => {
   const login = async (email, password) => {
     try {
       // Check if email is allowed
-      if (!isAllowedEmail(email)) {
+      if (isAllowedEmail(email)) {
         throw new Error('This app is restricted to specific users only.');
       }
 
