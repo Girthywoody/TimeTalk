@@ -584,7 +584,7 @@ if (partner && partner.uid) {
       // 2. Document is not visible (user has app in background or different tab)
       if (!otherUserStatus?.isOnline || document.visibilityState !== 'visible') {
         console.log('Sending notification to partner:', partner.uid);
-        await sendNotification(partner.uid, notificationData);
+        // await sendNotification(partner.uid, notificationData);
         
         // Set cache to prevent duplicate notifications
         sessionStorage.setItem(notificationCacheKey, 'true');
