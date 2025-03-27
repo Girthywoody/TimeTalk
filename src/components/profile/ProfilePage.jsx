@@ -1,204 +1,115 @@
-import React, { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
-import { useAuth } from '../../hooks/useAuth';
-import { Settings, MessageCircle, Heart, Calendar, Gift, Camera, Loader2 } from 'lucide-react';
-import SettingsPage from '../profile/SettingsPage';
-import QuickActions from '../profile/QuickActions'; // Add this import
-import { useNavigate } from 'react-router-dom';
-import SpotifySection from './SpotifySection';
-import PageLayout from '../../layout/PageLayout';
+import { useState, useEffect } from 'react';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
-const ProfilePage = () => {
-  const [profileData, setProfileData] = useState(null);
+export const useAuth = () => {
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showSettings, setShowSettings] = useState(false);
-  const [partnerProfile, setPartnerProfile] = useState(null);
-  const { user, getPartnerProfile } = useAuth();
-  const navigate = useNavigate();
+  const [hasProfile, setHasProfile] = useState(false);
 
   useEffect(() => {
-    const fetchProfileData = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const userRef = doc(db, 'users', user.uid);
-        const profileDoc = await getDoc(userRef);
-        
-        if (profileDoc.exists()) {      
-          const data = profileDoc.data();
-          setProfileData(data);
-        } else {
-          setError('Profile not found');
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        try {
+          // Force token refresh on each auth state change
+          await currentUser.getIdToken(true);
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          setHasProfile(userDoc.exists());
+        } catch (error) {
+          console.error('Error checking profile:', error);
+          setHasProfile(false);
         }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-        setError('Failed to load profile');
-      } finally {
-        setLoading(false);
+        setUser(currentUser);
+      } else {
+        setUser(null);
+        setHasProfile(false);
       }
-    };
+      setLoading(false);
+    });
 
-    fetchProfileData();
-  }, [user]);
+    return () => unsubscribe();
+  }, []);
 
-  useEffect(() => {
-    const loadPartnerProfile = async () => {
-      const partner = await getPartnerProfile();
-      console.log("Partner data:", partner);
-      setPartnerProfile(partner);
-    };
-
-    if (user) {
-      loadPartnerProfile();
+  const login = async (email, password) => {
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      await result.user.getIdToken(true);
+      return result;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-  }, [user]);
-
-  const handleProfileUpdate = (updatedData) => {
-    setProfileData(updatedData);
   };
 
-  const getDaysTogether = () => {
-    if (!profileData?.relationship?.anniversary) return 0;
-    const anniversary = new Date(profileData.relationship.anniversary);
-    const today = new Date();
-    return Math.floor((today - anniversary) / (1000 * 60 * 60 * 24));
+  const signup = async (email, password) => {
+    try {
+      // First create the authentication user
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      
+      try {
+        // Then try to create the user profile document
+        await setDoc(doc(db, 'users', result.user.uid), {
+          email: email,
+          createdAt: new Date().toISOString(),
+          displayName: email.split('@')[0], // Add a basic display name
+          username: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''), // Create a simple username
+          stats: {
+            messages: 0,
+            moments: 0
+          }
+        });
+      } catch (dbError) {
+        console.error('Error creating user profile in database:', dbError);
+        // We don't throw here because the authentication was successful
+        // The profile can be created later
+      }
+
+      await result.user.getIdToken(true);
+      return result;
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    }
   };
 
-  const stats = [
-    { label: 'Messages', value: profileData?.stats?.messages || 0, Icon: MessageCircle, color: 'text-blue-500' },
-    { label: 'Moments', value: profileData?.stats?.moments || 0, Icon: Camera, color: 'text-purple-500' },
-    { label: 'Days', value: getDaysTogether(), Icon: Calendar, color: 'text-rose-500' }
-  ];
+  const logout = async () => {
+    try {
+      // Clear any cached data before signing out
+      await auth.currentUser?.getIdToken(true);
+      await signOut(auth);
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  };
 
-  if (loading || !user || !profileData) {
-    return (
-      <PageLayout>
-        <div className="flex items-center justify-center h-screen">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        </div>
-      </PageLayout>
-    );
-  }
+  // Add this function to get partner's profile
+  const getPartnerProfile = async () => {
+    if (!user) return null;
+    
+    try {
+      // Just return null for now since we're removing the partner requirement
+      return null;
+    } catch (error) {
+      console.error('Error getting partner profile:', error);
+      return null;
+    }
+  };
 
-  if (error) {
-    return (
-      <PageLayout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="bg-red-500/10 text-red-600 dark:text-red-400 p-4 rounded-lg">
-            {error}
-          </div>
-        </div>
-      </PageLayout>
-    );
-  }
-
-  return (
-    <PageLayout>
-      <div className="min-h-screen">
-        {/* Header */}
-        <div className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-gray-200 dark:border-gray-800 sticky top-0 z-10">
-          <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Profile</h1>
-            <div className="flex items-center gap-2">
-              {/* Settings Button */}
-              <button 
-                onClick={() => setShowSettings(true)}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-          {/* Profile Section */}
-          <div className="flex flex-col items-center space-y-6">
-            {/* Profile Photo */}
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 p-1">
-                <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-900">
-                  <img
-                    src={profileData?.profilePhotoURL || "/api/placeholder/128/128"}
-                    alt={profileData?.displayName || "Profile"}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Info */}
-            <div className="text-center space-y-4">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {profileData?.displayName || "User"}
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400">
-                  @{profileData?.username || "username"}
-                </p>
-              </div>
-
-              {/* Relationship Status */}
-              {(profileData?.relationship?.anniversary || partnerProfile) && (
-                <div className="flex flex-col items-center gap-2">
-                  {profileData.relationship?.anniversary && (
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                      <Calendar className="w-4 h-4" />
-                      <span>Together since {new Date(profileData.relationship.anniversary).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                  {/* Partner Button */}
-                  <button 
-                    onClick={() => {
-                      console.log("Clicking partner button. Partner profile:", partnerProfile);
-                      navigate(`/profile/${partnerProfile?.uid}`);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
-                  >
-                    <Heart className="w-4 h-4" />
-                    <span>With {partnerProfile?.username || partnerProfile?.displayName}</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-4">
-            {stats.map((stat) => (
-              <div key={stat.label} className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center border border-gray-200 dark:border-gray-800">
-                <stat.Icon className={`w-6 h-6 ${stat.color} mx-auto mb-2`} />
-                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Spotify Section */}
-          <SpotifySection />
-
-          {/* Quick Actions */}
-          <QuickActions />
-        </div>
-
-        {/* Settings Modal */}
-        {showSettings && (
-          <SettingsPage 
-            onClose={() => setShowSettings(false)} 
-            profileData={{
-              ...profileData,
-              onProfileUpdate: handleProfileUpdate
-            }}
-          />
-        )}
-      </div>
-    </PageLayout>
-  );
+  return {
+    user,
+    loading,
+    hasProfile,
+    login,
+    signup,
+    logout,
+    getPartnerProfile,
+    auth
+  };
 };
-
-export default ProfilePage;
