@@ -1,6 +1,6 @@
 import { initializeApp, getApps, deleteApp } from 'firebase/app';
 import { getAuth, indexedDBLocalPersistence, initializeAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc } from 'firebase/firestore'; // Add doc here
 import { getStorage } from 'firebase/storage';
 import { getMessaging, getToken } from 'firebase/messaging';
 import { getFunctions } from 'firebase/functions';
@@ -97,7 +97,7 @@ export const requestNotificationPermission = async () => {
         
         console.log('FCM Token obtained:', token);
         
-        // Save token to user's document
+        // Save token to user's document - fix doc reference
         if (auth.currentUser) {
             const userRef = doc(db, 'users', auth.currentUser.uid);
             await updateDoc(userRef, {
