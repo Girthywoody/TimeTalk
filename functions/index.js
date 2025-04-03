@@ -81,63 +81,10 @@ app.use(cors({
 //     }
 // }
 
-// app.post('/simpleNotification', async (req, res) => {
-//     console.log('Received simple notification request:', req.body);
-//     try {
-//         // Authenticate the request
-//         const authHeader = req.headers.authorization;
-//         if (!authHeader) {
-//             return res.status(401).json({ error: 'Unauthorized' });
-//         }
 
-//         const token = authHeader.split('Bearer ')[1];
-//         const decodedToken = await admin.auth().verifyIdToken(token);
 
-//         if (!decodedToken.uid) {
-//             return res.status(401).json({ error: 'Invalid token' });
-//         }
-
-//         // Get the request data
-//         const { userId, title, body } = req.body;
-        
-//         if (!userId || !title || !body) {
-//             return res.status(400).json({ error: 'Missing required fields' });
-//         }
-
-//         // Get the user's FCM token
-//         const userDoc = await admin.firestore().collection('users').doc(userId).get();
-//         const userData = userDoc.data();
-        
-//         if (!userData?.fcmToken) {
-//             return res.json({ success: false, error: 'No FCM token available' });
-//         }
-
-//         // Create the most basic message possible
-//         const message = {
-//             token: userData.fcmToken,
-//             notification: {
-//                 title: title,
-//                 body: body
-//             }
-//         };
-
-//         try {
-//             // Send the notification
-//             const response = await admin.messaging().send(message);
-//             console.log('Successfully sent simple notification:', response);
-//             return res.json({ success: true });
-//         } catch (error) {
-//             console.error('FCM error:', error);
-//             return res.json({ success: false, error: error.message });
-//         }
-//     } catch (error) {
-//         console.error('Error in simpleNotification endpoint:', error);
-//         return res.status(500).json({ error: error.message });
-//     }
-// });
 
 // Updated sendNotificationToUser
-
 async function sendNotificationToUser(userId, info) {
     try {
         const userDoc = await admin.firestore().collection('users').doc(userId).get();
@@ -198,46 +145,6 @@ async function sendNotificationToUser(userId, info) {
         return { success: false, error: error.message };
     }
 }
-
-// app.post('/sendNotification', async (req, res) => {
-//     try {
-//         const authHeader = req.headers.authorization;
-//         if (!authHeader) {
-//             return res.status(401).json({ error: 'Unauthorized' });
-//         }
-
-//         const token = authHeader.split('Bearer ')[1];
-//         const decodedToken = await admin.auth().verifyIdToken(token);
-
-//         if (!decodedToken.uid) {
-//             return res.status(401).json({ error: 'Invalid token' });
-//         }
-
-//         // Extract fields from request
-//         const { userId, title, body, data, notification } = req.body;
-        
-//         // Support both old and new format
-//         const notificationTitle = title || notification?.title || 'New Notification';
-//         const notificationBody = body || notification?.body || 'You have a new notification';
-//         const notificationData = data || notification?.data || {
-//             type: 'general',
-//             timestamp: Date.now().toString()
-//         };
-
-//         const result = await sendNotificationToUser(userId, {
-//             title: notificationTitle,
-//             body: notificationBody,
-//             data: notificationData
-//         });
-        
-//         return res.json(result);
-//     } catch (error) {
-//         console.error('Error in sendNotification endpoint:', error);
-//         return res.status(500).json({ error: error.message });
-//     }
-// });
-
-
 
 exports.publishScheduledPosts = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
   const now = new Date();
