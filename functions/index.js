@@ -14,77 +14,62 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// async function sendNotificationToUser(userId, notification) {
-//     try {
-//         const userDoc = await admin.firestore().collection('users').doc(userId).get();
-//         const userData = userDoc.data();
+
+app.post('/simpleNotification', async (req, res) => {
+    console.log('Received simple notification request:', req.body);
+    try {
+        // Authenticate the request
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const token = authHeader.split('Bearer ')[1];
+        const decodedToken = await admin.auth().verifyIdToken(token);
+
+        if (!decodedToken.uid) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+
+        // Get the request data
+        const { userId, title, body } = req.body;
         
-//         if (!userData?.fcmToken) {
-//             console.log('No FCM token for user:', userId);
-//             return { success: false, error: 'No FCM token available' };
-//         }
+        if (!userId || !title || !body) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
 
-//         // Log the notification object received from client
-//         console.log('Notification received from client:', notification);
-
-//         // Create a properly formatted FCM message
-//         const message = {
-//             token: userData.fcmToken,
-//             notification: {
-//                 title: notification.title,
-//                 body: notification.body
-//             },
-//             webpush: {
-//                 headers: {
-//                     Urgency: 'high'
-//                 },
-//                 notification: {
-//                     icon: '/ios-icon-192.png',
-//                     badge: '/ios-icon-192.png',
-//                     vibrate: notification.vibrate || [200, 100, 200],
-//                     requireInteraction: true,
-//                     renotify: true
-//                 },
-//                 fcmOptions: {
-//                     link: notification.data?.clickAction || '/'
-//                 }
-//             },
-//             android: {
-//                 notification: {
-//                     icon: '/ios-icon-192.png',
-//                     priority: notification.priority || 'high'
-//                 }
-//             },
-//             apns: {
-//                 payload: {
-//                     aps: {
-//                         sound: notification.sound || 'default'
-//                     }
-//                 }
-//             },
-//             data: notification.data || {}
-//         };
-
-//         // Log the message before sending
-//         console.log('Message to be sent to FCM:', JSON.stringify(message, null, 2));
+        // Get the user's FCM token
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
+        const userData = userDoc.data();
         
-//         const response = await admin.messaging().send(message);
-//         console.log('Successfully sent notification:', response);
-//         return { success: true };
-//     } catch (error) {
-//         // Log the detailed error
-//         console.error('Error sending notification:', error.code, error.message);
-//         if (error.details) {
-//             console.error('Error details:', error.details);
-//         }
-//         return { success: false, error: error.message };
-//     }
-// }
+        if (!userData?.fcmToken) {
+            return res.json({ success: false, error: 'No FCM token available' });
+        }
 
+        // Create the most basic message possible
+        const message = {
+            token: userData.fcmToken,
+            notification: {
+                title: title,
+                body: body
+            }
+        };
 
+        try {
+            // Send the notification
+            const response = await admin.messaging().send(message);
+            console.log('Successfully sent simple notification:', response);
+            return res.json({ success: true });
+        } catch (error) {
+            console.error('FCM error:', error);
+            return res.json({ success: false, error: error.message });
+        }
+    } catch (error) {
+        console.error('Error in simpleNotification endpoint:', error);
+        return res.status(500).json({ error: error.message });
+    }
+});
 
-
-// Updated sendNotificationToUser
 async function sendNotificationToUser(userId, info) {
     try {
         const userDoc = await admin.firestore().collection('users').doc(userId).get();
