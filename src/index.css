@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add these to your existing styles */
+body {
+  @apply bg-gray-50 dark:bg-gray-950;
+}
+
+#root {
+  min-height: 100vh;
+  @apply bg-gray-50 dark:bg-gray-950;
+}

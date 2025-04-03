@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
+    <!-- iOS specific meta tags -->
+    <link rel="apple-touch-icon" href="/time talk.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Time Talk">
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Theme color -->
+    <meta name="theme-color" content="#ffffff">
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async function() {
+                try {
+                    // Unregister any existing service workers first
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for(let registration of registrations) {
+                        await registration.unregister();
+                    }
+
+                    // Register the new service worker
+                    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                        scope: '/',
+                        updateViaCache: 'none'
+                    });
+                    
+                    console.log('ServiceWorker registration successful:', registration);
+
+                    // Force update
+                    registration.update();
+
+                    // Handle updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        console.log('Service Worker update found!');
+                        newWorker.addEventListener('statechange', () => {
+                            console.log('Service Worker state:', newWorker.state);
+                        });
+                    });
+
+                } catch (error) {
+                    console.error('ServiceWorker registration failed:', error);
+                }
+            });
+
+            // Listen for controller change
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log('Service Worker controller changed');
+            });
+        }
+    </script>
+
+    <!-- iOS PWA notification support -->
+    <script>
+        // iOS PWA notification support
+        if (window.navigator && navigator.serviceWorker) {
+            navigator.serviceWorker.ready.then(registration => {
+                if ('Notification' in window) {
+                    const vapidPublicKey = 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc';
+                    
+                    function urlBase64ToUint8Array(base64String) {
+                        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                        const base64 = (base64String + padding)
+                            .replace(/\-/g, '+')
+                            .replace(/_/g, '/');
+
+                        const rawData = window.atob(base64);
+                        const outputArray = new Uint8Array(rawData.length);
+
+                        for (let i = 0; i < rawData.length; ++i) {
+                            outputArray[i] = rawData.charCodeAt(i);
+                        }
+                        return outputArray;
+                    }
+
+                    registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+                    }).then(function(subscription) {
+                        console.log('Push subscription successful:', subscription);
+                    }).catch(function(error) {
+                        console.error('Push subscription failed:', error);
+                    });
+                }
+            });
+        }
+    </script>
+
+    <!-- Check if running as PWA on iOS -->
+    <script>
+        // Check if running as PWA on iOS
+        if (window.navigator.standalone) {
+            // Set up a custom event listener for push notifications
+            window.addEventListener('push', function(event) {
+                if (event.data) {
+                    const payload = event.data.json();
+                    if (Notification.permission === 'granted') {
+                        const notification = new Notification(payload.notification.title, {
+                            body: payload.notification.body,
+                            icon: '/ios-icon-192.png',
+                            badge: '/ios-icon-192.png',
+                            data: payload.data
+                        });
+                        
+                        notification.onclick = function() {
+                            window.focus();
+                            notification.close();
+                            // Handle any custom click actions
+                            if (payload.data?.url) {
+                                window.location.href = payload.data.url;
+                            }
+                        };
+                    }
+                }
+            });
+        }
+    </script>
+
+    <title>Time Talk</title>
+
+    <style>
+      /* Prevent iOS Safari behaviors */
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        overscroll-behavior: none;
+        touch-action: manipulation;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        height: 100vh;
+        height: 100dvh;
+      }
+
+      #root {
+        height: 100%;
+        padding-bottom: calc(64px + env(safe-area-inset-bottom));
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+      }
+    </style>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
