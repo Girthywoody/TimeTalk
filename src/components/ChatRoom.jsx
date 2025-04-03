@@ -559,60 +559,52 @@ const handleSend = async () => {
       console.log('Audio play failed:', err);
     }
     
-    // Notification logic - Fixed to prevent duplicates and ensure notifications are sent
-    if (partner && partner.uid) {
-      try {
-        // Prepare notification content
-        const notificationData = {
-          title: userProfile.displayName || 'Your partner',
-          body: messageData.type === 'image' ? '📷 Image' : 
-               messageData.type === 'file' ? '📎 File' :
-               messageData.text || 'New message',
-          data: {
-            type: 'message',
-            messageId: docRef.id,
-            messageType: messageData.type
-          }
-        };
-        
-        // Create a more specific cache key with the message ID to prevent duplicates
-        const notificationCacheKey = `notification_sent_${docRef.id}`;
-        
-        // Check if the partner is not actively using the app right now
-        const shouldSendNotification = 
-          // Partner is offline (not active in last 2 minutes)
-          !otherUserStatus?.isOnline || 
-          // OR document is not visible (user has app in background or different tab)
-          document.visibilityState !== 'visible';
-        
-        // Only send if we should and haven't already sent for this message
-        if (shouldSendNotification && !localStorage.getItem(notificationCacheKey)) {
-          console.log('Sending notification to partner:', partner.uid, 'for message:', docRef.id);
-          
-          // Set the flag BEFORE sending the notification to prevent race conditions
-          localStorage.setItem(notificationCacheKey, 'true');
-          
-          // Send the notification
-          const result = await sendNotification(partner.uid, notificationData);
-          
-          if (!result.success) {
-            console.warn('Failed to send notification:', result.error);
-          }
-          
-          // Keep the record for 5 minutes (enough time to prevent duplicates but not forever)
-          setTimeout(() => {
-            localStorage.removeItem(notificationCacheKey);
-          }, 5 * 60 * 1000);
-        } else {
-          console.log(
-            'Skipping notification because:', 
-            !shouldSendNotification ? 'partner is active' : 'already sent notification for this message'
-          );
-        }
-      } catch (error) {
-        console.error('Failed to send notification:', error);
+// Inside handleSend function, modify the notification sending part:
+if (partner && partner.uid) {
+  try {
+    const notificationData = {
+      title: userProfile.displayName || 'Your partner',
+      body: messageData.type === 'image' ? '📷 Image' : 
+           messageData.type === 'file' ? '📎 File' :
+           messageData.text || 'New message',
+      data: {
+        type: 'message',
+        messageId: docRef.id,
+        messageType: messageData.type
       }
+    };
+    
+    // Use a more specific cache key with the message ID to prevent duplicates
+    const notificationCacheKey = `notification_sent_${docRef.id}`;
+    
+    // Check if we've already sent a notification for this specific message
+    if (!localStorage.getItem(notificationCacheKey)) {
+      // Send notification in these cases:
+      // 1. Partner is offline (not active in last 2 minutes)
+      // 2. Document is not visible (user has app in background or different tab)
+      if (!otherUserStatus?.isOnline || document.visibilityState !== 'visible') {
+        console.log('Sending notification to partner:', partner.uid, 'for message:', docRef.id);
+        
+        // Set the flag BEFORE sending the notification to prevent race conditions
+        localStorage.setItem(notificationCacheKey, 'true');
+        
+        // Send the actual notification
+        await sendNotification(partner.uid, notificationData);
+        
+        // Keep the record for a reasonable amount of time (1 hour)
+        setTimeout(() => {
+          localStorage.removeItem(notificationCacheKey);
+        }, 60 * 60 * 1000);
+      } else {
+        console.log('Partner is online and has app visible, skipping notification for message:', docRef.id);
+      }
+    } else {
+      console.log('Already sent notification for message:', docRef.id);
     }
+  } catch (error) {
+    console.error('Failed to send notification:', error);
+  }
+}
     
     setNewMessage('');
     removeSelectedFile();
@@ -1139,49 +1131,33 @@ useEffect(() => {
   };
 
 
-const handleNudge = async () => {
-  try {
-    if (!partner || !partner.uid) {
-      toast.error('Partner information not available');
-      return;
-    }
-    
-    // Check if we've sent a nudge in the last 60 seconds
-    const lastNudgeTime = localStorage.getItem('lastNudgeTime');
-    const now = Date.now();
-    
-    if (lastNudgeTime && (now - parseInt(lastNudgeTime)) < 60000) {
-      toast.info('Please wait a moment before sending another nudge');
-      return;
-    }
-    
-    // Set current time as last nudge time
-    localStorage.setItem('lastNudgeTime', now.toString());
-    
-    // Create unique ID for this nudge to prevent duplicates
-    const nudgeId = `nudge_${now}_${Math.random().toString(36).substring(2, 10)}`;
-    
-    const result = await sendNotification(partner.uid, {
-      title: userProfile?.displayName || user.displayName || 'Your partner',
-      body: '👋 Hey! Come answer me!',
-      data: {
-        type: 'nudge',
-        nudgeId: nudgeId,
-        priority: 'high',
-        vibrate: [200, 100, 200, 100, 200]  // Special vibration pattern for nudges
+  const handleNudge = async () => {
+    try {
+      if (!partner || !partner.uid) {
+        toast.error('Partner information not available');
+        return;
       }
-    });
+      
+      const result = await sendNotification(partner.uid, {
+        title: userProfile?.displayName || user.displayName || 'Your partner',
+        body: '👋 Hey! Come answer me!',
+        data: {
+          type: 'nudge',
+          priority: 'high',
+          vibrate: [200, 100, 200, 100, 200]  // Special vibration pattern for nudges
+        }
+      });
   
-    if (result.success) {
-      toast.success('Nudge sent!');
-    } else {
-      throw new Error('Failed to send nudge');
+      if (result.success) {
+        toast.success('Nudge sent!');
+      } else {
+        throw new Error('Failed to send nudge');
+      }
+    } catch (error) {
+      console.error('Error sending nudge:', error);
+      toast.error('Failed to send nudge');
     }
-  } catch (error) {
-    console.error('Error sending nudge:', error);
-    toast.error('Failed to send nudge');
-  }
-};
+  };
 
   useEffect(() => {
     const handleResize = () => {
