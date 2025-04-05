@@ -62,57 +62,57 @@ export const isAllowedEmail = (email) => {
 export { ALLOWED_USERS };
 
 export const requestNotificationPermission = async () => {
-    try {
-      // Step 1: Check browser support
-      if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-        console.error('This browser does not support notifications');
-        return null;
-      }
-      
-      // Step 2: Request permission
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        console.log('Notification permission denied');
-        return null;
-      }
-      
-      // Step 3: Register service worker (if not already registered)
-      let registration;
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      const existingRegistration = registrations.find(reg => 
-        reg.scope.includes(window.location.origin));
-      
-      if (existingRegistration) {
-        registration = existingRegistration;
-        console.log('Using existing Service Worker:', registration.scope);
-      } else {
-        registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        console.log('Service Worker registered:', registration.scope);
-      }
-      
-      // Step 4: Get FCM token
-      const messaging = getMessaging();
-      const token = await getToken(messaging, {
-        vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
-        serviceWorkerRegistration: registration
-      });
-      
-      console.log('FCM Token obtained:', token);
-      
-      // Step 5: Save token to user's document
-      if (auth.currentUser) {
-        const userRef = doc(db, 'users', auth.currentUser.uid);
-        await updateDoc(userRef, {
-          fcmToken: token,
-          lastTokenUpdate: new Date().toISOString()
-        });
-      }
-      
-      return token;
-    } catch (error) {
-      console.error('Notification setup error:', error);
+  try {
+    // Step 1: Check browser support
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      console.error('This browser does not support notifications');
       return null;
     }
-  };
+    
+    // Step 2: Request permission
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      console.log('Notification permission denied');
+      return null;
+    }
+    
+    // Step 3: Register service worker (if not already registered)
+    let registration;
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    const existingRegistration = registrations.find(reg => 
+      reg.scope.includes(window.location.origin));
+    
+    if (existingRegistration) {
+      registration = existingRegistration;
+      console.log('Using existing Service Worker:', registration.scope);
+    } else {
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      console.log('Service Worker registered:', registration.scope);
+    }
+    
+    // Step 4: Get FCM token
+    const messaging = getMessaging();
+    const token = await getToken(messaging, {
+      vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
+      serviceWorkerRegistration: registration
+    });
+    
+    console.log('FCM Token obtained:', token);
+    
+    // Step 5: Save token to user's document
+    if (auth.currentUser) {
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await updateDoc(userRef, {
+        fcmToken: token,
+        lastTokenUpdate: new Date().toISOString()
+      });
+    }
+    
+    return token;
+  } catch (error) {
+    console.error('Notification setup error:', error);
+    return null;
+  }
+};
 
 export { auth, db, storage, messaging, functions };

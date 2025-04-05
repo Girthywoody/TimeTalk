@@ -560,46 +560,32 @@ const handleSend = async () => {
     }
     
 // Inside handleSend function, modify the notification sending part:
+// In handleSend function in ChatRoom.jsx, replace the notification part with:
 if (partner && partner.uid) {
   try {
+    // Always create a fresh notification data object
     const notificationData = {
-      title: userProfile.displayName || 'Your partner',
+      title: userProfile?.displayName || 'Your partner',
       body: messageData.type === 'image' ? '📷 Image' : 
            messageData.type === 'file' ? '📎 File' :
            messageData.text || 'New message',
       data: {
         type: 'message',
         messageId: docRef.id,
-        messageType: messageData.type
+        messageType: messageData.type,
+        timestamp: Date.now()  // Add timestamp for more unique identification
       }
     };
     
-    // Use a more specific cache key with the message ID to prevent duplicates
-    const notificationCacheKey = `notification_sent_${docRef.id}`;
+    // Check if partner is not active or app is in background
+    const shouldSendNotification = 
+      !isPartnerActive || document.visibilityState !== 'visible';
     
-    // Check if we've already sent a notification for this specific message
-    if (!localStorage.getItem(notificationCacheKey)) {
-      // Send notification in these cases:
-      // 1. Partner is offline (not active in last 2 minutes)
-      // 2. Document is not visible (user has app in background or different tab)
-      if (!otherUserStatus?.isOnline || document.visibilityState !== 'visible') {
-        console.log('Sending notification to partner:', partner.uid, 'for message:', docRef.id);
-        
-        // Set the flag BEFORE sending the notification to prevent race conditions
-        localStorage.setItem(notificationCacheKey, 'true');
-        
-        // Send the actual notification
-        await sendNotification(partner.uid, notificationData);
-        
-        // Keep the record for a reasonable amount of time (1 hour)
-        setTimeout(() => {
-          localStorage.removeItem(notificationCacheKey);
-        }, 60 * 60 * 1000);
-      } else {
-        console.log('Partner is online and has app visible, skipping notification for message:', docRef.id);
-      }
+    if (shouldSendNotification) {
+      console.log('Sending notification to partner:', partner.uid, 'for message:', docRef.id);
+      await sendNotification(partner.uid, notificationData);
     } else {
-      console.log('Already sent notification for message:', docRef.id);
+      console.log('Partner is active and app is visible, skipping notification');
     }
   } catch (error) {
     console.error('Failed to send notification:', error);
@@ -1138,18 +1124,29 @@ useEffect(() => {
         return;
       }
       
-      const result = await sendNotification(partner.uid, {
+      // Always use a fresh timestamp for nudges
+      const nudgeData = {
         title: userProfile?.displayName || user.displayName || 'Your partner',
         body: '👋 Hey! Come answer me!',
         data: {
           type: 'nudge',
           priority: 'high',
-          vibrate: [200, 100, 200, 100, 200]  // Special vibration pattern for nudges
+          vibrate: [200, 100, 200, 100, 200],
+          timestamp: Date.now()  // Add timestamp for more unique identification
         }
-      });
-  
+      };
+      
+      // Use the improved sendNotification function
+      const result = await sendNotification(partner.uid, nudgeData);
+    
       if (result.success) {
         toast.success('Nudge sent!');
+        // Add this to prevent rapid sending of multiple nudges
+        document.getElementById('nudge-button').disabled = true;
+        setTimeout(() => {
+          const button = document.getElementById('nudge-button');
+          if (button) button.disabled = false;
+        }, 5000); // 5 seconds cooldown
       } else {
         throw new Error('Failed to send nudge');
       }
