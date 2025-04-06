@@ -119,59 +119,149 @@ app.post('/sendNotification', async (req, res) => {
     }
 });
 
-app.post('/simpleNotification', async (req, res) => {
-    console.log('Received simple notification request:', req.body);
+app.post('/checkUser', async (req, res) => {
     try {
-        // Authenticate the request
-        const authHeader = req.headers.authorization;
-        if (!authHeader) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
-
-        const token = authHeader.split('Bearer ')[1];
-        const decodedToken = await admin.auth().verifyIdToken(token);
-
-        if (!decodedToken.uid) {
-            return res.status(401).json({ error: 'Invalid token' });
-        }
-
-        // Get the request data
-        const { userId, title, body } = req.body;
-        
-        if (!userId || !title || !body) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
-
-        // Get the user's FCM token
+      // Authenticate the request
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+  
+      const token = authHeader.split('Bearer ')[1];
+      const decodedToken = await admin.auth().verifyIdToken(token);
+  
+      if (!decodedToken.uid) {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+  
+      // Get the request data
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: 'Missing userId' });
+      }
+  
+      // Check if the user exists in Firestore
+      try {
         const userDoc = await admin.firestore().collection('users').doc(userId).get();
-        const userData = userDoc.data();
-        
-        if (!userData?.fcmToken) {
-            return res.json({ success: false, error: 'No FCM token available' });
-        }
-
-        // Create the most basic message possible
-        const message = {
-            token: userData.fcmToken,
-            notification: {
-                title: title,
-                body: body
-            }
-        };
-
-        try {
-            // Send the notification
-            const response = await admin.messaging().send(message);
-            console.log('Successfully sent simple notification:', response);
-            return res.json({ success: true });
-        } catch (error) {
-            console.error('FCM error:', error);
-            return res.json({ success: false, error: error.message });
-        }
+        return res.json({ exists: userDoc.exists });
+      } catch (dbError) {
+        console.error('Error checking user existence:', dbError);
+        return res.status(500).json({ error: dbError.message });
+      }
     } catch (error) {
-        console.error('Error in simpleNotification endpoint:', error);
-        return res.status(500).json({ error: error.message });
+      console.error('Error in checkUser endpoint:', error);
+      return res.status(500).json({ error: error.message });
     }
+  });
+
+app.post('/simpleNotification', async (req, res) => {
+  console.log('Received simple notification request:', req.body);
+  try {
+    // Authenticate the request
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(token);
+
+    if (!decodedToken.uid) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    // Get the request data
+    const { userId, title, body, data } = req.body;
+    
+    if (!userId || !title || !body) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Get the user's FCM token with detailed error handling
+    let userDoc;
+    try {
+      userDoc = await admin.firestore().collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        console.error(`User ${userId} not found in database`);
+        return res.json({ success: false, error: 'User not found in database' });
+      }
+    } catch (dbError) {
+      console.error('Database error looking up user:', dbError);
+      return res.json({ success: false, error: 'Database error: ' + dbError.message });
+    }
+    
+    const userData = userDoc.data();
+    if (!userData) {
+      return res.json({ success: false, error: 'User data is empty' });
+    }
+    
+    if (!userData.fcmToken) {
+      console.log(`User ${userId} has no FCM token`);
+      return res.json({ success: false, error: 'No FCM token available for this user' });
+    }
+
+    // Create the notification message with optional data field
+    const message = {
+      token: userData.fcmToken,
+      notification: {
+        title: title,
+        body: body
+      }
+    };
+    
+    // Add data if provided
+    if (data) {
+      message.data = typeof data === 'object' ? 
+        // Convert all values to strings for FCM compatibility
+        Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])) : 
+        { data: String(data) };
+    }
+
+    try {
+      // Send the notification
+      const response = await admin.messaging().send(message);
+      console.log('Successfully sent simple notification:', response);
+      return res.json({ success: true, messageId: response });
+    } catch (fcmError) {
+      console.error('FCM error:', fcmError);
+      
+      // Provide more detailed error information
+      let errorMessage = fcmError.message;
+      
+      // Handle common FCM errors
+      if (fcmError.code === 'messaging/invalid-registration-token') {
+        errorMessage = 'Invalid FCM token';
+        
+        // Update the user document to clear the invalid token
+        try {
+          await admin.firestore().collection('users').doc(userId).update({
+            fcmToken: admin.firestore.FieldValue.delete()
+          });
+          console.log(`Cleared invalid FCM token for user ${userId}`);
+        } catch (updateError) {
+          console.error('Error clearing invalid token:', updateError);
+        }
+      } else if (fcmError.code === 'messaging/registration-token-not-registered') {
+        errorMessage = 'FCM token is no longer registered';
+        
+        // Update the user document to clear the unregistered token
+        try {
+          await admin.firestore().collection('users').doc(userId).update({
+            fcmToken: admin.firestore.FieldValue.delete()
+          });
+          console.log(`Cleared unregistered FCM token for user ${userId}`);
+        } catch (updateError) {
+          console.error('Error clearing unregistered token:', updateError);
+        }
+      }
+      
+      return res.json({ success: false, error: errorMessage });
+    }
+  } catch (error) {
+    console.error('Error in simpleNotification endpoint:', error);
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 // Updated sendNotificationToUser

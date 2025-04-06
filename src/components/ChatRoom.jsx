@@ -318,66 +318,83 @@ useEffect(() => {
   };
 
 
-// Add this function to ChatRoom.jsx
-const testNotification = async () => {
-  try {
-    // Show loading toast
-    const loadingToastId = toast.loading('Testing notification system...');
-    
-    // Verify permission first
-    if (Notification.permission !== 'granted') {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
+  const testNotification = async () => {
+    try {
+      // Show loading toast
+      const loadingToastId = toast.loading('Testing notification system...');
+      
+      // Check if notifications are supported
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) {
         toast.update(loadingToastId, {
-          render: 'Notification permission denied',
+          render: 'This browser does not support notifications',
           type: 'error',
           isLoading: false,
           autoClose: 5000
         });
         return;
       }
-    }
-
-    // Get FCM token
-    const token = await requestNotificationPermission();
-    if (!token) {
-      toast.update(loadingToastId, {
-        render: 'Failed to get notification token',
-        type: 'error',
-        isLoading: false,
-        autoClose: 5000
-      });
-      return;
-    }
-
-    // Send test notification
-    const testData = {
-      title: "Test Notification",
-      body: "This is a test notification from TimeTalk",
-      data: {
-        type: 'test',
-        timestamp: Date.now(),
-        clickAction: '/'
+      
+      // Verify permission
+      if (Notification.permission !== 'granted') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          toast.update(loadingToastId, {
+            render: 'Notification permission denied',
+            type: 'error',
+            isLoading: false,
+            autoClose: 5000
+          });
+          return;
+        }
       }
-    };
-
-    const result = await sendNotification(user.uid, testData);
-    
-    if (result.success) {
-      toast.update(loadingToastId, {
-        render: 'Test notification sent successfully!',
-        type: 'success',
-        isLoading: false,
-        autoClose: 5000
+      
+      // Refresh the token to ensure it's valid
+      const token = await refreshFCMToken();
+      if (!token) {
+        toast.update(loadingToastId, {
+          render: 'Failed to get notification token',
+          type: 'error',
+          isLoading: false,
+          autoClose: 5000
+        });
+        return;
+      }
+      
+      // Send a local notification first to test browser support
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification('Local Test', {
+        body: 'This is a local browser notification test',
+        icon: '/ios-icon-192.png'
       });
-    } else {
-      throw new Error(result.error || 'Failed to send notification');
+      
+      // Now send an FCM notification to yourself
+      const testData = {
+        title: "FCM Test Notification",
+        body: "This is an FCM test notification",
+        data: {
+          type: 'test',
+          timestamp: Date.now().toString(),
+          clickAction: '/'
+        }
+      };
+  
+      const result = await sendNotification(user.uid, testData);
+      
+      if (result.success) {
+        toast.update(loadingToastId, {
+          render: 'Test notification sent successfully!',
+          type: 'success',
+          isLoading: false,
+          autoClose: 5000
+        });
+      } else {
+        throw new Error(result.error || 'Failed to send test notification');
+      }
+    } catch (error) {
+      console.error('Test notification failed:', error);
+      toast.error('Failed to send test notification: ' + error.message);
     }
-  } catch (error) {
-    console.error('Test notification failed:', error);
-    toast.error('Failed to send test notification: ' + error.message);
-  }
-};
+  };
 
   useEffect(() => {
     // Add styles to head
@@ -1111,26 +1128,100 @@ useEffect(() => {
         return;
       }
       
-      const result = await sendNotification(partner.uid, {
-        title: userProfile?.displayName || user.displayName || 'Your partner',
-        body: '👋 Hey! Come answer me!',
-        data: {
-          type: 'nudge',
-          priority: 'high',
-          vibrate: [200, 100, 200, 100, 200]  // Special vibration pattern for nudges
+      // Disable the nudge button immediately to prevent multiple clicks
+      const nudgeButton = document.getElementById('nudge-button');
+      if (nudgeButton) nudgeButton.disabled = true;
+      
+      // Show a loading toast
+      const loadingToastId = toast.loading('Sending nudge...');
+      
+      try {
+        // Always use a fresh timestamp for nudges
+        const nudgeData = {
+          title: userProfile?.displayName || "Your partner",
+          body: '👋 Hey! Come answer me!',
+          data: {
+            type: 'nudge',
+            priority: 'high',
+            vibrate: [200, 100, 200, 100, 200],
+            timestamp: Date.now()
+          }
+        };
+        
+        console.log(`Attempting to nudge partner with ID: ${partner.uid}`);
+        
+        // Use the improved sendNotification function
+        const result = await sendNotification(partner.uid, nudgeData);
+      
+        // Update the toast based on the result
+        if (result.success) {
+          toast.update(loadingToastId, {
+            render: 'Nudge sent successfully!',
+            type: 'success',
+            isLoading: false,
+            autoClose: 3000
+          });
+        } else {
+          let errorMessage = 'Failed to send nudge';
+          
+          if (result.error === 'Partner has not enabled notifications') {
+            errorMessage = 'Your partner has not enabled notifications';
+          } else if (result.error === 'User not found') {
+            errorMessage = 'Your partner account was not found';
+          } else if (result.error) {
+            errorMessage = `Nudge failed: ${result.error}`;
+          }
+          
+          toast.update(loadingToastId, {
+            render: errorMessage,
+            type: 'error',
+            isLoading: false,
+            autoClose: 5000
+          });
+          
+          throw new Error(errorMessage);
         }
-      });
-  
-      if (result.success) {
-        toast.success('Nudge sent!');
-      } else {
-        throw new Error('Failed to send nudge');
+      } catch (error) {
+        console.error('Error sending nudge:', error);
+        toast.update(loadingToastId, {
+          render: `Failed to send nudge: ${error.message}`,
+          type: 'error',
+          isLoading: false,
+          autoClose: 3000
+        });
+      } finally {
+        // Re-enable the nudge button after 5 seconds regardless of outcome
+        setTimeout(() => {
+          const button = document.getElementById('nudge-button');
+          if (button) button.disabled = false;
+        }, 5000);
       }
     } catch (error) {
-      console.error('Error sending nudge:', error);
-      toast.error('Failed to send nudge');
+      console.error('Error in handleNudge:', error);
+      toast.error('Could not send nudge at this time');
     }
   };
+
+  useEffect(() => {
+    if (!user) return;
+    
+    // Function to refresh the token
+    const refreshToken = async () => {
+      try {
+        await refreshFCMToken();
+      } catch (error) {
+        console.error('Error refreshing token:', error);
+      }
+    };
+    
+    // Refresh token immediately
+    refreshToken();
+    
+    // Refresh token every 24 hours
+    const tokenRefreshInterval = setInterval(refreshToken, 24 * 60 * 60 * 1000);
+    
+    return () => clearInterval(tokenRefreshInterval);
+  }, [user]);
 
   useEffect(() => {
     const handleResize = () => {

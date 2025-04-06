@@ -53,6 +53,73 @@ const ALLOWED_USERS = {
   }
 };
 
+export const refreshFCMToken = async () => {
+    try {
+      // Check if notifications are supported
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        console.error('This browser does not support notifications');
+        return null;
+      }
+      
+      // Check if permission is granted
+      if (Notification.permission !== 'granted') {
+        console.log('Notification permission not granted');
+        return null;
+      }
+      
+      // Check for current user
+      if (!auth.currentUser) {
+        console.log('No authenticated user');
+        return null;
+      }
+      
+      // Get a fresh token
+      try {
+        // Unregister existing service workers first
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let registration of registrations) {
+          if (registration.scope.includes(window.location.origin)) {
+            await registration.unregister();
+            console.log('Unregistered existing service worker');
+          }
+        }
+        
+        // Register a new service worker
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+          scope: '/',
+          updateViaCache: 'none'
+        });
+        
+        // Get a new FCM token
+        const messaging = getMessaging();
+        const token = await getToken(messaging, {
+          vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
+          serviceWorkerRegistration: registration
+        });
+        
+        if (!token) {
+          throw new Error('Failed to obtain FCM token');
+        }
+        
+        // Update the token in Firestore
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        await updateDoc(userRef, {
+          fcmToken: token,
+          lastTokenUpdate: new Date().toISOString()
+        });
+        
+        console.log('FCM token refreshed successfully');
+        return token;
+      } catch (error) {
+        console.error('Error refreshing FCM token:', error);
+        return null;
+      }
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      return null;
+    }
+  };
+
 // Add this function to check if email is allowed
 export const isAllowedEmail = (email) => {
   return Object.values(ALLOWED_USERS).some(user => user.email === email);

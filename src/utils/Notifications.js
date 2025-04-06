@@ -1,28 +1,16 @@
 import { auth } from '../firebase';
 
 
+// 1. First, let's fix the sendNotification function in src/utils/Notifications.js
+
 export const sendNotification = async (userId, notificationData) => {
   if (!userId) {
     console.error('Invalid user ID for notification');
     return { success: false, error: 'Invalid user ID' };
   }
   
-  // Create a unique ID for this specific notification
-  const notificationId = `${userId}_${notificationData.data?.type || 'unknown'}_${Date.now()}`;
-  
-  // Check for message deduplication but with a shorter window (2 seconds)
-  if (notificationData.data?.messageId) {
-    const recentMessages = JSON.parse(localStorage.getItem('recent_message_ids') || '[]');
-    if (recentMessages.includes(notificationData.data.messageId)) {
-      console.log('Duplicate message notification prevented');
-      return { success: true, duplicate: true };
-    }
-    
-    // Store message ID with expiration (store last 10 messages)
-    recentMessages.push(notificationData.data.messageId);
-    if (recentMessages.length > 10) recentMessages.shift();
-    localStorage.setItem('recent_message_ids', JSON.stringify(recentMessages));
-  }
+  // Log the notification attempt for debugging
+  console.log(`Attempting to send notification to userId: ${userId}`);
   
   try {
     // Check if we have a current user and authentication
@@ -33,6 +21,28 @@ export const sendNotification = async (userId, notificationData) => {
     
     const idToken = await auth.currentUser.getIdToken(true);
     
+    // Make a preliminary check to see if the user exists
+    try {
+      const userCheckResponse = await fetch(`https://us-central1-timetalk-13a75.cloudfunctions.net/api/checkUser`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ userId })
+      });
+      
+      const userCheckResult = await userCheckResponse.json();
+      if (!userCheckResult.exists) {
+        console.error(`User ${userId} does not exist in the database`);
+        return { success: false, error: 'User not found' };
+      }
+    } catch (checkError) {
+      // If the checkUser endpoint doesn't exist, continue with the notification attempt
+      console.warn('User check failed, attempting notification anyway:', checkError);
+    }
+    
+    // Continue with notification sending
     console.log('Sending notification to user:', userId, 'with data:', notificationData);
     
     const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/simpleNotification', {
@@ -56,6 +66,12 @@ export const sendNotification = async (userId, notificationData) => {
 
     const result = await response.json();
     console.log('Notification API response:', result);
+    
+    // If the server indicates no FCM token, return a more specific error
+    if (result.error && result.error.includes('No FCM token')) {
+      return { success: false, error: 'Partner has not enabled notifications' };
+    }
+    
     return result;
   } catch (error) {
     console.error('Notification sending failed:', error);
