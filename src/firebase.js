@@ -63,54 +63,71 @@ export { ALLOWED_USERS };
 
 export const requestNotificationPermission = async () => {
     try {
-        if (!messaging) return null;
-
-        // First, check if service worker is already registered
-        let registration;
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        const existingRegistration = registrations.find(reg => reg.scope.includes(window.location.origin));
-        
-        if (existingRegistration) {
-            registration = existingRegistration;
-            console.log('Using existing Service Worker registration:', registration);
-        } else {
-            // Register a new service worker
-            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                scope: '/',
-                updateViaCache: 'none'
-            });
-            console.log('New Service Worker registered:', registration);
-        }
-
-        // Request notification permission
+      // Step 1: Check browser support
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        console.error('This browser does not support notifications');
+        return null;
+      }
+      
+      // Step 2: Request permission if not already granted
+      if (Notification.permission !== 'granted') {
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
-            console.log('Notification permission denied');
-            return null;
+          console.log('Notification permission denied');
+          return null;
         }
-
-        // Get token with the correct registration
-        const token = await getToken(messaging, {
-            vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OoxiYx4lrpbcNGm1IUobk_8dGLwvycc',
-            serviceWorkerRegistration: registration
+      }
+      
+      // Step 3: Register service worker (ensuring it's registration is fresh)
+      let registration;
+      try {
+        // Force update the service worker to ensure latest version
+        registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+          scope: '/',
+          updateViaCache: 'none'
         });
+        console.log('Service Worker registered successfully:', registration.scope);
         
-        console.log('FCM Token obtained:', token);
-        
-        // Save token to user's document - fix doc reference
-        if (auth.currentUser) {
-            const userRef = doc(db, 'users', auth.currentUser.uid);
-            await updateDoc(userRef, {
-                fcmToken: token,
-                lastTokenUpdate: new Date().toISOString()
+        // Wait for the registration to activate if needed
+        if (registration.installing) {
+          console.log('Service worker installing...');
+          await new Promise(resolve => {
+            registration.installing.addEventListener('statechange', e => {
+              if (e.target.state === 'activated') {
+                console.log('Service worker activated!');
+                resolve();
+              }
             });
+          });
         }
-        
-        return token;
-    } catch (error) {
-        console.error('Notification permission error:', error);
+      } catch (err) {
+        console.error('Service worker registration failed:', err);
         return null;
+      }
+      
+      // Step 4: Get FCM token with the fresh registration
+      const messaging = getMessaging();
+      const token = await getToken(messaging, {
+        vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
+        serviceWorkerRegistration: registration
+      });
+      
+      console.log('FCM Token obtained:', token);
+      
+      // Step 5: Save token to user's document
+      if (auth.currentUser) {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        await updateDoc(userRef, {
+          fcmToken: token,
+          lastTokenUpdate: new Date().toISOString()
+        });
+      }
+      
+      return token;
+    } catch (error) {
+      console.error('Notification setup error:', error);
+      return null;
     }
-};
+  };
 
 export { auth, db, storage, messaging, functions };

@@ -29,26 +29,25 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background messages
-// messaging.onBackgroundMessage(function(payload) {
-//     console.log('[firebase-messaging-sw.js] Received background message:', payload);
+// Add to firebase-messaging-sw.js - uncomment and fix the background message handler
+messaging.onBackgroundMessage(function(payload) {
+    console.log('[firebase-messaging-sw.js] Received background message:', payload);
     
-//     const notificationTitle = payload.notification?.title || 'New Message';
-//     const notificationOptions = {
-//         body: payload.notification?.body || 'You have a new notification',
-//         icon: '/ios-icon-192.png',
-//         badge: '/ios-icon-192.png',
-//         tag: payload.data?.timestamp || Date.now().toString(),
-//         data: payload.data || {},
-//         renotify: true,
-//         requireInteraction: true,
-//         silent: false,
-//         vibrate: [200, 100, 200]
-//     };
+    const notificationTitle = payload.notification?.title || 'New Message';
+    const notificationOptions = {
+        body: payload.notification?.body || 'You have a new notification',
+        icon: '/ios-icon-192.png',
+        badge: '/ios-icon-192.png',
+        tag: payload.data?.timestamp || Date.now().toString(),
+        data: payload.data || {},
+        renotify: true,
+        requireInteraction: true,
+        silent: false,
+        vibrate: [200, 100, 200]
+    };
 
-//     self.registration.showNotification(notificationTitle, notificationOptions);
-// });
-
+    self.registration.showNotification(notificationTitle, notificationOptions);
+});
 // Add to firebase-messaging-sw.js
 self.addEventListener('notificationclick', function(event) {
     console.log('[Service Worker] Notification click received:', event);

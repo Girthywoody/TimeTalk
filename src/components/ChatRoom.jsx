@@ -208,51 +208,56 @@ useEffect(() => {
   // Replace your notification status check with this more robust implementation
 // This prevents errors from undefined array access and React mount issues
 
-// Define this as a separate function in your ChatRoom component
 const checkNotificationStatus = async () => {
   // Only check if the component is still mounted and user exists
   if (!user) return;
   
   try {
-    // Check current permission without asking
+    // Check if device supports notifications
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      console.log('This browser does not support notifications');
+      return;
+    }
+    
+    // Check current permission
     if (Notification.permission === 'granted') {
       try {
-        const { requestNotificationPermission } = await import('../firebase');
+        // Get a fresh token to ensure FCM is working
         const token = await requestNotificationPermission();
         if (token) {
-          console.log('Notification token obtained:', token);
+          console.log('Notification token refreshed:', token);
         } else {
           console.warn('Permission granted but token not obtained');
         }
       } catch (error) {
         console.error('Error getting notification token:', error);
       }
-    } else if (Notification.permission === 'default' && !localStorage.getItem('notification_asked')) {
-      // Only show prompt once per session
-      localStorage.setItem('notification_asked', 'true');
-      
-      // Use toast instead of alert for better UX
-      toast.info(
-        'Enable notifications to get message alerts?',
-        {
-          onClick: async () => {
-            try {
-              const permission = await Notification.requestPermission();
-              if (permission === 'granted') {
-                const { requestNotificationPermission } = await import('../firebase');
-                const token = await requestNotificationPermission();
-                if (token) {
-                  toast.success('Notifications enabled successfully');
+    } else if (Notification.permission === 'default') {
+      // Only show prompt if not already asked in this session
+      if (!sessionStorage.getItem('notification_asked')) {
+        sessionStorage.setItem('notification_asked', 'true');
+        
+        toast.info(
+          'Enable notifications to get message alerts?',
+          {
+            onClick: async () => {
+              try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                  const token = await requestNotificationPermission();
+                  if (token) {
+                    toast.success('Notifications enabled successfully');
+                  }
                 }
+              } catch (error) {
+                console.error('Error requesting permission:', error);
               }
-            } catch (error) {
-              console.error('Error requesting permission:', error);
-            }
-          },
-          autoClose: 10000,
-          closeButton: true
-        }
-      );
+            },
+            autoClose: 10000,
+            closeButton: true
+          }
+        );
+      }
     }
   } catch (error) {
     console.error('Notification check failed:', error);
@@ -313,10 +318,11 @@ useEffect(() => {
   };
 
 
+// Add this function to ChatRoom.jsx
 const testNotification = async () => {
   try {
     // Show loading toast
-    const loadingToastId = toast.loading('Sending test notification...');
+    const loadingToastId = toast.loading('Testing notification system...');
     
     // Verify permission first
     if (Notification.permission !== 'granted') {
@@ -332,9 +338,6 @@ const testNotification = async () => {
       }
     }
 
-    // Import modules dynamically to prevent undefined errors
-    const { requestNotificationPermission, auth } = await import('../firebase');
-    
     // Get FCM token
     const token = await requestNotificationPermission();
     if (!token) {
@@ -347,39 +350,29 @@ const testNotification = async () => {
       return;
     }
 
-    console.log('Sending test notification with token:', token);
-
     // Send test notification
-    const idToken = await auth.currentUser.getIdToken(true);
-    const response = await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/simpleNotification', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
-      },
-      body: JSON.stringify({
-        userId: auth.currentUser.uid,
-        title: 'Test Notification',
-        body: 'This is a test notification from TimeTalk',
-        data: {
-          type: 'test',
-          timestamp: Date.now()
-        }
-      })
-    });
+    const testData = {
+      title: "Test Notification",
+      body: "This is a test notification from TimeTalk",
+      data: {
+        type: 'test',
+        timestamp: Date.now(),
+        clickAction: '/'
+      }
+    };
 
-    const result = await response.json();
-    if (!result.success) {
+    const result = await sendNotification(user.uid, testData);
+    
+    if (result.success) {
+      toast.update(loadingToastId, {
+        render: 'Test notification sent successfully!',
+        type: 'success',
+        isLoading: false,
+        autoClose: 5000
+      });
+    } else {
       throw new Error(result.error || 'Failed to send notification');
     }
-
-    console.log('Test notification sent successfully');
-    toast.update(loadingToastId, {
-      render: 'Test notification sent successfully',
-      type: 'success',
-      isLoading: false,
-      autoClose: 5000
-    });
   } catch (error) {
     console.error('Test notification failed:', error);
     toast.error('Failed to send test notification: ' + error.message);
@@ -559,48 +552,28 @@ const handleSend = async () => {
       console.log('Audio play failed:', err);
     }
     
-// Inside handleSend function, modify the notification sending part:
+// Inside handleSend function in ChatRoom.jsx
 if (partner && partner.uid) {
   try {
+    // Always create a fresh notification data object
     const notificationData = {
-      title: userProfile.displayName || 'Your partner',
+      title: userProfile?.displayName || 'New message',
       body: messageData.type === 'image' ? '📷 Image' : 
            messageData.type === 'file' ? '📎 File' :
-           messageData.text || 'New message',
+           messageData.text && messageData.text.length > 30 ? 
+           `${messageData.text.substring(0, 27)}...` : messageData.text || 'New message',
       data: {
         type: 'message',
         messageId: docRef.id,
-        messageType: messageData.type
+        messageType: messageData.type,
+        clickAction: '/',
+        timestamp: Date.now()
       }
     };
     
-    // Use a more specific cache key with the message ID to prevent duplicates
-    const notificationCacheKey = `notification_sent_${docRef.id}`;
-    
-    // Check if we've already sent a notification for this specific message
-    if (!localStorage.getItem(notificationCacheKey)) {
-      // Send notification in these cases:
-      // 1. Partner is offline (not active in last 2 minutes)
-      // 2. Document is not visible (user has app in background or different tab)
-      if (!otherUserStatus?.isOnline || document.visibilityState !== 'visible') {
-        console.log('Sending notification to partner:', partner.uid, 'for message:', docRef.id);
-        
-        // Set the flag BEFORE sending the notification to prevent race conditions
-        localStorage.setItem(notificationCacheKey, 'true');
-        
-        // Send the actual notification
-        await sendNotification(partner.uid, notificationData);
-        
-        // Keep the record for a reasonable amount of time (1 hour)
-        setTimeout(() => {
-          localStorage.removeItem(notificationCacheKey);
-        }, 60 * 60 * 1000);
-      } else {
-        console.log('Partner is online and has app visible, skipping notification for message:', docRef.id);
-      }
-    } else {
-      console.log('Already sent notification for message:', docRef.id);
-    }
+    // Always send notifications for messages
+    console.log(`Sending notification to partner ${partner.uid} for message:`, docRef.id);
+    await sendNotification(partner.uid, notificationData);
   } catch (error) {
     console.error('Failed to send notification:', error);
   }
