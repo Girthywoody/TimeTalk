@@ -234,11 +234,12 @@ app.post('/simpleNotification', async (req, res) => {
       
       // Provide more detailed error information
       let errorMessage = fcmError.message;
-      
+      const errorCode = fcmError.code || fcmError.errorInfo?.code;
+
       // Handle common FCM errors
-      if (fcmError.code === 'messaging/invalid-registration-token') {
+      if (errorCode === 'messaging/invalid-registration-token') {
         errorMessage = 'Invalid FCM token';
-        
+
         // Update the user document to clear the invalid token
         try {
           await admin.firestore().collection('users').doc(userId).update({
@@ -248,9 +249,9 @@ app.post('/simpleNotification', async (req, res) => {
         } catch (updateError) {
           console.error('Error clearing invalid token:', updateError);
         }
-      } else if (fcmError.code === 'messaging/registration-token-not-registered') {
+      } else if (errorCode === 'messaging/registration-token-not-registered') {
         errorMessage = 'FCM token is no longer registered';
-        
+
         // Update the user document to clear the unregistered token
         try {
           await admin.firestore().collection('users').doc(userId).update({
@@ -261,7 +262,7 @@ app.post('/simpleNotification', async (req, res) => {
           console.error('Error clearing unregistered token:', updateError);
         }
       }
-      
+
       return res.json({ success: false, error: errorMessage });
     }
   } catch (error) {
