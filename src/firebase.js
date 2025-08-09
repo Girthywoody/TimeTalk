@@ -41,6 +41,9 @@ const storage = getStorage(app);
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 const functions = getFunctions(app);
 
+// Load VAPID key from environment to avoid using an invalid hardcoded key
+const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+
 // Add this after your firebaseConfig
 const ALLOWED_USERS = {
   user1: {
@@ -83,17 +86,22 @@ export const refreshFCMToken = async () => {
             console.log('Unregistered existing service worker');
           }
         }
-        
+
         // Register a new service worker
         const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
           scope: '/',
           updateViaCache: 'none'
         });
-        
+
+        // Ensure we have a valid VAPID key before requesting a token
+        if (!VAPID_KEY) {
+          throw new Error('VAPID key is not defined');
+        }
+
         // Get a new FCM token
         const messaging = getMessaging();
         const token = await getToken(messaging, {
-          vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
+          vapidKey: VAPID_KEY,
           serviceWorkerRegistration: registration
         });
         
@@ -173,9 +181,13 @@ export const requestNotificationPermission = async () => {
       }
       
       // Step 4: Get FCM token with the fresh registration
+      if (!VAPID_KEY) {
+        throw new Error('VAPID key is not defined');
+      }
+
       const messaging = getMessaging();
       const token = await getToken(messaging, {
-        vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
+        vapidKey: VAPID_KEY,
         serviceWorkerRegistration: registration
       });
       

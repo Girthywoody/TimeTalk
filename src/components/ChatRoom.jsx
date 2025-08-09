@@ -863,10 +863,16 @@ useEffect(() => {
     const unsubscribe = onSnapshot(messagesQuery, async (snapshot) => {
       if (!snapshot.empty) {
         const message = snapshot.docs[0].data();
-        // Get the ID of the other user (either sender or receiver)
-        const otherUserId = message.senderId === user.uid 
-          ? message.receiverId  // If you have this field
-          : message.senderId;   // If current user is receiver
+        // Determine the other user's ID (sender or receiver)
+        const otherUserId = message.senderId === user.uid
+          ? message.receiverId
+          : message.senderId;
+
+        // If we can't determine the other user, avoid calling Firestore with undefined
+        if (!otherUserId) {
+          console.warn('Could not determine other user from latest message');
+          return;
+        }
 
         // Get and listen to the other user's document
         const otherUserRef = doc(db, 'users', otherUserId);
@@ -874,13 +880,13 @@ useEffect(() => {
           if (userDoc.exists()) {
             const userData = userDoc.data();
             setOtherUser(userData);
-            
+
             // Check online status
             if (userData.lastActive) {
               const lastActive = userData.lastActive.toDate();
               const now = new Date();
               const diffInMinutes = Math.floor((now - lastActive) / (1000 * 60));
-              
+
               if (diffInMinutes < 2) {
                 setOtherUserStatus({ isOnline: true });
               } else {
