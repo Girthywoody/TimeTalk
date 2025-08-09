@@ -100,7 +100,7 @@ const LoginPage = () => {
       {/* Logo Section - Updated with transparent logo */}
       <div className="mb-8 text-center">
         <img
-          src="/time talk transparent.png"
+          src="/time-talk-transparent.png"
           alt="Time Talk"
           className="w-32 h-32 mx-auto mb-4"
         />
