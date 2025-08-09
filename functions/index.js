@@ -5,9 +5,15 @@ const express = require('express');
 
 admin.initializeApp();
 
+// Initialize Firestore instance
+const db = admin.firestore();
+
 const app = express();
 
-app.use(cors({ 
+// Parse incoming JSON requests
+app.use(express.json());
+
+app.use(cors({
     origin: true,
     methods: ['POST', 'OPTIONS'],
     credentials: true,
@@ -263,68 +269,6 @@ app.post('/simpleNotification', async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 });
-
-// Updated sendNotificationToUser
-async function sendNotificationToUser(userId, info) {
-    try {
-        const userDoc = await admin.firestore().collection('users').doc(userId).get();
-        const userData = userDoc.data();
-        
-        if (!userData?.fcmToken) {
-            console.log('No FCM token for user:', userId);
-            return { success: false, error: 'No FCM token available' };
-        }
-
-        // Create a properly formatted FCM message
-        const message = {
-            token: userData.fcmToken,
-            notification: {
-                title: info.title,
-                body: info.body
-            },
-            webpush: {
-                headers: {
-                    Urgency: 'high'
-                },
-                notification: {
-                    icon: '/ios-icon-192.png',
-                    badge: '/ios-icon-192.png',
-                    vibrate: [200, 100, 200],
-                    requireInteraction: true,
-                    renotify: true
-                },
-                fcmOptions: {
-                    link: info.data?.clickAction || '/'
-                }
-            },
-            android: {
-                notification: {
-                    icon: '/ios-icon-192.png',
-                    priority: 'high'
-                }
-            },
-            apns: {
-                payload: {
-                    aps: {
-                        sound: 'default'
-                    }
-                }
-            },
-            data: info.data || {}
-        };
-
-        const response = await admin.messaging().send(message);
-        console.log('Successfully sent notification:', response);
-        return { success: true };
-    } catch (error) {
-        console.error('Error sending notification:', error);
-        // Check for detailed error information
-        if (error.errorInfo) {
-            console.error('Error details:', error.errorInfo);
-        }
-        return { success: false, error: error.message };
-    }
-}
 
 exports.publishScheduledPosts = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
   const now = new Date();
