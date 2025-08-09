@@ -22,7 +22,7 @@ import { useDarkMode } from '../context/DarkModeContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { db, storage } from '../firebase';
-import { requestNotificationPermission, auth } from '../firebase';
+import { requestNotificationPermission, refreshFCMToken, auth } from '../firebase';
 import { sendNotification } from '../utils/Notifications';
 
 import { useNavigate, useLocation } from 'react-router-dom';
