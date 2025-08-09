@@ -29,9 +29,33 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Track recently shown notifications to avoid rapid duplicates
+const recentNotificationTags = new Set();
+
+function createNotificationTag(payload) {
+    return (
+        payload?.data?.timestamp ||
+        payload?.data?.messageId ||
+        payload?.messageId ||
+        Date.now().toString()
+    );
+}
+
 // Helper to avoid showing the same notification multiple times
 async function showUniqueNotification(title, options) {
-    const existing = await self.registration.getNotifications({ tag: options.tag });
+    const tag = options.tag;
+
+    // Skip if we've recently shown this notification
+    if (recentNotificationTags.has(tag)) {
+        console.log('[Service Worker] Duplicate notification skipped');
+        return;
+    }
+
+    recentNotificationTags.add(tag);
+    // Remove tag after 10 seconds to prevent memory leak
+    setTimeout(() => recentNotificationTags.delete(tag), 10000);
+
+    const existing = await self.registration.getNotifications({ tag });
     if (existing.length === 0) {
         return self.registration.showNotification(title, options);
     }
@@ -42,12 +66,13 @@ async function showUniqueNotification(title, options) {
 messaging.onBackgroundMessage(function(payload) {
     console.log('[firebase-messaging-sw.js] Received background message:', payload);
 
+    const tag = createNotificationTag(payload);
     const notificationTitle = payload.notification?.title || 'New Message';
     const notificationOptions = {
         body: payload.notification?.body || 'You have a new notification',
         icon: '/ios-icon-192.png',
         badge: '/ios-icon-192.png',
-        tag: payload.data?.timestamp || Date.now().toString(),
+        tag,
         data: payload.data || {},
         renotify: true,
         requireInteraction: true,
@@ -128,12 +153,13 @@ self.addEventListener('push', function(event) {
             
             console.log('[Service Worker] Push payload:', payload);
 
+            const tag = createNotificationTag(payload);
             const notificationTitle = payload.notification?.title || 'New Message';
             const notificationOptions = {
                 body: payload.notification?.body || 'You have a new notification',
                 icon: '/ios-icon-192.png',
                 badge: '/ios-icon-192.png',
-                tag: payload.data?.timestamp || Date.now().toString(),
+                tag,
                 data: payload.data || {},
                 actions: [{
                     action: 'open',
