@@ -93,6 +93,19 @@ export const refreshFCMToken = async () => {
           updateViaCache: 'none'
         });
 
+        // Wait for the newly registered service worker to become active
+        if (registration.installing) {
+          await new Promise((resolve) => {
+            registration.installing.addEventListener('statechange', (e) => {
+              if (e.target.state === 'activated') {
+                resolve();
+              }
+            });
+          });
+        } else if (!registration.active) {
+          await navigator.serviceWorker.ready;
+        }
+
         // Ensure we have a valid VAPID key before requesting a token
         if (!VAPID_KEY) {
           throw new Error('VAPID key is not defined');
