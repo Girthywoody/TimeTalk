@@ -29,25 +29,27 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Add to firebase-messaging-sw.js - uncomment and fix the background message handler
-messaging.onBackgroundMessage(function(payload) {
-    console.log('[firebase-messaging-sw.js] Received background message:', payload);
-    
-    const notificationTitle = payload.notification?.title || 'New Message';
-    const notificationOptions = {
-        body: payload.notification?.body || 'You have a new notification',
-        icon: '/ios-icon-192.png',
-        badge: '/ios-icon-192.png',
-        tag: payload.data?.timestamp || Date.now().toString(),
-        data: payload.data || {},
-        renotify: true,
-        requireInteraction: true,
-        silent: false,
-        vibrate: [200, 100, 200]
-    };
+// Track recently shown notifications to avoid duplicates even if tags differ
+const recentNotificationTags = new Set();
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
-});
+// Helper to avoid showing the same notification multiple times
+async function showUniqueNotification(title, options) {
+    const tag = options.tag;
+    if (recentNotificationTags.has(tag)) {
+        console.log('[Service Worker] Duplicate notification skipped (tag in memory)');
+        return;
+    }
+
+    // Remember this notification for 30 seconds
+    recentNotificationTags.add(tag);
+    setTimeout(() => recentNotificationTags.delete(tag), 30000);
+
+    const existing = await self.registration.getNotifications({ tag });
+    if (existing.length === 0) {
+        return self.registration.showNotification(title, options);
+    }
+    console.log('[Service Worker] Duplicate notification skipped');
+}
 // Add to firebase-messaging-sw.js
 self.addEventListener('notificationclick', function(event) {
     console.log('[Service Worker] Notification click received:', event);
@@ -120,12 +122,18 @@ self.addEventListener('push', function(event) {
             console.log('[Service Worker] Push payload:', payload);
 
             const notificationTitle = payload.notification?.title || 'New Message';
+            const notificationTag =
+                payload.data?.id ||
+                payload.data?.messageId ||
+                payload.data?.timestamp ||
+                Date.now().toString();
+
             const notificationOptions = {
                 body: payload.notification?.body || 'You have a new notification',
                 icon: '/ios-icon-192.png',
                 badge: '/ios-icon-192.png',
-                tag: payload.data?.timestamp || Date.now().toString(),
-                data: payload.data || {},
+                tag: notificationTag,
+                data: { ...(payload.data || {}), tag: notificationTag },
                 actions: [{
                     action: 'open',
                     title: 'Open'
@@ -136,7 +144,7 @@ self.addEventListener('push', function(event) {
             };
 
             event.waitUntil(
-                self.registration.showNotification(notificationTitle, notificationOptions)
+                showUniqueNotification(notificationTitle, notificationOptions)
             );
         } catch (error) {
             console.error('[Service Worker] Error handling push event:', error);
