@@ -135,37 +135,30 @@ const ChatRoom = () => {
   };
 
   
-
-  const searchHighlightStyles = `
-  .search-highlight {git add .
-git commit -m "Simplify auth flow"
-git push origin main
-
-
-
-    background-color: #FFE082 !important;
-    box-shadow: 0 0 12px rgba(251, 191, 36, 0.4) !important;
-    transform: scale(1.02);
-    z-index: 1;
-    transition: all 0.5s ease-out !important;
-  }
-  .dark .search-highlight {
-    background-color: #FFA000 !important;
-    box-shadow: 0 0 12px rgba(251, 191, 36, 0.5) !important;
-    transition: all 0.5s ease-out !important;
-  }
-  .search-highlight-dark {
-    background-color: #4CAF50 !important;
-    box-shadow: 0 0 12px rgba(76, 175, 80, 0.4) !important;
-    transform: scale(1.02);
-    z-index: 1;
-    transition: all 0.5s ease-out !important;
-  }
-  .dark .search-highlight-dark {
-    background-color: #2E7D32 !important;
-    box-shadow: 0 0 12px rgba(76, 175, 80, 0.5) !important;
-    transition: all 0.5s ease-out !important;
-  }
+  const searchHighlightStyles = `.search-highlight {
+  background-color: #FFE082 !important;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.4) !important;
+  transform: scale(1.02);
+  z-index: 1;
+  transition: all 0.5s ease-out !important;
+}
+.dark .search-highlight {
+  background-color: #FFA000 !important;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.5) !important;
+  transition: all 0.5s ease-out !important;
+}
+.search-highlight-dark {
+  background-color: #4CAF50 !important;
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.4) !important;
+  transform: scale(1.02);
+  z-index: 1;
+  transition: all 0.5s ease-out !important;
+}
+.dark .search-highlight-dark {
+  background-color: #2E7D32 !important;
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.5) !important;
+  transition: all 0.5s ease-out !important;
+}
 `;
 
 const location = useLocation();
