@@ -29,10 +29,19 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Add to firebase-messaging-sw.js - uncomment and fix the background message handler
+// Helper to avoid showing the same notification multiple times
+async function showUniqueNotification(title, options) {
+    const existing = await self.registration.getNotifications({ tag: options.tag });
+    if (existing.length === 0) {
+        return self.registration.showNotification(title, options);
+    }
+    console.log('[Service Worker] Duplicate notification skipped');
+}
+
+// Background message handler - use shared dedupe logic
 messaging.onBackgroundMessage(function(payload) {
     console.log('[firebase-messaging-sw.js] Received background message:', payload);
-    
+
     const notificationTitle = payload.notification?.title || 'New Message';
     const notificationOptions = {
         body: payload.notification?.body || 'You have a new notification',
@@ -46,7 +55,7 @@ messaging.onBackgroundMessage(function(payload) {
         vibrate: [200, 100, 200]
     };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    showUniqueNotification(notificationTitle, notificationOptions);
 });
 // Add to firebase-messaging-sw.js
 self.addEventListener('notificationclick', function(event) {
@@ -136,7 +145,7 @@ self.addEventListener('push', function(event) {
             };
 
             event.waitUntil(
-                self.registration.showNotification(notificationTitle, notificationOptions)
+                showUniqueNotification(notificationTitle, notificationOptions)
             );
         } catch (error) {
             console.error('[Service Worker] Error handling push event:', error);
