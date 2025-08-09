@@ -1,7 +1,6 @@
 import { auth } from '../firebase';
 
-
-// 1. First, let's fix the sendNotification function in src/utils/Notifications.js
+// Utility functions for sending notifications via Firebase Cloud Functions
 
 export const sendNotification = async (userId, notificationData) => {
   if (!userId) {
