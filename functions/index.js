@@ -234,11 +234,12 @@ app.post('/simpleNotification', async (req, res) => {
       
       // Provide more detailed error information
       let errorMessage = fcmError.message;
-      
+      const errorCode = fcmError.code || fcmError.errorInfo?.code;
+
       // Handle common FCM errors
-      if (fcmError.code === 'messaging/invalid-registration-token') {
+      if (errorCode === 'messaging/invalid-registration-token') {
         errorMessage = 'Invalid FCM token';
-        
+
         // Update the user document to clear the invalid token
         try {
           await admin.firestore().collection('users').doc(userId).update({
@@ -248,9 +249,9 @@ app.post('/simpleNotification', async (req, res) => {
         } catch (updateError) {
           console.error('Error clearing invalid token:', updateError);
         }
-      } else if (fcmError.code === 'messaging/registration-token-not-registered') {
+      } else if (errorCode === 'messaging/registration-token-not-registered') {
         errorMessage = 'FCM token is no longer registered';
-        
+
         // Update the user document to clear the unregistered token
         try {
           await admin.firestore().collection('users').doc(userId).update({
@@ -260,9 +261,21 @@ app.post('/simpleNotification', async (req, res) => {
         } catch (updateError) {
           console.error('Error clearing unregistered token:', updateError);
         }
+      } else if (errorCode === 'messaging/not-found') {
+        errorMessage = 'FCM token not found';
+
+        // Clear the missing token so it can be refreshed on next login
+        try {
+          await admin.firestore().collection('users').doc(userId).update({
+            fcmToken: admin.firestore.FieldValue.delete()
+          });
+          console.log(`Cleared missing FCM token for user ${userId}`);
+        } catch (updateError) {
+          console.error('Error clearing missing token:', updateError);
+        }
       }
-      
-      return res.json({ success: false, error: errorMessage });
+
+      return res.json({ success: false, error: errorMessage, code: errorCode });
     }
   } catch (error) {
     console.error('Error in simpleNotification endpoint:', error);
