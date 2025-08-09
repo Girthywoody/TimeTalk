@@ -22,22 +22,37 @@ export const sendNotification = async (userId, notificationData) => {
     
     // Make a preliminary check to see if the user exists
     try {
-      const userCheckResponse = await fetch(`https://us-central1-timetalk-13a75.cloudfunctions.net/api/checkUser`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ userId })
-      });
-      
-      const userCheckResult = await userCheckResponse.json();
-      if (!userCheckResult.exists) {
-        console.error(`User ${userId} does not exist in the database`);
-        return { success: false, error: 'User not found' };
+      const userCheckResponse = await fetch(
+        `https://us-central1-timetalk-13a75.cloudfunctions.net/api/checkUser`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+          },
+          body: JSON.stringify({ userId })
+        }
+      );
+
+      if (userCheckResponse.ok) {
+        const userCheckResult = await userCheckResponse.json();
+        if (!userCheckResult.exists) {
+          console.error(`User ${userId} does not exist in the database`);
+          return { success: false, error: 'User not found' };
+        }
+      } else {
+        // Avoid JSON parsing of HTML error pages
+        console.warn(
+          `User check endpoint responded with ${userCheckResponse.status}`
+        );
+
+        if (userCheckResponse.status === 404) {
+          return { success: false, error: 'User check endpoint not found' };
+        }
       }
     } catch (checkError) {
-      // If the checkUser endpoint doesn't exist, continue with the notification attempt
+      // If the checkUser endpoint doesn't exist or returns invalid JSON,
+      // continue with the notification attempt
       console.warn('User check failed, attempting notification anyway:', checkError);
     }
     
