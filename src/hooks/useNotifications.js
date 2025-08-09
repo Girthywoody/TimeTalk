@@ -48,6 +48,19 @@ export const useNotifications = () => {
                 updateViaCache: 'none'
             });
 
+            // Wait until the service worker is active before requesting a token
+            if (registration.installing) {
+                await new Promise((resolve) => {
+                    registration.installing.addEventListener('statechange', (e) => {
+                        if (e.target.state === 'activated') {
+                            resolve();
+                        }
+                    });
+                });
+            } else if (!registration.active) {
+                await navigator.serviceWorker.ready;
+            }
+
             // Get FCM token
             const token = await getToken(messaging, {
                 vapidKey: 'BJ9j4bdUtNCIQtWDls0PqGtSoGW__yJSv4JZSOXzkuKTizgWLsmYC1t4OxiYx4lrpbcNGm1IUobk_8dGLwvycc',
