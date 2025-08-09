@@ -41,12 +41,9 @@ export const useNotifications = () => {
                 throw new Error('PERMISSION_DENIED');
             }
 
-            // Initialize messaging and get registration
+            // Initialize messaging and get existing registration
             const messaging = getMessaging();
-            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                scope: '/',
-                updateViaCache: 'none'
-            });
+            const registration = await navigator.serviceWorker.ready;
 
             // Wait until the service worker is active before requesting a token
             if (registration.installing) {

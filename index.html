@@ -19,49 +19,6 @@
     <!-- Web App Manifest -->
     <link rel="manifest" href="/manifest.json">
 
-    <!-- Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', async function() {
-                try {
-                    // Unregister any existing service workers first
-                    const registrations = await navigator.serviceWorker.getRegistrations();
-                    for(let registration of registrations) {
-                        await registration.unregister();
-                    }
-
-                    // Register the new service worker
-                    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                        scope: '/',
-                        updateViaCache: 'none'
-                    });
-                    
-                    console.log('ServiceWorker registration successful:', registration);
-
-                    // Force update
-                    registration.update();
-
-                    // Handle updates
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        console.log('Service Worker update found!');
-                        newWorker.addEventListener('statechange', () => {
-                            console.log('Service Worker state:', newWorker.state);
-                        });
-                    });
-
-                } catch (error) {
-                    console.error('ServiceWorker registration failed:', error);
-                }
-            });
-
-            // Listen for controller change
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                console.log('Service Worker controller changed');
-            });
-        }
-    </script>
-
     <!-- iOS PWA notification support -->
     <script>
         // iOS PWA notification support

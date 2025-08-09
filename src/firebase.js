@@ -78,20 +78,8 @@ export const refreshFCMToken = async () => {
       
       // Get a fresh token
       try {
-        // Unregister existing service workers first
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (let registration of registrations) {
-          if (registration.scope.includes(window.location.origin)) {
-            await registration.unregister();
-            console.log('Unregistered existing service worker');
-          }
-        }
-
-        // Register a new service worker
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-          scope: '/',
-          updateViaCache: 'none'
-        });
+        // Use the existing service worker registration
+        const registration = await navigator.serviceWorker.ready;
 
         // Wait for the newly registered service worker to become active
         if (registration.installing) {
@@ -166,28 +154,10 @@ export const requestNotificationPermission = async () => {
         }
       }
       
-      // Step 3: Register service worker (ensuring it's registration is fresh)
+      // Step 3: Use existing service worker registration
       let registration;
       try {
-        // Force update the service worker to ensure latest version
-        registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-          scope: '/',
-          updateViaCache: 'none'
-        });
-        console.log('Service Worker registered successfully:', registration.scope);
-        
-        // Wait for the registration to activate if needed
-        if (registration.installing) {
-          console.log('Service worker installing...');
-          await new Promise(resolve => {
-            registration.installing.addEventListener('statechange', e => {
-              if (e.target.state === 'activated') {
-                console.log('Service worker activated!');
-                resolve();
-              }
-            });
-          });
-        }
+        registration = await navigator.serviceWorker.ready;
       } catch (err) {
         console.error('Service worker registration failed:', err);
         return null;
