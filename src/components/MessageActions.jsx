@@ -1,18 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Heart, Pencil, Trash2, X, Bookmark, BookmarkX } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Copy, Trash2 } from 'lucide-react';
 
-const REACTIONS = ['❤️', '😊', '👍', '😮', '😢', '😡'];
+const REACTIONS = ['👍', '❤️', '😂', '😮', '😢'];
 
 const MessageActions = ({ 
   isOpen, 
   onClose, 
-  onEdit, 
-  onDelete, 
-  onReact, 
+  onCopy,
+  onDelete,
+  onReact,
   position,
   isOwnMessage,
-  onSave,
-  isSaved,
   currentReaction
 }) => {
   const menuRef = useRef(null);
@@ -114,47 +112,26 @@ const MessageActions = ({
         }`}>
           <button
             onClick={() => {
-              onSave();
+              onCopy();
               onClose();
             }}
             className="flex items-center gap-2 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
           >
-            {isSaved ? (
-              <>
-                <BookmarkX size={18} />
-                <span className="text-sm">Unsave Message</span>
-              </>
-            ) : (
-              <>
-                <Bookmark size={18} />
-                <span className="text-sm">Save Message</span>
-              </>
-            )}
+            <Copy size={18} />
+            <span className="text-sm">Copy</span>
           </button>
 
           {isOwnMessage && (
-            <>
-              <button
-                onClick={() => {
-                  onEdit();
-                  onClose();
-                }}
-                className="flex items-center gap-2 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-              >
-                <Pencil size={18} />
-                <span className="text-sm">Edit Message</span>
-              </button>
-              <button
-                onClick={() => {
-                  onDelete();
-                  onClose();
-                }}
-                className="flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
-              >
-                <Trash2 size={18} />
-                <span className="text-sm">Delete Message</span>
-              </button>
-            </>
+            <button
+              onClick={() => {
+                onDelete();
+                onClose();
+              }}
+              className="flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+            >
+              <Trash2 size={18} />
+              <span className="text-sm">Delete Message</span>
+            </button>
           )}
         </div>
       </div>
