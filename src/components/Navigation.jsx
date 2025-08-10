@@ -1,5 +1,6 @@
 import React from 'react';
 import { Home, MessageSquare, Calendar, User } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useDarkMode } from '../context/DarkModeContext';
 
 export default function Navigation({ currentPage, setCurrentPage }) {
@@ -16,6 +17,13 @@ export default function Navigation({ currentPage, setCurrentPage }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const tabs = [
+    { id: 'home', icon: Home },
+    { id: 'chat', icon: MessageSquare },
+    { id: 'calendar', icon: Calendar },
+    { id: 'profile', icon: User }
+  ];
+
   const buttonClasses = (page) => `
     relative flex-1 flex flex-col items-center justify-center py-3
     transition-all duration-300 ease-out group
@@ -31,40 +39,38 @@ export default function Navigation({ currentPage, setCurrentPage }) {
           ? 'bg-dark-800/80 border-dark-700'
           : 'bg-white/80 border-brand-100'
         } backdrop-blur-lg border-t`}>
-        <div className="max-w-lg mx-auto flex items-center justify-between px-8">
-          {[
-            { id: 'home', icon: Home },
-            { id: 'chat', icon: MessageSquare },
-            { id: 'calendar', icon: Calendar },
-            { id: 'profile', icon: User }
-          ].map(({ id, icon: Icon }) => (
-            <button 
+        <div className="relative max-w-lg mx-auto flex items-center justify-between px-8">
+          {tabs.map(({ id, icon: Icon }) => (
+            <motion.button
               key={id}
               onClick={() => setCurrentPage(id)}
               className={buttonClasses(id)}
+              whileTap={{ scale: 0.9 }}
+              animate={{ scale: currentPage === id ? 1.1 : 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
             >
-              <div className="relative">
-                <Icon 
-                  size={24} 
-                  className={`transition-all duration-300 ${
-                    currentPage === id 
-                      ? 'stroke-2' 
-                      : `group-hover:${darkMode ? 'text-gray-200' : 'text-gray-600'}`
-                  }`}
+              {currentPage === id && (
+                <motion.span
+                  layoutId="nav-active"
+                  className="absolute inset-0 rounded-full bg-brand-100 dark:bg-dark-700"
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
-                {currentPage === id && (
-                  <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2">
-                  <div className="w-1 h-1 rounded-full bg-brand-500" />
-                  </div>
-                )}
-              </div>
-            </button>
+              )}
+              <Icon
+                size={24}
+                className={`relative z-10 transition-colors duration-300 ${
+                  currentPage === id
+                    ? 'stroke-2'
+                    : `group-hover:${darkMode ? 'text-gray-200' : 'text-gray-600'}`
+                }`}
+              />
+            </motion.button>
           ))}
         </div>
       </div>
       <div className={`h-[env(safe-area-inset-bottom)] ${
-        darkMode 
-          ? 'bg-gray-900/80' 
+        darkMode
+          ? 'bg-gray-900/80'
           : 'bg-white/80'
         } backdrop-blur-lg`} />
     </nav>
