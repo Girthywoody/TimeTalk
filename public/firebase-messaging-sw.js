@@ -77,14 +77,23 @@ self.addEventListener('notificationclick', function(event) {
         includeUncontrolled: true
       }).then(function(clientList) {
         for (const client of clientList) {
-          if (client.url.startsWith(self.registration.scope) && 'focus' in client) {
+          if (client.url.startsWith(self.registration.scope)) {
             client.postMessage({
               type: 'notificationClick',
               notification: {
                 data: notificationData
               }
             });
-            return client.focus();
+
+            if ('navigate' in client) {
+              return client
+                .navigate(clickAction)
+                .then(() => client.focus());
+            }
+
+            if ('focus' in client) {
+              return client.focus();
+            }
           }
         }
         return clients.openWindow(clickAction);
