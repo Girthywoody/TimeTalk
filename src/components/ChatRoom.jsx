@@ -27,11 +27,12 @@ import { sendNotification } from '../utils/Notifications';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 
-import { 
-  Send, 
-  Loader2, 
-  X, 
-  Paperclip, 
+import {
+  Send,
+  Loader2,
+  X,
+  Paperclip,
+  Camera,
   Search,
   MoreVertical,
   Download,
@@ -41,8 +42,6 @@ import {
   Share2,
   Archive,
   MessageSquare,
-  BookmarkCheck,
-  Trash2,
   AlertCircle,
   Settings,
   Bell,
@@ -53,6 +52,7 @@ import {
   BellRing
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useInView } from 'react-intersection-observer';
 
 
 const MESSAGES_LIMIT = 100;
@@ -66,6 +66,23 @@ const ALLOWED_FILE_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 ];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+const formatDateDivider = (date) =>
+  date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
+const isNewDay = (msgs, index) => {
+  if (index === 0) return true;
+  const current = msgs[index].timestamp instanceof Timestamp ? msgs[index].timestamp.toDate() : msgs[index].timestamp;
+  const previous = msgs[index - 1].timestamp instanceof Timestamp ? msgs[index - 1].timestamp.toDate() : msgs[index - 1].timestamp;
+  return current.toDateString() !== previous.toDateString();
+};
+
+const shouldShowClusterTime = (msgs, index) => {
+  if (index === 0) return true;
+  const current = msgs[index].timestamp instanceof Timestamp ? msgs[index].timestamp.toDate() : msgs[index].timestamp;
+  const previous = msgs[index - 1].timestamp instanceof Timestamp ? msgs[index - 1].timestamp.toDate() : msgs[index - 1].timestamp;
+  return previous.getTime() + 5 * 60 * 1000 < current.getTime() || msgs[index - 1].senderId !== msgs[index].senderId;
+};
 
 const formatLastSeen = (date) => {
   const now = new Date();
@@ -100,7 +117,7 @@ const ChatRoom = ({ onKeyboardChange }) => {
   const [isMuted, setIsMuted] = useState(false);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
-  const messagesEndRef = useRef(null);
+  const { ref: messagesEndRef, inView } = useInView();
   const scrollContainerRef = useRef(null);
   const fileInputRef = useRef(null);
   const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
@@ -448,6 +465,15 @@ useEffect(() => {
     };
   }, []);
 
+  useEffect(() => {
+    if (inView) {
+      scrollContainerRef.current?.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }, [messages, inView]);
+
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -514,31 +540,45 @@ useEffect(() => {
 
 
 const handleSend = async () => {
-  // Create a local variable to track if we're already sending
   if (uploading) return;
-  
-  // Check for valid input and user state
   if ((!newMessage.trim() && !selectedFile) || !user || !userProfile) return;
+
+  const tempId = `temp-${Date.now()}`;
+  const tempMsg = {
+    id: tempId,
+    text: newMessage.trim() || null,
+    senderId: user.uid,
+    timestamp: new Date(),
+    edited: false,
+    deleted: false,
+    saved: false,
+    status: 'sending',
+    type: selectedFile ? (selectedFile.type.startsWith('image/') ? 'image' : 'file') : 'text',
+    fileURL: selectedFile ? selectedFilePreview : null,
+    fileName: selectedFile ? selectedFile.name : null,
+    fileType: selectedFile ? selectedFile.type : null,
+    senderProfile: { profilePhotoURL: userProfile?.profilePhotoURL, username: userProfile?.username }
+  };
+  setMessages(prev => [...prev, tempMsg]);
 
   try {
     setUploading(true);
     let fileURL = null;
     let fileType = null;
-    
-    // Handle file upload if present
+
     if (selectedFile) {
       try {
         fileURL = await uploadFile(selectedFile);
         fileType = selectedFile.type.startsWith('image/') ? 'image' : 'file';
       } catch (error) {
         console.error('Error uploading file:', error);
+        setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'failed' } : m));
         toast.error('Failed to upload file. Please try again.');
         setUploading(false);
         return;
       }
     }
 
-    // Create message document
     const messagesRef = collection(db, 'messages');
     const messageData = {
       text: newMessage.trim() || null,
@@ -547,59 +587,55 @@ const handleSend = async () => {
       edited: false,
       deleted: false,
       saved: false,
-      status: 'sent'
+      status: 'sent',
+      type: fileURL ? (newMessage.trim() ? 'mixed' : fileType) : 'text'
     };
 
     if (fileURL) {
-      messageData.type = newMessage.trim() ? 'mixed' : fileType;
       messageData.fileURL = fileURL;
       messageData.fileName = selectedFile.name;
       messageData.fileType = selectedFile.type;
-    } else {
-      messageData.type = 'text';
     }
 
     const docRef = await addDoc(messagesRef, messageData);
     setLastMessageId(docRef.id);
-    
+    setMessages(prev => prev.filter(m => m.id === tempId ? false : true));
+
     try {
       await sendSound.current.play();
     } catch (err) {
       console.log('Audio play failed:', err);
     }
-    
-// Inside handleSend function in ChatRoom.jsx
-if (partner && partner.uid) {
-  try {
-    // Always create a fresh notification data object
-    const notificationData = {
-      title: userProfile?.displayName || 'New message',
-      body: messageData.type === 'image' ? '📷 Image' : 
-           messageData.type === 'file' ? '📎 File' :
-           messageData.text && messageData.text.length > 30 ? 
-           `${messageData.text.substring(0, 27)}...` : messageData.text || 'New message',
-      data: {
-        type: 'message',
-        messageId: docRef.id,
-        messageType: messageData.type,
-        clickAction: '/chat',
-        timestamp: Date.now()
+
+    if (partner && partner.uid) {
+      try {
+        const notificationData = {
+          title: userProfile?.displayName || 'New message',
+          body: messageData.type === 'image' ? '📷 Image' :
+            messageData.type === 'file' ? '📎 File' :
+            messageData.text && messageData.text.length > 30 ?
+              `${messageData.text.substring(0, 27)}...` : messageData.text || 'New message',
+          data: {
+            type: 'message',
+            messageId: docRef.id,
+            messageType: messageData.type,
+            clickAction: '/chat',
+            timestamp: Date.now()
+          }
+        };
+
+        await sendNotification(partner.uid, notificationData);
+      } catch (error) {
+        console.error('Failed to send notification:', error);
       }
-    };
-    
-    // Always send notifications for messages
-    console.log(`Sending notification to partner ${partner.uid} for message:`, docRef.id);
-    await sendNotification(partner.uid, notificationData);
-  } catch (error) {
-    console.error('Failed to send notification:', error);
-  }
-}
-    
+    }
+
     setNewMessage('');
     removeSelectedFile();
-    
+
   } catch (error) {
-    console.error("Error sending message:", error);
+    console.error('Error sending message:', error);
+    setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'failed' } : m));
     toast.error('Failed to send message');
   } finally {
     setUploading(false);
@@ -659,6 +695,42 @@ if (partner && partner.uid) {
       setSelectedMessage(null);
     } catch (error) {
       console.error('Error toggling reaction:', error);
+    }
+  };
+
+  const retryMessage = async (msg) => {
+    if (!msg || msg.status !== 'failed' || msg.type !== 'text') return;
+    setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: 'sending' } : m));
+    try {
+      const messagesRef = collection(db, 'messages');
+      const messageData = {
+        text: msg.text,
+        senderId: user.uid,
+        timestamp: serverTimestamp(),
+        edited: false,
+        deleted: false,
+        saved: false,
+        status: 'sent',
+        type: 'text'
+      };
+      const docRef = await addDoc(messagesRef, messageData);
+      setLastMessageId(docRef.id);
+      setMessages(prev => prev.filter(m => m.id !== msg.id));
+    } catch (error) {
+      console.error('Error retrying message:', error);
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: 'failed' } : m));
+      toast.error('Failed to send message');
+    }
+  };
+
+  const handleCopyMessage = async (message) => {
+    try {
+      if (message.text) {
+        await navigator.clipboard.writeText(message.text);
+        toast.success('Copied to clipboard');
+      }
+    } catch (error) {
+      console.error('Failed to copy message:', error);
     }
   };
 
@@ -1022,16 +1094,36 @@ useEffect(() => {
 
   }, [messages, user]);
 
-  const MessageStatus = ({ status, isLastMessage }) => {
-    if (!status || !isLastMessage) return null;
-
+  const MessageStatus = ({ status, isLastMessage, onRetry }) => {
+    if (!isLastMessage) return null;
+    let content = null;
+    switch (status) {
+      case 'sending':
+        content = 'Sending...';
+        break;
+      case 'sent':
+      case 'delivered':
+        content = 'Sent';
+        break;
+      case 'read':
+        content = 'Seen';
+        break;
+      case 'failed':
+        content = (
+          <button onClick={onRetry} className="underline">
+            Retry
+          </button>
+        );
+        break;
+      default:
+        content = null;
+    }
+    if (!content) return null;
     return (
       <div className={`text-[11px] ${
-        darkMode 
-          ? 'text-white/80' 
-          : 'text-white'
+        darkMode ? 'text-white/80' : 'text-gray-500'
       }`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {content}
       </div>
     );
   };
@@ -1553,202 +1645,204 @@ useEffect(() => {
             ) : (
               <>
                 {messages.map((message, index) => (
-                  <div
-                    id={`message-${message.id}`}
-                    key={message.id}
-                    className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"} mb-2`}
-                  >
-                    {message.senderId !== user?.uid && (
-                      <div className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0">
-                        {message.senderProfile?.profilePhotoURL ? (
-                          <img 
-                            src={message.senderProfile.profilePhotoURL} 
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-blue-100 flex items-center justify-center">
-                            <span className="text-blue-500 text-sm font-medium">
-                              {message.senderProfile?.username?.[0] || '?'}
-                            </span>
-                          </div>
-                        )}
+                  <React.Fragment key={message.id}>
+                    {isNewDay(messages, index) && (
+                      <div className="flex items-center my-4">
+                        <div className="flex-grow border-t border-gray-300/40" />
+                        <span className="mx-2 text-xs text-gray-400">
+                          {formatDateDivider(message.timestamp instanceof Timestamp ? message.timestamp.toDate() : message.timestamp)}
+                        </span>
+                        <div className="flex-grow border-t border-gray-300/40" />
+                      </div>
+                    )}
+                    {shouldShowClusterTime(messages, index) && (
+                      <div className="text-center text-xs text-gray-400 mb-2">
+                        {(message.timestamp instanceof Timestamp ? message.timestamp.toDate() : message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     )}
                     <div
-                      className={`message-bubble relative max-w-[75%] rounded-2xl px-4 py-2 
-                        ${message.senderId === user?.uid 
-                          ? "bg-[#4E82EA] text-white rounded-br-none" 
-                          : "bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none shadow-sm"}
-                        ${message.saved ? "border border-yellow-400" : ""}
-                        ${pressedMessageId === message.id ? 'scale-95' : 'scale-100'}
-                        ${index === messages.length - 1 ? 'mb-4' : 'mb-2'}
-                        transition-all duration-200`}
-                      onContextMenu={(e) => handleMessageLongPress(message, e, index, messages.length)}
-                      onTouchStart={(e) => {
-                        setPressTimer(
-                          setTimeout(() => {
-                            handleMessageLongPress(message, e, index, messages.length);
-                          }, 500)
-                        );
-                        setPressedMessageId(message.id);
-                      }}
-                      onTouchEnd={() => {
-                        if (pressTimer) {
-                          clearTimeout(pressTimer);
-                          setPressTimer(null);
-                        }
-                        setPressedMessageId(null);
-                      }}
-                      onTouchMove={() => {
-                        if (pressTimer) {
-                          clearTimeout(pressTimer);
-                          setPressTimer(null);
-                        }
-                        setPressedMessageId(null);
-                      }}
+                      id={`message-${message.id}`}
+                      className={`flex ${message.senderId === user?.uid ? 'justify-end' : 'justify-start'} mb-1`}
                     >
-                      {message.replyTo && (
-                        <div className={`text-sm mb-1 pb-1 border-b ${
-                          message.senderId === user?.uid 
-                            ? "border-white/20 text-white/80" 
-                            : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400"
-                        }`}>
-                          <div className="flex items-center gap-1">
-                            <MessageSquare size={12} />
-                            <span className="font-medium">
-                              {message.replyTo.senderId === user?.uid ? 'You' : 'Their message'}
-                            </span>
+                      {message.senderId !== user?.uid && (
+                        <div className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0">
+                          {message.senderProfile?.profilePhotoURL ? (
+                            <img src={message.senderProfile.profilePhotoURL} alt="Profile" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-blue-100 flex items-center justify-center">
+                              <span className="text-blue-500 text-sm font-medium">
+                                {message.senderProfile?.username?.[0] || '?'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div
+                        className={`message-bubble relative max-w-[75%] rounded-[12px] px-4 py-2 ${
+                          message.senderId === user?.uid
+                            ? 'bg-[#4E82EA] text-white rounded-br-none'
+                            : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none shadow-sm'
+                        } ${message.saved ? 'border border-yellow-400' : ''} ${
+                          pressedMessageId === message.id ? 'scale-95' : 'scale-100'
+                        } transition-all duration-200`}
+                        onContextMenu={(e) => handleMessageLongPress(message, e, index, messages.length)}
+                        onTouchStart={(e) => {
+                          setPressTimer(
+                            setTimeout(() => {
+                              handleMessageLongPress(message, e, index, messages.length);
+                            }, 500)
+                          );
+                          setPressedMessageId(message.id);
+                        }}
+                        onTouchEnd={() => {
+                          if (pressTimer) {
+                            clearTimeout(pressTimer);
+                            setPressTimer(null);
+                          }
+                          setPressedMessageId(null);
+                        }}
+                        onTouchMove={() => {
+                          if (pressTimer) {
+                            clearTimeout(pressTimer);
+                            setPressTimer(null);
+                          }
+                          setPressedMessageId(null);
+                        }}
+                      >
+                        {message.replyTo && (
+                          <div className={`text-sm mb-1 pb-1 border-b ${
+                            message.senderId === user?.uid
+                              ? 'border-white/20 text-white/80'
+                              : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400'
+                          }`}>
+                            <div className="flex items-center gap-1">
+                              <MessageSquare size={12} />
+                              <span className="font-medium">
+                                {message.replyTo.senderId === user?.uid ? 'You' : 'Their message'}
+                              </span>
+                            </div>
+                            <div className="line-clamp-1">{message.replyTo.text}</div>
                           </div>
-                          <div className="line-clamp-1">{message.replyTo.text}</div>
-                        </div>
-                      )}
+                        )}
 
-                      {message.deleted ? (
-                        <div className="italic text-opacity-70">This message was deleted</div>
-                      ) : (
-                        <>
-                          {message.reaction && (
-                            <div 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReaction(message.id, message.reaction.emoji);
-                              }}
-                              className={`
-                                absolute -top-3 
-                                ${message.senderId === user?.uid ? '-left-3' : '-right-3'}
-                                bg-white dark:bg-gray-700 rounded-full shadow-md p-1 text-sm cursor-pointer
-                                hover:scale-110 
-                                transition-transform`}
-                            >
-                              {message.reaction.emoji}
-                            </div>
-                          )}
-
-                          {message.type === 'text' && (
-                            <div className="break-words">
-                              {editingMessage?.id === message.id ? (
-                                <input
-                                  type="text"
-                                  value={editingMessage.text}
-                                  onChange={(e) => setEditingMessage({ ...editingMessage, text: e.target.value })}
-                                  onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleEditMessage(message.id, editingMessage.text);
-                                    }
-                                  }}
-                                  className={`w-full bg-transparent border-b ${
-                                    message.senderId === user?.uid 
-                                      ? "border-white/50 text-white placeholder-white/50"
-                                      : "border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white placeholder-gray-400"
-                                  } focus:outline-none`}
-                                  autoFocus
-                                />
-                              ) : (
-                                <span className="message-text text-[15px] leading-relaxed">{message.text}</span>
-                              )}
-                            </div>
-                          )}
-
-                          {(message.type === 'image' || message.type === 'mixed') && (
-                            <>
-                              <div className="rounded-lg overflow-hidden mt-1 relative group">
-                                <img 
-                                  src={message.fileURL} 
-                                  alt="Shared image"
-                                  className={`max-w-full rounded-lg cursor-pointer transition-all duration-200 ${
-                                    imagePreview === message.fileURL ? 'w-full' : 'max-h-48 object-cover'
-                                  }`}
-                                  loading="lazy"
-                                  onClick={() => setImagePreview(message.fileURL)}
-                                />
+                        {message.deleted ? (
+                          <div className="italic text-opacity-70">This message was deleted</div>
+                        ) : (
+                          <>
+                            {message.reaction && (
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReaction(message.id, message.reaction.emoji);
+                                }}
+                                className={`
+                                  absolute -top-3
+                                  ${message.senderId === user?.uid ? '-left-3' : '-right-3'}
+                                  bg-white dark:bg-gray-700 rounded-full shadow-md p-1 text-sm cursor-pointer
+                                  hover:scale-110
+                                  transition-transform`}
+                              >
+                                {message.reaction.emoji}
                               </div>
-                              {message.text && (
-                                <div className="mt-2 text-[15px] leading-relaxed">
-                                  {message.text}
+                            )}
+
+                            {message.type === 'text' && (
+                              <div className="break-words">
+                                {editingMessage?.id === message.id ? (
+                                  <input
+                                    type="text"
+                                    value={editingMessage.text}
+                                    onChange={(e) => setEditingMessage({ ...editingMessage, text: e.target.value })}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleEditMessage(message.id, editingMessage.text);
+                                      }
+                                    }}
+                                    className={`w-full bg-transparent border-b ${
+                                      message.senderId === user?.uid
+                                        ? 'border-white/50 text-white placeholder-white/50'
+                                        : 'border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white placeholder-gray-400'
+                                    } focus:outline-none`}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <span className="message-text text-[15px] leading-relaxed">{message.text}</span>
+                                )}
+                              </div>
+                            )}
+
+                            {(message.type === 'image' || message.type === 'mixed') && (
+                              <>
+                                <div className="rounded-lg overflow-hidden mt-1 relative group">
+                                  <img
+                                    src={message.fileURL}
+                                    alt="Shared image"
+                                    className={`max-w-full rounded-lg cursor-pointer transition-all duration-200 ${
+                                      imagePreview === message.fileURL ? 'w-full' : 'max-h-48 object-cover'
+                                    }`}
+                                    loading="lazy"
+                                    onClick={() => setImagePreview(message.fileURL)}
+                                  />
                                 </div>
-                              )}
-                            </>
-                          )}
+                                {message.text && (
+                                  <div className="mt-2 text-[15px] leading-relaxed">
+                                    {message.text}
+                                  </div>
+                                )}
+                              </>
+                            )}
 
-                          {message.type === 'file' && (
-                            <a 
-                              href={message.fileURL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`flex items-center gap-2 text-sm hover:underline mt-1 ${
-                                message.senderId === user?.uid 
-                                  ? "text-white/90 hover:text-white" 
-                                  : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
-                              }`}
-                            >
-                              <Paperclip size={16} />
-                              {message.fileName}
-                            </a>
-                          )}
+                            {message.type === 'file' && (
+                              <a
+                                href={message.fileURL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center gap-2 text-sm hover:underline mt-1 ${
+                                  message.senderId === user?.uid
+                                    ? 'text-white/90 hover:text-white'
+                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                                }`}
+                              >
+                                <Paperclip size={16} />
+                                {message.fileName}
+                              </a>
+                            )}
 
-                          {message.edited && (
-                            <div className={`text-xs mt-1 ${
-                              message.senderId === user?.uid 
-                                ? "text-white/60" 
-                                : "text-gray-500 dark:text-gray-400"
-                            }`}>
-                              (edited)
-                            </div>
-                          )}
+                            {message.edited && (
+                              <div className={`text-xs mt-1 ${
+                                message.senderId === user?.uid
+                                  ? 'text-white/60'
+                                  : 'text-gray-500 dark:text-gray-400'
+                              }`}>
+                                (edited)
+                              </div>
+                            )}
 
-                          {message.saved && (
-                            <div className="absolute -top-2 -right-2">
-                              <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
-                            </div>
-                          )}
-                        </>
-                      )}
-
-                      <div className="flex items-center justify-between gap-2">
-                        <div className={`text-[11px] ${
-                          darkMode 
-                            ? 'text-white/80' 
-                            : message.senderId === user?.uid 
-                              ? 'text-white' 
-                              : 'text-gray-500'
-                        }`}>
-                          {message.timestamp?.toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                        </div>
-                        
-                        {message.senderId === user?.uid && (
-                          <MessageStatus 
-                            status={message.status} 
-                            isLastMessage={index === messages.length - 1}
-                          />
+                            {message.saved && (
+                              <div className="absolute -top-2 -right-2">
+                                <Bookmark size={16} className="text-yellow-400 fill-yellow-400" />
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
-                  </div>
+                    {message.senderId === user?.uid && (
+                      <div className="flex justify-end mb-2">
+                        <MessageStatus status={message.status} isLastMessage={index === messages.length - 1} onRetry={() => retryMessage(message)} />
+                      </div>
+                    )}
+                  </React.Fragment>
                 ))}
+                {isTyping && (
+                  <div className="flex justify-start mb-2">
+                    <div className="bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-[12px] rounded-bl-none px-4 py-2 shadow-sm flex items-center gap-1">
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:200ms]" />
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:400ms]" />
+                    </div>
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </>
             )}
@@ -1812,7 +1906,7 @@ useEffect(() => {
                     disabled={uploading}
                     className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
                   >
-                    <Paperclip size={20} />
+                    <Camera size={20} />
                   </button>
                 </div>
                 
@@ -1840,7 +1934,8 @@ useEffect(() => {
           type="file"
           ref={fileInputRef}
           onChange={handleFileSelect}
-          accept="image/*,.pdf,.doc,.docx"
+          accept="image/*"
+          capture="environment"
           className="hidden"
         />
 
@@ -1903,11 +1998,9 @@ useEffect(() => {
             setSelectedMessage(null);
             setPressedMessageId(null);
           }}
-          onEdit={() => setEditingMessage(selectedMessage)}
+          onCopy={() => handleCopyMessage(selectedMessage)}
           onDelete={() => handleDeleteMessage(selectedMessage?.id)}
           onReact={(reaction) => handleReaction(selectedMessage?.id, reaction)}
-          onSave={() => handleSaveMessage(selectedMessage?.id)}
-          isSaved={selectedMessage?.saved}
           position={actionPosition}
           isOwnMessage={selectedMessage?.senderId === user?.uid}
         />
