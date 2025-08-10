@@ -576,7 +576,7 @@ if (partner && partner.uid) {
         type: 'message',
         messageId: docRef.id,
         messageType: messageData.type,
-        clickAction: '/',
+        clickAction: '/chat',
         timestamp: Date.now()
       }
     };
@@ -1143,7 +1143,8 @@ useEffect(() => {
             type: 'nudge',
             priority: 'high',
             vibrate: [200, 100, 200, 100, 200],
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            clickAction: '/chat?nudged=true'
           }
         };
         
