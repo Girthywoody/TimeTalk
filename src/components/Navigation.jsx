@@ -25,7 +25,12 @@ export default function Navigation({ currentPage, setCurrentPage }) {
   };
 
   return (
-    <nav className="fixed inset-x-5 bottom-5 z-50">
+    <motion.nav
+      initial={{ y: 80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+      className="fixed inset-x-5 bottom-5 z-40"
+    >
       <div
         className="h-[72px] p-[14px] rounded-[28px] flex items-center justify-between shadow-[0_8px_22px_rgba(0,0,0,0.35)] backdrop-blur-xl"
         style={{
@@ -52,6 +57,6 @@ export default function Navigation({ currentPage, setCurrentPage }) {
         ))}
       </div>
       <div className="h-[env(safe-area-inset-bottom)]" />
-    </nav>
+    </motion.nav>
   );
 }

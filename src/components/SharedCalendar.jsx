@@ -355,7 +355,7 @@ const SharedCalendar = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="p-4 flex-1 overflow-y-auto pb-32"
+          className="p-4 flex-1 overflow-y-auto pb-[calc(120px+env(safe-area-inset-bottom))]"
         >
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
