@@ -17,17 +17,21 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import MessageActions from './MessageActions';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useDarkMode } from '../context/DarkModeContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 import { db, storage } from '../firebase';
+import { requestNotificationPermission, refreshFCMToken, auth } from '../firebase';
+import { sendNotification } from '../utils/Notifications';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { 
-  Send,
-  Loader2,
-  X,
-  Paperclip,
+  Send, 
+  Loader2, 
+  X, 
+  Paperclip, 
   Search,
   MoreVertical,
   Download,
@@ -41,8 +45,12 @@ import {
   Trash2,
   AlertCircle,
   Settings,
+  Bell,
+  BellOff,
   Moon,
-  LogOut
+  LogOut,
+  Vibrate,
+  BellRing
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -89,6 +97,7 @@ const ChatRoom = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -99,6 +108,10 @@ const ChatRoom = () => {
   const [isVisible, setIsVisible] = useState(false);
   const { user, getPartnerProfile } = useAuth();
   const { darkMode } = useDarkMode();
+  const [notificationSettings, setNotificationSettings] = useState({
+    muted: false,
+    mutedUntil: null
+  });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [otherUser, setOtherUser] = useState(null);
   const [otherUserStatus, setOtherUserStatus] = useState(null);
@@ -185,6 +198,196 @@ useEffect(() => {
     }
   }, [searchQuery]);
 
+  // Replace your notification status check with this more robust implementation
+// This prevents errors from undefined array access and React mount issues
+
+const checkNotificationStatus = async () => {
+  // Only check if the component is still mounted and user exists
+  if (!user) return;
+  
+  try {
+    // Check if device supports notifications
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      console.log('This browser does not support notifications');
+      return;
+    }
+    
+    // Check current permission
+    if (Notification.permission === 'granted') {
+      try {
+        // Get a fresh token to ensure FCM is working
+        const token = await requestNotificationPermission();
+        if (token) {
+          console.log('Notification token refreshed:', token);
+        } else {
+          console.warn('Permission granted but token not obtained');
+        }
+      } catch (error) {
+        console.error('Error getting notification token:', error);
+      }
+    } else if (Notification.permission === 'default') {
+      // Only show prompt if not already asked in this session
+      if (!sessionStorage.getItem('notification_asked')) {
+        sessionStorage.setItem('notification_asked', 'true');
+        
+        toast.info(
+          'Enable notifications to get message alerts?',
+          {
+            onClick: async () => {
+              try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                  const token = await requestNotificationPermission();
+                  if (token) {
+                    toast.success('Notifications enabled successfully');
+                  }
+                }
+              } catch (error) {
+                console.error('Error requesting permission:', error);
+              }
+            },
+            autoClose: 10000,
+            closeButton: true
+          }
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Notification check failed:', error);
+  }
+};
+
+// Replace this useEffect block in ChatRoom.jsx (around line 144-184)
+useEffect(() => {
+  let mounted = true;
+  
+  // Only run once when component mounts
+  if (user && mounted) {
+    // Small timeout to ensure component is fully mounted
+    const timer = setTimeout(() => {
+      if (mounted) {
+        checkNotificationStatus();
+      }
+    }, 2000);
+    
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
+  }
+  
+  return () => {
+    mounted = false;
+  };
+}, [user]); // Only depend on user
+  
+
+  const handleMuteNotifications = (duration) => {
+    const now = new Date();
+    let mutedUntil = null;
+    
+    switch (duration) {
+      case '1h':
+        mutedUntil = new Date(now.getTime() + 60 * 60 * 1000);
+        break;
+      case '8h':
+        mutedUntil = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+        break;
+      case '24h':
+        mutedUntil = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        break;
+      case 'forever':
+        mutedUntil = 'forever';
+        break;
+      default:
+        mutedUntil = null;
+    }
+
+    setNotificationSettings({
+      muted: !!mutedUntil,
+      mutedUntil
+    });
+    setIsDropdownOpen(false);
+  };
+
+
+  const testNotification = async () => {
+    try {
+      // Show loading toast
+      const loadingToastId = toast.loading('Testing notification system...');
+      
+      // Check if notifications are supported
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        toast.update(loadingToastId, {
+          render: 'This browser does not support notifications',
+          type: 'error',
+          isLoading: false,
+          autoClose: 5000
+        });
+        return;
+      }
+      
+      // Verify permission
+      if (Notification.permission !== 'granted') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          toast.update(loadingToastId, {
+            render: 'Notification permission denied',
+            type: 'error',
+            isLoading: false,
+            autoClose: 5000
+          });
+          return;
+        }
+      }
+      
+      // Refresh the token to ensure it's valid
+      const token = await refreshFCMToken();
+      if (!token) {
+        toast.update(loadingToastId, {
+          render: 'Failed to get notification token',
+          type: 'error',
+          isLoading: false,
+          autoClose: 5000
+        });
+        return;
+      }
+      
+      // Send a local notification first to test browser support
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification('Local Test', {
+        body: 'This is a local browser notification test',
+        icon: '/ios-icon-192.png'
+      });
+      
+      // Now send an FCM notification to yourself
+      const testData = {
+        title: "FCM Test Notification",
+        body: "This is an FCM test notification",
+        data: {
+          type: 'test',
+          timestamp: Date.now().toString(),
+          clickAction: '/'
+        }
+      };
+  
+      const result = await sendNotification(user.uid, testData);
+      
+      if (result.success) {
+        toast.update(loadingToastId, {
+          render: 'Test notification sent successfully!',
+          type: 'success',
+          isLoading: false,
+          autoClose: 5000
+        });
+      } else {
+        throw new Error(result.error || 'Failed to send test notification');
+      }
+    } catch (error) {
+      console.error('Test notification failed:', error);
+      toast.error('Failed to send test notification: ' + error.message);
+    }
+  };
 
   useEffect(() => {
     // Add styles to head
@@ -358,6 +561,33 @@ const handleSend = async () => {
     } catch (err) {
       console.log('Audio play failed:', err);
     }
+    
+// Inside handleSend function in ChatRoom.jsx
+if (partner && partner.uid) {
+  try {
+    // Always create a fresh notification data object
+    const notificationData = {
+      title: userProfile?.displayName || 'New message',
+      body: messageData.type === 'image' ? '📷 Image' : 
+           messageData.type === 'file' ? '📎 File' :
+           messageData.text && messageData.text.length > 30 ? 
+           `${messageData.text.substring(0, 27)}...` : messageData.text || 'New message',
+      data: {
+        type: 'message',
+        messageId: docRef.id,
+        messageType: messageData.type,
+        clickAction: '/',
+        timestamp: Date.now()
+      }
+    };
+    
+    // Always send notifications for messages
+    console.log(`Sending notification to partner ${partner.uid} for message:`, docRef.id);
+    await sendNotification(partner.uid, notificationData);
+  } catch (error) {
+    console.error('Failed to send notification:', error);
+  }
+}
     
     setNewMessage('');
     removeSelectedFile();
@@ -890,6 +1120,87 @@ useEffect(() => {
   };
 
 
+  const handleNudge = async () => {
+    try {
+      if (!partner || !partner.uid) {
+        toast.error('Partner information not available');
+        return;
+      }
+      
+      // Disable the nudge button immediately to prevent multiple clicks
+      const nudgeButton = document.getElementById('nudge-button');
+      if (nudgeButton) nudgeButton.disabled = true;
+      
+      // Show a loading toast
+      const loadingToastId = toast.loading('Sending nudge...');
+      
+      try {
+        // Always use a fresh timestamp for nudges
+        const nudgeData = {
+          title: userProfile?.displayName || "Your partner",
+          body: '👋 Hey! Come answer me!',
+          data: {
+            type: 'nudge',
+            priority: 'high',
+            vibrate: [200, 100, 200, 100, 200],
+            timestamp: Date.now()
+          }
+        };
+        
+        console.log(`Attempting to nudge partner with ID: ${partner.uid}`);
+        
+        // Use the improved sendNotification function
+        const result = await sendNotification(partner.uid, nudgeData);
+      
+        // Update the toast based on the result
+        if (result.success) {
+          toast.update(loadingToastId, {
+            render: 'Nudge sent successfully!',
+            type: 'success',
+            isLoading: false,
+            autoClose: 3000
+          });
+        } else {
+          let errorMessage = 'Failed to send nudge';
+          
+          if (result.error === 'Partner has not enabled notifications') {
+            errorMessage = 'Your partner has not enabled notifications';
+          } else if (result.error === 'User not found') {
+            errorMessage = 'Your partner account was not found';
+          } else if (result.error) {
+            errorMessage = `Nudge failed: ${result.error}`;
+          }
+          
+          toast.update(loadingToastId, {
+            render: errorMessage,
+            type: 'error',
+            isLoading: false,
+            autoClose: 5000
+          });
+          
+          throw new Error(errorMessage);
+        }
+      } catch (error) {
+        console.error('Error sending nudge:', error);
+        toast.update(loadingToastId, {
+          render: `Failed to send nudge: ${error.message}`,
+          type: 'error',
+          isLoading: false,
+          autoClose: 3000
+        });
+      } finally {
+        // Re-enable the nudge button after 5 seconds regardless of outcome
+        setTimeout(() => {
+          const button = document.getElementById('nudge-button');
+          if (button) button.disabled = false;
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('Error in handleNudge:', error);
+      toast.error('Could not send nudge at this time');
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     
@@ -1005,6 +1316,25 @@ useEffect(() => {
     fetchAndTrackPartner();
   }, [user, partner?.uid]);
 
+  useEffect(() => {
+    const promptNotifications = async () => {
+        if (Notification.permission === 'default') {
+            const shouldPrompt = window.confirm(
+                'Would you like to receive notifications for new messages?'
+            );
+            if (shouldPrompt) {
+                try {
+                    await Notification.requestPermission();
+                } catch (error) {
+                    console.error('Error requesting permission:', error);
+                }
+            }
+        }
+    };
+
+    promptNotifications();
+  }, []);
+
   return (
     <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
@@ -1012,13 +1342,20 @@ useEffect(() => {
         <div className={`px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b z-10 relative`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
+              <button 
+                onClick={testNotification}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title="Test Notification"
+              >
+                <Bell size={20} className="text-blue-500" />
+              </button>
               <button
                 onClick={() => navigate(`/profile/${partner?.uid}`)}
-                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                className="hover:opacity-80 transition-opacity"
               >
                 {partner?.profilePhotoURL ? (
-                  <img
-                    src={partner.profilePhotoURL}
+                  <img 
+                    src={partner.profilePhotoURL} 
                     alt={partner.displayName || 'Partner'}
                     className="w-10 h-10 rounded-full object-cover"
                   />
@@ -1029,20 +1366,30 @@ useEffect(() => {
                     </span>
                   </div>
                 )}
-                <div className="text-left">
-                  <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
-                    {partner?.displayName || partner?.email?.split('@')[0]}
-                  </h1>
-                  <p className={`text-sm ${otherUserStatus?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
-                    {isTyping ? 'typing...' :
-                      otherUserStatus?.isOnline ? 'Online' :
-                      otherUserStatus?.lastSeen ? formatLastSeen(otherUserStatus.lastSeen) : 'Offline'}
-                  </p>
-                </div>
+              </button>
+              <button
+                onClick={() => navigate(`/profile/${partner?.uid}`)}
+                className="text-left hover:opacity-80 transition-opacity"
+              >
+                <h1 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>
+                  {partner?.displayName || partner?.email?.split('@')[0]}
+                </h1>
+                <p className={`text-sm ${otherUserStatus?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
+                  {isTyping ? 'typing...' : 
+                    otherUserStatus?.isOnline ? 'Online' : 
+                    otherUserStatus?.lastSeen ? formatLastSeen(otherUserStatus.lastSeen) : 'Offline'}
+                </p>
               </button>
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleNudge}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title="Nudge Partner"
+              >
+                <Vibrate size={20} className="text-gray-500" />
+              </button>
               <button
                 onClick={() => setIsSearchOpen(true)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
