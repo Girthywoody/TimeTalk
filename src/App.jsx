@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import MainApp from './components/MainApp';
@@ -6,7 +6,6 @@ import ProfileSetupPage from './components/ProfileSetupPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
-import SettingsPage from './components/profile/SettingsPage';
 import { DarkModeProvider } from './context/DarkModeContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -22,6 +21,8 @@ import { requestNotificationPermission } from './firebase';
 const App = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+
   useEffect(() => {
     // Check if the app is installed as PWA
     const isPWA = window.matchMedia('(display-mode: standalone)').matches;
@@ -33,6 +34,32 @@ const App = () => {
     }
   }, [user]); // Empty dependency array means this runs once when component mounts
 
+  useEffect(() => {
+    if (!navigator.serviceWorker) return;
+
+    const handler = (event) => {
+      if (event.data?.type === 'notificationClick') {
+        const data = event.data.notification?.data;
+
+        if (data) {
+          if (data.type === 'message') {
+            navigateRef.current('/chat');
+          } else if (data.type === 'nudge') {
+            navigateRef.current('/chat?nudged=true');
+          } else if (data.clickAction) {
+            navigateRef.current(data.clickAction);
+          }
+        }
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handler);
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handler);
+    };
+  }, []);
+
 
 // Replace the multiple notification setups with a single consolidated one:
 useEffect(() => {
@@ -42,35 +69,12 @@ useEffect(() => {
   // Single function to handle all notification setup
   const setupNotifications = async () => {
     try {
-      // Check if the app is installed as PWA
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                   window.navigator.standalone === true;
-      
-      // Set up handler for notification clicks
-      if (navigator.serviceWorker) {
-        navigator.serviceWorker.addEventListener('message', (event) => {
-          if (event.data?.type === 'notificationClick') {
-            const data = event.data.notification?.data;
-
-            if (data) {
-              if (data.type === 'message') {
-                navigate('/chat');
-              } else if (data.type === 'nudge') {
-                navigate('/chat?nudged=true');
-              } else if (data.clickAction) {
-                navigate(data.clickAction);
-              }
-            }
-          }
-        });
-      }
-      //
       // Request permission if needed
       if (Notification.permission === 'default') {
         const permission = await Notification.requestPermission();
         console.log('Notification permission status:', permission);
       }
-      
+
       // Get token if permission granted
       if (Notification.permission === 'granted') {
         const token = await requestNotificationPermission();
@@ -80,33 +84,11 @@ useEffect(() => {
       console.error('Failed to initialize notifications:', err);
     }
   };
-  
+
   // Small delay to ensure everything is loaded
   const timer = setTimeout(setupNotifications, 2000);
   return () => clearTimeout(timer);
-}, [user, navigate]);
-
-
-  const initializeNotifications = async () => {
-    // Check if the app is installed as PWA
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    
-    if (isPWA && Notification.permission !== 'granted') {
-      try {
-        // Try to get permission on startup
-        const permission = await Notification.requestPermission();
-        console.log('Notification permission status:', permission);
-        
-        if (permission === 'granted') {
-          // Get token if permission granted
-          const token = await requestNotificationPermission();
-          console.log('Notification token obtained:', token);
-        }
-      } catch (err) {
-        console.error('Failed to initialize notifications:', err);
-      }
-    }
-  };
+}, [user]);
 
   if (loading) {
     return (
