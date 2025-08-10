@@ -26,16 +26,6 @@ import { useDarkMode } from '../context/DarkModeContext';
 import ParticipantsModal from './ParticipantsModal';
 import PageLayout from '../layout/PageLayout';
 
-const NOTIFICATION_OPTIONS = [
-  { value: '2880', label: '2 days before' },
-  { value: '1440', label: '1 day before' },
-  { value: '240', label: '4 hours before' },
-  { value: '120', label: '2 hours before' },
-  { value: '60', label: '1 hour before' },
-  { value: '30', label: '30 minutes before' },
-  { value: '15', label: '15 minutes before' }
-];
-
 const REPEAT_OPTIONS = [
   { value: 'never', label: 'Never' },
   { value: 'weekly', label: 'Every Week' },
@@ -65,7 +55,6 @@ const SharedCalendar = () => {
     endTime: "",
     location: "",
     type: "general",
-    notifications: [],
     repeat: 'never',
     description: ""
   });
@@ -161,19 +150,11 @@ const SharedCalendar = () => {
     
     setIsSubmitting(true);
     try {
-        // Calculate notification times
-        const notificationTimes = newEvent.notifications.map(minutes => {
-            const eventDate = new Date(`${newEvent.date}T${newEvent.startTime || '00:00'}`);
-            return new Date(eventDate.getTime() - (parseInt(minutes) * 60 * 1000)).toISOString();
-        });
-
         const eventData = {
             ...newEvent,
             userId: auth.currentUser.uid,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            notificationTimes,
-            sentNotifications: [],
             repeatConfig: newEvent.repeat !== 'never' ? {
                 type: newEvent.repeat,
                 startDate: newEvent.date
@@ -182,41 +163,6 @@ const SharedCalendar = () => {
 
         // Add event to database
         const docRef = await addDoc(collection(db, 'events'), eventData);
-
-        // Send notification to all participants
-        if (newEvent.participants?.length > 0) {
-            const idToken = await auth.currentUser.getIdToken(true);
-            
-            // Send to each participant
-            for (const participant of newEvent.participants) {
-                await fetch('https://us-central1-timetalk-13a75.cloudfunctions.net/api/sendNotification', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${idToken}`
-                    },
-                    body: JSON.stringify({
-                        userId: participant.id,
-                        notification: {
-                            title: '📅 New Calendar Event',
-                            body: `${auth.currentUser.displayName} added you to: ${newEvent.title}`,
-                            data: {
-                                type: 'calendar_invite',
-                                eventId: docRef.id,
-                                senderId: auth.currentUser.uid,
-                                timestamp: Date.now().toString(),
-                                eventDetails: {
-                                    title: newEvent.title,
-                                    date: newEvent.date,
-                                    time: newEvent.startTime || 'All day',
-                                    location: newEvent.location || 'No location specified'
-                                }
-                            }
-                        }
-                    })
-                });
-            }
-        }
 
         // Reset form
         setNewEvent({
@@ -227,7 +173,6 @@ const SharedCalendar = () => {
             endTime: "",
             location: "",
             type: "general",
-            notifications: [],
             repeat: 'never',
             description: ""
         });
@@ -265,7 +210,6 @@ const SharedCalendar = () => {
         endTime: "",
         location: "",
         type: "general",
-        notifications: [],
         repeat: 'never',
         description: ""
       });
@@ -753,29 +697,6 @@ const SharedCalendar = () => {
                     transition={{ duration: 0.2 }}
                     className="space-y-4 overflow-hidden"
                   >
-                    {/* Notifications */}
-                    <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
-                      <Bell size={20} className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                      <select 
-                        value={newEvent.notifications[0] || ''} 
-                        onChange={e => setNewEvent(prev => ({ 
-                          ...prev, 
-                          notifications: e.target.value ? [e.target.value] : [] 
-                        }))}
-                        className={`flex-1 bg-transparent ${darkMode ? 'text-white' : 'text-gray-900'}`}
-                      >
-                        <option value="" className={darkMode ? 'bg-gray-700' : 'bg-white'}>No Alert</option>
-                        {NOTIFICATION_OPTIONS.map(option => (
-                          <option 
-                            key={option.value} 
-                            value={option.value}
-                            className={darkMode ? 'bg-gray-700' : 'bg-white'}
-                          >
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
 
                     {/* Repeat */}
                     <div className={`flex items-center gap-3 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
@@ -852,19 +773,18 @@ const SharedCalendar = () => {
                   onClick={() => {
                     setShowEventForm(false);
                     setIsEditing(false);
-                    setNewEvent({
-                      title: "",
-                      date: "",
-                      isAllDay: false,
-                      startTime: "",
-                      endTime: "",
-                      location: "",
-                      type: "general",
-                      notifications: [],
-                      repeat: 'never',
-                      description: ""
-                    });
-                  }}
+                      setNewEvent({
+                        title: "",
+                        date: "",
+                        isAllDay: false,
+                        startTime: "",
+                        endTime: "",
+                        location: "",
+                        type: "general",
+                        repeat: 'never',
+                        description: ""
+                      });
+                    }}
                   className={`flex-1 py-3 px-6 rounded-xl font-medium transition-colors ${
                     darkMode 
                       ? 'bg-gray-700 text-white hover:bg-gray-600' 
