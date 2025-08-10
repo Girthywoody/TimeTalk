@@ -425,7 +425,7 @@ const MainApp = () => {
               ) : currentPage === 'profile' ? (
                 <ProfilePage />
               ) : currentPage === 'chat' ? (
-                <ChatRoom />
+                <ChatRoom setHideNav={setHideNav} hideNav={hideNav} />
               ) : currentPage === 'calendar' ? (
                 <SharedCalendar />
               ) : (

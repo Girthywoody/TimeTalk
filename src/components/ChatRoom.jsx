@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { 
   collection, 
   addDoc, 
@@ -66,6 +66,7 @@ const ALLOWED_FILE_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 ];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const NAV_BAR_HEIGHT = 72;
 
 const formatDateDivider = (date) =>
   date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
@@ -94,7 +95,7 @@ const formatLastSeen = (date) => {
   return date.toLocaleDateString();
 };
 
-const ChatRoom = () => {
+const ChatRoom = ({ setHideNav, hideNav }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -120,6 +121,8 @@ const ChatRoom = () => {
   const { ref: messagesEndRef, inView } = useInView();
   const scrollContainerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const inputContainerRef = useRef(null);
+  const [inputHeight, setInputHeight] = useState(0);
   const sendSound = useRef(new Audio('/sounds/swoosh.mp3'));
   const receiveSound = useRef(new Audio('/sounds/ding.mp3'));
   const [isVisible, setIsVisible] = useState(false);
@@ -150,6 +153,12 @@ const ChatRoom = () => {
   const [partner, setPartner] = useState(null);
   const navigate = useNavigate();
   const [isPartnerActive, setIsPartnerActive] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      setHideNav && setHideNav(false);
+    };
+  }, [setHideNav]);
 
 
   const otherUserInfo = {
@@ -465,6 +474,26 @@ useEffect(() => {
     };
   }, []);
 
+  useLayoutEffect(() => {
+    const updateHeight = () => {
+      if (inputContainerRef.current) {
+        setInputHeight(inputContainerRef.current.offsetHeight);
+      }
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    if (inputContainerRef.current) observer.observe(inputContainerRef.current);
+    const viewport = window.visualViewport;
+    viewport?.addEventListener('resize', updateHeight);
+
+    return () => {
+      observer.disconnect();
+      viewport?.removeEventListener('resize', updateHeight);
+    };
+  }, [selectedFilePreview, isKeyboardVisible, hideNav]);
+
   useEffect(() => {
     if (inView) {
       scrollContainerRef.current?.scrollTo({
@@ -473,6 +502,12 @@ useEffect(() => {
       });
     }
   }, [messages, inView]);
+
+  useEffect(() => {
+    if (inView) {
+      scrollToNewestMessage();
+    }
+  }, [inputHeight, isKeyboardVisible, hideNav]);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -1620,11 +1655,11 @@ useEffect(() => {
 
       {/* Messages Container */}
       <div className="flex-1 overflow-hidden relative">
-          <div 
+          <div
             ref={scrollContainerRef}
             className="absolute inset-0 overflow-y-auto px-4 z-0"
             style={{
-              paddingBottom: isKeyboardVisible ? '80px' : '160px', // Extra space for input and nav
+              paddingBottom: `${inputHeight + (hideNav ? 0 : NAV_BAR_HEIGHT)}px`,
               paddingTop: '16px',
               overscrollBehavior: 'contain',
               WebkitOverflowScrolling: 'touch',
@@ -1849,13 +1884,16 @@ useEffect(() => {
 
         {/* Message Input */}
         <div
+          ref={inputContainerRef}
           className={`fixed left-0 right-0 ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
           } border-t z-50 transition-all duration-300`}
           style={{
             bottom: isKeyboardVisible
               ? `${keyboardHeight}px`
-              : 'calc(72px + env(safe-area-inset-bottom))'
+              : hideNav
+                ? 'env(safe-area-inset-bottom)'
+                : 'calc(72px + env(safe-area-inset-bottom))'
           }}
         >
           <div
@@ -1885,6 +1923,8 @@ useEffect(() => {
                   type="text"
                   value={newMessage}
                   onChange={handleInputChange}
+                  onFocus={() => setHideNav && setHideNav(true)}
+                  onBlur={() => setHideNav && setHideNav(false)}
                   onKeyPress={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -2005,9 +2045,9 @@ useEffect(() => {
 
           {/* Image Preview Dialog */}
           {imagePreview && (
-            <div 
+            <div
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
-              style={{ paddingBottom: '80px' }}
+              style={{ paddingBottom: `${inputHeight + (hideNav ? 0 : NAV_BAR_HEIGHT)}px` }}
               onClick={() => setImagePreview(null)}
             >
               <div className="absolute top-4 right-4 flex gap-2 z-10">
