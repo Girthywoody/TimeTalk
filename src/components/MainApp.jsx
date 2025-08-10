@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Image, MessageSquare, Video, Lock, Send, Heart, X, EyeOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { collection, addDoc, query, orderBy, onSnapshot, getDoc, doc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -50,12 +51,36 @@ const MainApp = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    if (currentPage !== 'chat') {
+    if (!['chat', 'home'].includes(currentPage)) {
       setHideNav(false);
     }
   }, [currentPage]);
 
-
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const handleResize = () => {
+      if (!['chat', 'home'].includes(currentPage)) {
+        setHideNav(false);
+        return;
+      }
+      if (viewport) {
+        const heightDiff = window.innerHeight - viewport.height - viewport.offsetTop;
+        setHideNav(heightDiff > 100);
+      } else {
+        const isKeyboard = window.innerHeight < window.outerHeight * 0.75;
+        setHideNav(isKeyboard);
+      }
+    };
+    viewport?.addEventListener('resize', handleResize);
+    viewport?.addEventListener('scroll', handleResize);
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => {
+      viewport?.removeEventListener('resize', handleResize);
+      viewport?.removeEventListener('scroll', handleResize);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [currentPage]);
 
   useEffect(() => {
     const postsRef = collection(db, 'posts');
@@ -269,13 +294,21 @@ const MainApp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-transparent">
+    <div className="bg-transparent min-h-[calc(var(--vh,1vh)*100)]">
       <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] bg-transparent z-[49]" />
-      
+
       <div className="pb-20 relative">
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-          {currentPage === 'home' ? (
-            <>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentPage}
+            initial={{ x: 12, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -12, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+              {currentPage === 'home' ? (
+                <>
               {/* Header */}
               <div className={`${darkMode ? 'bg-dark-800/80' : 'bg-white/80'} backdrop-blur-sm border-none shadow-lg rounded-lg`}>
                 <div className="p-4 flex flex-row items-center justify-between">
@@ -389,29 +422,30 @@ const MainApp = () => {
                 </div>
               </div>
             </>
-          ) : currentPage === 'profile' ? (
-            <ProfilePage />
-          ) : currentPage === 'chat' ? (
-            <ChatRoom onKeyboardChange={setHideNav} />
-          ) : currentPage === 'calendar' ? (
-            <SharedCalendar />
-          ) : (
-            <div className="flex flex-col items-center justify-center min-h-[80vh]">
-              <div className="text-2xl font-bold text-gray-800 mb-4">
-                {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
-              </div>
-              <p className="text-gray-600">Coming Soon</p>
+              ) : currentPage === 'profile' ? (
+                <ProfilePage />
+              ) : currentPage === 'chat' ? (
+                <ChatRoom />
+              ) : currentPage === 'calendar' ? (
+                <SharedCalendar />
+              ) : (
+                <div className="flex flex-col items-center justify-center min-h-[80vh]">
+                  <div className="text-2xl font-bold text-gray-800 mb-4">
+                    {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
+                  </div>
+                  <p className="text-gray-600">Coming Soon</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {!hideNav && (
-        <>
-          <div className="fixed bottom-0 left-0 right-0 h-[env(safe-area-inset-bottom)] bg-transparent z-[49]" />
+      <AnimatePresence>
+        {!hideNav && (
           <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
-        </>
-      )}
+        )}
+      </AnimatePresence>
 
       <SecretPostModal 
         isOpen={showSecretModal}
