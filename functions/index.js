@@ -241,24 +241,47 @@ app.post('/simpleNotification', async (req, res) => {
   }
 });
 
-exports.publishScheduledPosts = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
+exports.publishScheduledPosts = functions.pubsub.schedule('every 1 minutes').onRun(async () => {
   const now = new Date();
-  
+
   const scheduledPosts = await db.collection('posts')
     .where('isScheduled', '==', true)
     .where('scheduledFor', '<=', now.toISOString())
     .get();
 
   const batch = db.batch();
-  
-  scheduledPosts.docs.forEach((doc) => {
-    batch.update(doc.ref, {
+  const notifications = [];
+
+  scheduledPosts.docs.forEach((docSnap) => {
+    const postData = docSnap.data();
+    batch.update(docSnap.ref, {
       isScheduled: false,
       publishedAt: now.toISOString()
     });
+
+    notifications.push(
+      db.collection('users').doc(postData.userId).get().then(userDoc => {
+        const userData = userDoc.data();
+        const partnerId = userData?.partnerId;
+        if (partnerId) {
+          return sendNotificationToUser(partnerId, {
+            title: `${userData?.displayName || 'Partner'} posted a memory`,
+            body: postData.content ? postData.content : 'New post on the timeline',
+            data: {
+              type: 'post',
+              postId: docSnap.id,
+              clickAction: '/',
+              timestamp: Date.now().toString()
+            }
+          });
+        }
+        return null;
+      })
+    );
   });
 
   await batch.commit();
+  await Promise.all(notifications);
 });
 
 exports.api = functions.https.onRequest(app);

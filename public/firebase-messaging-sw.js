@@ -76,20 +76,18 @@ self.addEventListener('notificationclick', function(event) {
         type: 'window',
         includeUncontrolled: true
       }).then(function(clientList) {
-        // Try to find an existing window/tab
         for (const client of clientList) {
           if (client.url.startsWith(self.registration.scope) && 'focus' in client) {
-            // Post a message to the client
             client.postMessage({
               type: 'notificationClick',
               notification: {
                 data: notificationData
               }
             });
-            
             return client.focus();
           }
         }
+        return clients.openWindow(clickAction);
       })
     );
   });

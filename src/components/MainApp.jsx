@@ -12,9 +12,12 @@ import CustomDateTimeSelector from './CustomDateTimeSelector';
 import ChatRoom from './ChatRoom';
 import SharedCalendar from './SharedCalendar';
 import SecretPostModal from './SecretPostModal';
-import { auth } from '../firebase';  // Add this line with your other imports
+import { auth } from '../firebase';
 import { useDarkMode } from '../context/DarkModeContext';
-import PostButton from './PostButton';  // Add this line
+import PostButton from './PostButton';
+import { sendNotification } from '../utils/Notifications';
+import { useAuth } from '../hooks/useAuth';
+import { useLocation } from 'react-router-dom';
 
 
 const MainApp = () => {
@@ -31,6 +34,20 @@ const MainApp = () => {
   const { darkMode } = useDarkMode();  // Add this line to get darkMode
   const [isScheduleMode, setIsScheduleMode] = useState(false);
   const [user, setUser] = useState(null);
+  const { getPartnerProfile } = useAuth();
+  const location = useLocation();
+  useEffect(() => {
+    if (location.pathname.startsWith('/chat')) {
+      setCurrentPage('chat');
+    } else if (location.pathname.startsWith('/calendar')) {
+      setCurrentPage('calendar');
+    } else if (location.pathname.startsWith('/profile')) {
+      setCurrentPage('profile');
+    } else {
+      setCurrentPage('home');
+    }
+  }, [location.pathname]);
+
 
 
   useEffect(() => {
@@ -97,9 +114,24 @@ const MainApp = () => {
           const mediaUrl = await uploadMedia(mediaPreview, mediaType);
           postData.mediaUrl = mediaUrl;
         }
-  
-        await addDoc(collection(db, 'posts'), postData);
-        
+
+        const docRef = await addDoc(collection(db, 'posts'), postData);
+
+        const partner = await getPartnerProfile();
+        if (partner?.uid) {
+          const notificationData = {
+            title: `${userData?.displayName || 'Partner'} posted a memory`,
+            body: postData.content ? (postData.content.length > 30 ? `${postData.content.slice(0,27)}...` : postData.content) : 'New post on the timeline',
+            data: {
+              type: 'post',
+              postId: docRef.id,
+              clickAction: '/',
+              timestamp: Date.now()
+            }
+          };
+          await sendNotification(partner.uid, notificationData);
+        }
+
         // Reset form
         setMessage('');
         setScheduledDateTime(null);

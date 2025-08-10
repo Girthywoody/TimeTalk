@@ -53,9 +53,11 @@ useEffect(() => {
             
             if (data) {
               if (data.type === 'message') {
-                window.location.href = '/';
+                window.location.href = '/chat';
               } else if (data.type === 'nudge') {
-                window.location.href = '/?nudged=true';
+                window.location.href = '/chat?nudged=true';
+              } else if (data.clickAction) {
+                window.location.href = data.clickAction;
               }
             }
           }
