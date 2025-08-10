@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import MainApp from './components/MainApp';
 import ProfileSetupPage from './components/ProfileSetupPage';
@@ -21,6 +21,7 @@ import { requestNotificationPermission } from './firebase';
 
 const App = () => {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
   useEffect(() => {
     // Check if the app is installed as PWA
     const isPWA = window.matchMedia('(display-mode: standalone)').matches;
@@ -37,7 +38,7 @@ const App = () => {
 useEffect(() => {
   // Only initialize once when user is logged in
   if (!user) return;
-  
+
   // Single function to handle all notification setup
   const setupNotifications = async () => {
     try {
@@ -50,14 +51,14 @@ useEffect(() => {
         navigator.serviceWorker.addEventListener('message', (event) => {
           if (event.data?.type === 'notificationClick') {
             const data = event.data.notification?.data;
-            
+
             if (data) {
               if (data.type === 'message') {
-                window.location.href = '/chat';
+                navigate('/chat');
               } else if (data.type === 'nudge') {
-                window.location.href = '/chat?nudged=true';
+                navigate('/chat?nudged=true');
               } else if (data.clickAction) {
-                window.location.href = data.clickAction;
+                navigate(data.clickAction);
               }
             }
           }
@@ -83,7 +84,7 @@ useEffect(() => {
   // Small delay to ensure everything is loaded
   const timer = setTimeout(setupNotifications, 2000);
   return () => clearTimeout(timer);
-}, [user]);
+}, [user, navigate]);
 
 
   const initializeNotifications = async () => {
