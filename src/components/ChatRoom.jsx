@@ -77,7 +77,7 @@ const formatLastSeen = (date) => {
   return date.toLocaleDateString();
 };
 
-const ChatRoom = () => {
+const ChatRoom = ({ onKeyboardChange }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -124,6 +124,12 @@ const ChatRoom = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(
+    typeof window !== 'undefined'
+      ? window.visualViewport?.height || window.innerHeight
+      : 0
+  );
   const [partner, setPartner] = useState(null);
   const navigate = useNavigate();
   const [isPartnerActive, setIsPartnerActive] = useState(false);
@@ -1224,15 +1230,42 @@ useEffect(() => {
   }, [user]);
 
   useEffect(() => {
+    const viewport = window.visualViewport;
+
     const handleResize = () => {
-      // Check if the viewport height has decreased significantly (keyboard is shown)
-      const isKeyboard = window.innerHeight < window.outerHeight * 0.75;
-      setIsKeyboardVisible(isKeyboard);
+      if (viewport) {
+        const heightDiff =
+          window.innerHeight - viewport.height - viewport.offsetTop;
+        const keyboard = heightDiff > 100;
+        setViewportHeight(viewport.height);
+        setKeyboardHeight(keyboard ? heightDiff : 0);
+        setIsKeyboardVisible(keyboard);
+        onKeyboardChange?.(keyboard);
+      } else {
+        const isKeyboard = window.innerHeight < window.outerHeight * 0.75;
+        setIsKeyboardVisible(isKeyboard);
+        onKeyboardChange?.(isKeyboard);
+      }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    if (viewport) {
+      viewport.addEventListener('resize', handleResize);
+      viewport.addEventListener('scroll', handleResize);
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+
+    handleResize();
+
+    return () => {
+      if (viewport) {
+        viewport.removeEventListener('resize', handleResize);
+        viewport.removeEventListener('scroll', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+    };
+  }, [onKeyboardChange]);
 
   useEffect(() => {
     const fetchAndTrackPartner = async () => {
@@ -1337,7 +1370,10 @@ useEffect(() => {
   }, []);
 
   return (
-    <div className={`fixed inset-0 flex flex-col ${darkMode ? 'dark' : ''}`}>
+    <div
+      className={`fixed top-0 left-0 right-0 flex flex-col ${darkMode ? 'dark' : ''}`}
+      style={{ height: viewportHeight }}
+    >
       <div className={`h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#F8F9FE]'}`}>
         {/* Header */}
         <div className={`px-4 py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b z-10 relative`}>
@@ -1498,7 +1534,7 @@ useEffect(() => {
             ref={scrollContainerRef}
             className="absolute inset-0 overflow-y-auto px-4 z-0"
             style={{
-              paddingBottom: '160px', // Extra space for input and nav
+              paddingBottom: isKeyboardVisible ? '80px' : '160px', // Extra space for input and nav
               paddingTop: '16px',
               overscrollBehavior: 'contain',
               WebkitOverflowScrolling: 'touch',
@@ -1721,15 +1757,19 @@ useEffect(() => {
 
         {/* Message Input */}
         <div
-          className={`fixed ${
-            isKeyboardVisible
-              ? 'bottom-0'
-              : 'bottom-[calc(90px+env(safe-area-inset-bottom))]'
-          } left-0 right-0 ${
+          className={`fixed left-0 right-0 ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
           } border-t z-50 transition-all duration-300`}
+          style={{
+            bottom: isKeyboardVisible
+              ? `${keyboardHeight}px`
+              : 'calc(90px + env(safe-area-inset-bottom))'
+          }}
         >
-          <div className="max-w-2xl mx-auto px-4 py-3">
+          <div
+            className="max-w-2xl mx-auto px-4 py-3"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          >
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
                 <div className="relative inline-block">

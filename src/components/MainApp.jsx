@@ -36,6 +36,7 @@ const MainApp = () => {
   const [user, setUser] = useState(null);
   const { getPartnerProfile } = useAuth();
   const location = useLocation();
+  const [hideNav, setHideNav] = useState(false);
   useEffect(() => {
     if (location.pathname.startsWith('/chat')) {
       setCurrentPage('chat');
@@ -47,6 +48,12 @@ const MainApp = () => {
       setCurrentPage('home');
     }
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (currentPage !== 'chat') {
+      setHideNav(false);
+    }
+  }, [currentPage]);
 
 
 
@@ -385,7 +392,7 @@ const MainApp = () => {
           ) : currentPage === 'profile' ? (
             <ProfilePage />
           ) : currentPage === 'chat' ? (
-            <ChatRoom />
+            <ChatRoom onKeyboardChange={setHideNav} />
           ) : currentPage === 'calendar' ? (
             <SharedCalendar />
           ) : (
@@ -399,9 +406,12 @@ const MainApp = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 h-[env(safe-area-inset-bottom)] bg-transparent z-[49]" />
-
-      <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
+      {!hideNav && (
+        <>
+          <div className="fixed bottom-0 left-0 right-0 h-[env(safe-area-inset-bottom)] bg-transparent z-[49]" />
+          <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
+        </>
+      )}
 
       <SecretPostModal 
         isOpen={showSecretModal}
