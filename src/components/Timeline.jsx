@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Clock, Video, Image, MessageSquare, Mic, Lock, MoreVertical, Trash, Edit, Share, Flag } from 'lucide-react';
+import { Heart, Clock, Video, Image, Mic, MoreVertical, Trash, Edit, Share, Flag, Search } from 'lucide-react';
 import { deleteDoc, doc, updateDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import CustomDateTimeSelector from './CustomDateTimeSelector';
@@ -107,6 +107,8 @@ const Timeline = ({ posts }) => {
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const [editModal, setEditModal] = useState({ isOpen: false, post: null });
   const { darkMode } = useDarkMode();
+  const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     // Query for scheduled posts that need to be published
@@ -171,6 +173,39 @@ const Timeline = ({ posts }) => {
       alert('Failed to update post. Please try again.');
     }
   };
+
+  const filteredPosts = [...(posts || [])]
+    .filter(post => {
+      // Show all non-scheduled posts
+      if (!post.isScheduled) return true;
+
+      // Hide completely secret scheduled posts until their time
+      if (post.completelySecret && post.isScheduled) {
+        const scheduledTime = new Date(post.scheduledFor);
+        return scheduledTime <= new Date();
+      }
+
+      // Show all subtle hint posts (they'll be rendered as placeholders if not time yet)
+      return true;
+    })
+    .filter(post => {
+      if (filter === 'unlocked') {
+        return !post.isScheduled || isPostVisible(post.scheduledFor);
+      }
+      if (filter === 'scheduled') {
+        return post.isScheduled && !isPostVisible(post.scheduledFor);
+      }
+      return true;
+    })
+    .filter(post => {
+      if (!searchTerm.trim()) return true;
+      return post.content?.toLowerCase().includes(searchTerm.toLowerCase());
+    })
+    .sort((a, b) => {
+      const aDate = new Date(a.scheduledFor);
+      const bDate = new Date(b.scheduledFor);
+      return bDate - aDate; // Most recent first
+    });
 
   const renderMedia = (post) => {
     // Previous media rendering logic remains the same
@@ -327,49 +362,70 @@ const Timeline = ({ posts }) => {
     );
   };
 
-  if (!posts || posts.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 text-gray-500">
-        <Clock size={48} className="mb-4" />
-        <p className="text-lg font-medium">No posts yet</p>
-        <p className="text-sm">Start creating memories!</p>
-      </div>
-    );
-  }
+  const emptyState = (
+    <div className="flex flex-col items-center justify-center p-8 text-gray-500">
+      <Clock size={48} className="mb-4" />
+      <p className="text-lg font-medium">No posts yet</p>
+      <p className="text-sm">Start creating memories!</p>
+    </div>
+  );
 
   return (
     <>
-      <div className="space-y-4" onClick={handleClickOutside}>
-        {[...posts]
-          .filter(post => {
-            // Show all non-scheduled posts
-            if (!post.isScheduled) return true;
-            
-            // Hide completely secret scheduled posts until their time
-            if (post.completelySecret && post.isScheduled) {
-              const scheduledTime = new Date(post.scheduledFor);
-              return scheduledTime <= new Date();
-            }
-            
-            // Show all subtle hint posts (they'll be rendered as placeholders if not time yet)
-            return true;
-          })
-          .sort((a, b) => {
-            const aDate = new Date(a.scheduledFor);
-            const bDate = new Date(b.scheduledFor);
-            return bDate - aDate; // Most recent first
-          })
-          .map((post) => (
-            <div 
-              key={post.id} 
-              className={`${
-                darkMode ? 'bg-dark-800/90' : 'bg-white/90'
-              } backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200 
-              border-none overflow-hidden transform hover:-translate-y-1 rounded-lg`}
+      <div onClick={handleClickOutside}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div className="flex gap-2">
+          {['all', 'unlocked', 'scheduled'].map(option => (
+            <button
+              key={option}
+              onClick={() => setFilter(option)}
+              className={`px-3 py-1 rounded-full text-sm capitalize ${
+                filter === option
+                  ? 'bg-brand-500 text-white'
+                  : darkMode
+                    ? 'bg-gray-700 text-gray-300'
+                    : 'bg-gray-100 text-gray-600'
+              }`}
             >
-              {renderPost(post)}
-            </div>
+              {option}
+            </button>
           ))}
+        </div>
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search posts..."
+            className={`pl-9 pr-3 py-1 rounded-full border focus:outline-none ${
+              darkMode
+                ? 'bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-400'
+                : 'bg-white border-gray-200 text-gray-800 placeholder-gray-500'
+            }`}
+          />
+        </div>
+        </div>
+        {(!posts || posts.length === 0) && emptyState}
+        {posts && posts.length > 0 && (
+          <div className="space-y-4">
+          {filteredPosts.length === 0 ? (
+            emptyState
+          ) : (
+            filteredPosts.map((post) => (
+              <div
+                key={post.id}
+                className={`${
+                  darkMode ? 'bg-dark-800/90' : 'bg-white/90'
+                } backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200
+                border-none overflow-hidden transform hover:-translate-y-1 rounded-lg`}
+              >
+                {renderPost(post)}
+              </div>
+            ))
+          )}
+          </div>
+        )}
       </div>
       <EditPostModal
         isOpen={editModal.isOpen}
