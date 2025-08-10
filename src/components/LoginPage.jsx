@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff, Moon, Sun } from 'lucide-react';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { useDarkMode } from '../context/DarkModeContext';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -16,6 +17,7 @@ const LoginPage = () => {
   const [isResetPassword, setIsResetPassword] = useState(false);
   const { login, signup, auth } = useAuth();
   const navigate = useNavigate();
+  const { darkMode, toggleDarkMode } = useDarkMode();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,7 +98,13 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4">
+    <div className="relative min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col items-center justify-center p-4">
+      <button
+        onClick={toggleDarkMode}
+        aria-label="Toggle dark mode"
+        className="absolute top-4 right-4 p-2 rounded-full bg-white/70 dark:bg-gray-800/70 backdrop-blur-md shadow-md hover:scale-105 transition-transform">
+        {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+      </button>
       {/* Logo Section - Updated with transparent logo */}
       <div className="mb-8 text-center">
         <img
@@ -107,15 +115,15 @@ const LoginPage = () => {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           Welcome Back
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-gray-600 dark:text-gray-300 mt-2">
           {isSignUp ? 'Create your account' : isResetPassword ? 'Reset your password' : 'Sign in to continue'}
         </p>
       </div>
 
       <div className="w-full max-w-md">
-        <div className="bg-white/90 backdrop-blur-xl shadow-2xl rounded-3xl p-8 border border-gray-100">
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl shadow-2xl rounded-3xl p-8 border border-gray-100 dark:border-gray-700">
           {error && (
-            <div className="mb-6 bg-red-50 text-red-500 p-4 rounded-xl flex items-center gap-2 animate-fadeIn">
+            <div className="mb-6 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 p-4 rounded-xl flex items-center gap-2 animate-fadeIn">
               <AlertCircle size={20} />
               {error}
             </div>
@@ -126,7 +134,7 @@ const LoginPage = () => {
               <div className="space-y-4">
                 {/* Email Field */}
                 <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Email
                   </label>
                   <div className="relative">
@@ -136,7 +144,7 @@ const LoginPage = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
                       placeholder="Enter your email"
                       required
                     />
@@ -145,7 +153,7 @@ const LoginPage = () => {
 
                 {/* Password Field */}
                 <div className="space-y-2">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Password
                   </label>
                   <div className="relative">
@@ -155,7 +163,7 @@ const LoginPage = () => {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-10 pr-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
                       placeholder="Enter your password"
                       required
                     />
@@ -172,7 +180,7 @@ const LoginPage = () => {
                 {/* Confirm Password Field (Sign Up only) */}
                 {isSignUp && (
                   <div className="space-y-2">
-                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Confirm Password
                     </label>
                     <div className="relative">
@@ -182,7 +190,7 @@ const LoginPage = () => {
                         type={showConfirmPassword ? "text" : "password"}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full pl-10 pr-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
                         placeholder="Confirm your password"
                         required
                       />
@@ -237,7 +245,7 @@ const LoginPage = () => {
             /* Password Reset Form */
             <form onSubmit={handleForgotPassword} className="space-y-6">
               <div className="space-y-2">
-                <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Email
                 </label>
                 <div className="relative">
@@ -247,7 +255,7 @@ const LoginPage = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
                     placeholder="Enter your email"
                     required
                   />
@@ -273,10 +281,10 @@ const LoginPage = () => {
           <div className="mt-6 text-center space-y-4">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
+                <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or</span>
+                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">or</span>
               </div>
             </div>
 
@@ -288,7 +296,7 @@ const LoginPage = () => {
                 setEmail('');
                 setPassword('');
               }}
-              className="text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors"
+              className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 text-sm font-medium transition-colors"
             >
               {isSignUp ? 'Already have an account? Log in' : "Don't have an account? Sign up"}
             </button>
