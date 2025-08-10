@@ -5,6 +5,7 @@ import {
   ArrowRight,
   User,
   Lock,
+  Bell,
   Palette,
   Sliders,
   Camera,
@@ -171,6 +172,11 @@ const SettingsPage = ({ onClose, profileData }) => {
       icon: Lock, 
       label: 'Change password',
       onClick: () => setIsChangingPassword(true)
+    },
+    { 
+      icon: Bell, 
+      label: 'Notifications',
+      onClick: () => {}  // Add notifications functionality
     },
     { 
       icon: Sliders, 

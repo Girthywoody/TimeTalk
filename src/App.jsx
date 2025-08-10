@@ -14,12 +14,97 @@ import PartnerProfilePage from './components/profile/PartnerProfilePage';
 import ChristmasList from './components/profile/ChristmasList';
 import { SpotifyCallback } from './components/SpotifyCallback';
 import SyncdGame from './components/syncd/SyncdGame';
+import { requestNotificationPermission } from './firebase';
 
 
 
 
 const App = () => {
   const { user, loading } = useAuth();
+  useEffect(() => {
+    // Check if the app is installed as PWA
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+
+    
+    if (!isPWA && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      // Show installation prompt for iOS users
+      alert('To enable notifications, please add this app to your home screen by clicking the share button and selecting "Add to Home Screen".');
+    }
+  }, [user]); // Empty dependency array means this runs once when component mounts
+
+
+// Replace the multiple notification setups with a single consolidated one:
+useEffect(() => {
+  // Only initialize once when user is logged in
+  if (!user) return;
+  
+  // Single function to handle all notification setup
+  const setupNotifications = async () => {
+    try {
+      // Check if the app is installed as PWA
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                   window.navigator.standalone === true;
+      
+      // Set up handler for notification clicks
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data?.type === 'notificationClick') {
+            const data = event.data.notification?.data;
+            
+            if (data) {
+              if (data.type === 'message') {
+                window.location.href = '/';
+              } else if (data.type === 'nudge') {
+                window.location.href = '/?nudged=true';
+              }
+            }
+          }
+        });
+      }
+      //
+      // Request permission if needed
+      if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        console.log('Notification permission status:', permission);
+      }
+      
+      // Get token if permission granted
+      if (Notification.permission === 'granted') {
+        const token = await requestNotificationPermission();
+        console.log('Notification token status:', token ? 'obtained' : 'failed');
+      }
+    } catch (err) {
+      console.error('Failed to initialize notifications:', err);
+    }
+  };
+  
+  // Small delay to ensure everything is loaded
+  const timer = setTimeout(setupNotifications, 2000);
+  return () => clearTimeout(timer);
+}, [user]);
+
+
+  const initializeNotifications = async () => {
+    // Check if the app is installed as PWA
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    
+    if (isPWA && Notification.permission !== 'granted') {
+      try {
+        // Try to get permission on startup
+        const permission = await Notification.requestPermission();
+        console.log('Notification permission status:', permission);
+        
+        if (permission === 'granted') {
+          // Get token if permission granted
+          const token = await requestNotificationPermission();
+          console.log('Notification token obtained:', token);
+        }
+      } catch (err) {
+        console.error('Failed to initialize notifications:', err);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
