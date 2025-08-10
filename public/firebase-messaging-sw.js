@@ -62,26 +62,6 @@ async function showUniqueNotification(title, options) {
     console.log('[Service Worker] Duplicate notification skipped');
 }
 
-// Background message handler - use shared dedupe logic
-messaging.onBackgroundMessage(function(payload) {
-    console.log('[firebase-messaging-sw.js] Received background message:', payload);
-
-    const tag = createNotificationTag(payload);
-    const notificationTitle = payload.notification?.title || 'New Message';
-    const notificationOptions = {
-        body: payload.notification?.body || 'You have a new notification',
-        icon: '/ios-icon-192.png',
-        badge: '/ios-icon-192.png',
-        tag,
-        data: payload.data || {},
-        renotify: true,
-        requireInteraction: true,
-        silent: false,
-        vibrate: [200, 100, 200]
-    };
-
-    showUniqueNotification(notificationTitle, notificationOptions);
-});
 // Add to firebase-messaging-sw.js
 self.addEventListener('notificationclick', function(event) {
     console.log('[Service Worker] Notification click received:', event);
@@ -154,17 +134,25 @@ self.addEventListener('push', function(event) {
             console.log('[Service Worker] Push payload:', payload);
 
             const tag = createNotificationTag(payload);
-            const notificationTitle = payload.notification?.title || 'New Message';
+            const notificationTitle =
+                payload.data?.title ||
+                payload.notification?.title ||
+                'New Message';
             const notificationOptions = {
-                body: payload.notification?.body || 'You have a new notification',
+                body:
+                    payload.data?.body ||
+                    payload.notification?.body ||
+                    'You have a new notification',
                 icon: '/ios-icon-192.png',
                 badge: '/ios-icon-192.png',
                 tag,
                 data: payload.data || {},
-                actions: [{
-                    action: 'open',
-                    title: 'Open'
-                }],
+                actions: [
+                    {
+                        action: 'open',
+                        title: 'Open'
+                    }
+                ],
                 renotify: true,
                 requireInteraction: true,
                 silent: false

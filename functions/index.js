@@ -33,42 +33,19 @@ async function sendNotificationToUser(userId, notification) {
         // Log the notification object received from client
         console.log('Notification received from client:', notification);
 
-        // Create a properly formatted FCM message
+        // Convert all data values to strings for FCM compatibility
+        const dataPayload = Object.fromEntries(
+            Object.entries({
+                title: notification.title,
+                body: notification.body,
+                ...(notification.data || {})
+            }).map(([k, v]) => [k, String(v)])
+        );
+
+        // Create a data-only FCM message to prevent duplicate notifications
         const message = {
             token: userData.fcmToken,
-            notification: {
-                title: notification.title,
-                body: notification.body
-            },
-            webpush: {
-                headers: {
-                    Urgency: 'high'
-                },
-                notification: {
-                    icon: '/ios-icon-192.png',
-                    badge: '/ios-icon-192.png',
-                    vibrate: notification.vibrate || [200, 100, 200],
-                    requireInteraction: true,
-                    renotify: true
-                },
-                fcmOptions: {
-                    link: notification.data?.clickAction || '/'
-                }
-            },
-            android: {
-                notification: {
-                    icon: '/ios-icon-192.png',
-                    priority: notification.priority || 'high'
-                }
-            },
-            apns: {
-                payload: {
-                    aps: {
-                        sound: notification.sound || 'default'
-                    }
-                }
-            },
-            data: notification.data || {}
+            data: dataPayload
         };
 
         // Log the message before sending
@@ -207,22 +184,15 @@ app.post('/simpleNotification', async (req, res) => {
       return res.json({ success: false, error: 'No FCM token available for this user' });
     }
 
-    // Create the notification message with optional data field
+    // Create a data-only message to avoid duplicate notifications
+    const messageData = Object.fromEntries(
+      Object.entries({ title, body, ...(data || {}) }).map(([k, v]) => [k, String(v)])
+    );
+
     const message = {
       token: userData.fcmToken,
-      notification: {
-        title: title,
-        body: body
-      }
+      data: messageData
     };
-    
-    // Add data if provided
-    if (data) {
-      message.data = typeof data === 'object' ? 
-        // Convert all values to strings for FCM compatibility
-        Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])) : 
-        { data: String(data) };
-    }
 
     try {
       // Send the notification
