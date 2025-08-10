@@ -1498,7 +1498,7 @@ useEffect(() => {
             ref={scrollContainerRef}
             className="absolute inset-0 overflow-y-auto px-4 z-0"
             style={{
-              paddingBottom: '140px', // Increased to account for input + nav height
+              paddingBottom: '160px', // Extra space for input and nav
               paddingTop: '16px',
               overscrollBehavior: 'contain',
               WebkitOverflowScrolling: 'touch',
@@ -1720,11 +1720,15 @@ useEffect(() => {
         </div>
 
         {/* Message Input */}
-        <div className={`fixed ${
-          isKeyboardVisible ? 'bottom-0' : 'bottom-[80px]'
-        } left-0 right-0 ${
-          darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
-        } border-t z-20 transition-all duration-300`}>
+        <div
+          className={`fixed ${
+            isKeyboardVisible
+              ? 'bottom-0'
+              : 'bottom-[calc(90px+env(safe-area-inset-bottom))]'
+          } left-0 right-0 ${
+            darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+          } border-t z-50 transition-all duration-300`}
+        >
           <div className="max-w-2xl mx-auto px-4 py-3">
             <div className="flex flex-col gap-2">
               {selectedFilePreview && (
