@@ -92,7 +92,7 @@ useEffect(() => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[calc(var(--vh,1vh)*100)] flex items-center justify-center">
         <Loader2 className="animate-spin text-brand-500" size={40} />
       </div>
     );
@@ -100,7 +100,7 @@ useEffect(() => {
 
   return (
     <DarkModeProvider>
-      <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-brand-100 dark:from-dark-900 dark:via-dark-800 dark:to-dark-900">
+      <div className="min-h-[calc(var(--vh,1vh)*100)] bg-gradient-to-br from-brand-50 via-white to-brand-100 dark:from-dark-900 dark:via-dark-800 dark:to-dark-900">
         <Routes>
           {/* Public route */}
           <Route 

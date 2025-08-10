@@ -28,21 +28,24 @@ export default function Navigation({ currentPage, setCurrentPage }) {
     <motion.nav
       initial={{ y: 80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-      className="fixed inset-x-5 bottom-5 z-40"
+      exit={{ y: 80, opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-x-0 bottom-0 z-40 pb-[env(safe-area-inset-bottom)]"
     >
       <div
-        className="h-[72px] p-[14px] rounded-[28px] flex items-center justify-between shadow-[0_8px_22px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+        className="mx-4 mb-4 flex items-center justify-between rounded-2xl backdrop-blur-md shadow-lg"
         style={{
-          backgroundColor: darkMode ? '#0F1113' : '#111315'
+          backgroundColor: darkMode
+            ? 'rgba(17,19,21,0.6)'
+            : 'rgba(255,255,255,0.6)'
         }}
       >
         {tabs.map(({ id, icon: Icon, label, badge }) => (
           <motion.button
             key={id}
             onClick={() => handleSelect(id)}
-            whileTap={{ scale: 0.9 }}
-            className="relative flex-1 flex items-center justify-center"
+            whileTap={{ scale: 0.95 }}
+            className="relative flex-1 flex items-center justify-center h-14"
             aria-label={label}
           >
             <Icon
@@ -56,7 +59,6 @@ export default function Navigation({ currentPage, setCurrentPage }) {
           </motion.button>
         ))}
       </div>
-      <div className="h-[env(safe-area-inset-bottom)]" />
     </motion.nav>
   );
 }

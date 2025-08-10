@@ -94,7 +94,7 @@ const formatLastSeen = (date) => {
   return date.toLocaleDateString();
 };
 
-const ChatRoom = ({ onKeyboardChange }) => {
+const ChatRoom = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -1332,11 +1332,9 @@ useEffect(() => {
         setViewportHeight(viewport.height);
         setKeyboardHeight(keyboard ? heightDiff : 0);
         setIsKeyboardVisible(keyboard);
-        onKeyboardChange?.(keyboard);
       } else {
         const isKeyboard = window.innerHeight < window.outerHeight * 0.75;
         setIsKeyboardVisible(isKeyboard);
-        onKeyboardChange?.(isKeyboard);
       }
     };
 
@@ -1357,7 +1355,7 @@ useEffect(() => {
         window.removeEventListener('resize', handleResize);
       }
     };
-  }, [onKeyboardChange]);
+  }, []);
 
   useEffect(() => {
     const fetchAndTrackPartner = async () => {
@@ -1857,7 +1855,7 @@ useEffect(() => {
           style={{
             bottom: isKeyboardVisible
               ? `${keyboardHeight}px`
-              : 'calc(90px + env(safe-area-inset-bottom))'
+              : 'calc(72px + env(safe-area-inset-bottom))'
           }}
         >
           <div
@@ -2031,7 +2029,7 @@ useEffect(() => {
               <img 
                 src={imagePreview} 
                 alt="Preview" 
-                className="max-w-[90%] max-h-[calc(100vh-160px)] object-contain"
+                className="max-w-[90%] max-h-[calc(100dvh-160px)] object-contain"
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
