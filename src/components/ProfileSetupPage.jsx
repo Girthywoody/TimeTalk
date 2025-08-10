@@ -119,7 +119,7 @@ const ProfileSetupPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-pink-50 p-4 flex items-center justify-center">
       <div className="w-full max-w-md">
         <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl p-8">
           <button
@@ -142,7 +142,7 @@ const ProfileSetupPage = () => {
             {/* Profile Image Upload */}
             <div className="flex flex-col items-center space-y-4">
               <div className="relative w-32 h-32">
-                <div className="w-full h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 p-1">
+                <div className="w-full h-full rounded-full bg-gradient-to-r from-brand-500 to-pink-500 p-1">
                   <div className="w-full h-full rounded-full overflow-hidden bg-white">
                     {profileData.profileImage ? (
                       <img 
@@ -157,7 +157,7 @@ const ProfileSetupPage = () => {
                     )}
                   </div>
                 </div>
-                <label className="absolute bottom-0 right-0 p-2 bg-blue-500 rounded-full shadow-lg cursor-pointer hover:bg-blue-600 transition-colors">
+                <label className="absolute bottom-0 right-0 p-2 bg-brand-500 rounded-full shadow-lg cursor-pointer hover:bg-brand-600 transition-colors">
                   <Camera className="text-white" size={20} />
                   <input
                     type="file"
@@ -176,13 +176,13 @@ const ProfileSetupPage = () => {
                 placeholder="Your display name"
                 value={profileData.displayName}
                 onChange={(e) => setProfileData(prev => ({...prev, displayName: e.target.value}))}
-                className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               />
               <textarea
                 placeholder="Write a short bio..."
                 value={profileData.bio}
                 onChange={(e) => setProfileData(prev => ({...prev, bio: e.target.value}))}
-                className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-32"
+                className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none h-32"
               />
               <input
                 type="text"
@@ -192,7 +192,7 @@ const ProfileSetupPage = () => {
                   ...prev, 
                   partnerInfo: {...prev.partnerInfo, name: e.target.value}
                 }))}
-                className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               />
               <div className="flex items-center gap-3">
                 <Calendar className="text-gray-400" size={20} />
@@ -204,7 +204,7 @@ const ProfileSetupPage = () => {
                     ...prev, 
                     relationship: {...prev.relationship, anniversary: e.target.value}
                   }))}
-                  className="flex-1 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -213,7 +213,7 @@ const ProfileSetupPage = () => {
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-xl
+              className="w-full bg-gradient-to-r from-brand-500 to-pink-500 text-white p-4 rounded-xl
                       flex items-center justify-center gap-2 hover:shadow-lg transition-all duration-200"
             >
               {loading ? (

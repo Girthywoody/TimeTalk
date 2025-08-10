@@ -19,7 +19,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
   const buttonClasses = (page) => `
     relative flex-1 flex flex-col items-center justify-center py-3
     transition-all duration-300 ease-out group
-    ${currentPage === page ? 'text-blue-500' : darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}
+    ${currentPage === page ? 'text-brand-500' : darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}
   `;
 
   return (
@@ -27,9 +27,9 @@ export default function Navigation({ currentPage, setCurrentPage }) {
       isKeyboardVisible ? 'translate-y-full' : 'translate-y-0'
     }`}>
       <div className={`${
-        darkMode 
-          ? 'bg-gray-900/80 border-gray-800' 
-          : 'bg-white/80 border-gray-100'
+        darkMode
+          ? 'bg-dark-800/80 border-dark-700'
+          : 'bg-white/80 border-brand-100'
         } backdrop-blur-lg border-t`}>
         <div className="max-w-lg mx-auto flex items-center justify-between px-8">
           {[
@@ -54,7 +54,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
                 />
                 {currentPage === id && (
                   <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2">
-                    <div className="w-1 h-1 rounded-full bg-blue-500" />
+                  <div className="w-1 h-1 rounded-full bg-brand-500" />
                   </div>
                 )}
               </div>
