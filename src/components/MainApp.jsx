@@ -262,8 +262,8 @@ const MainApp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] bg-gray-50 dark:bg-gray-950 z-[49]" />
+    <div className="min-h-screen bg-transparent">
+      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] bg-transparent z-[49]" />
       
       <div className="pb-20 relative">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
@@ -274,7 +274,7 @@ const MainApp = () => {
                 <div className="p-4 flex flex-row items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Heart className="text-rose-500" size={24} />
-                    <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
+                    <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-brand-600 to-pink-600 bg-clip-text text-transparent'}`}>
                       Our Timeline
                     </h1>
                   </div>
@@ -298,9 +298,9 @@ const MainApp = () => {
                           setMediaPreview(null);
                         }}
                         className={`p-3 rounded-full transition-all duration-200 transform hover:scale-110
-                          ${mediaType === type 
-                            ? 'bg-blue-500 text-white shadow-lg' 
-                            : 'bg-white text-gray-600 hover:bg-blue-100'}`}
+                          ${mediaType === type
+                            ? 'bg-brand-500 text-white shadow-lg'
+                            : 'bg-white text-gray-600 hover:bg-brand-100'}`}
                       >
                         <Icon size={24} />
                       </button>
@@ -327,7 +327,7 @@ const MainApp = () => {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Share a memory or future thought..."
-                    className={`w-full p-4 border rounded-xl resize-none h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}                
+                    className={`w-full p-4 border rounded-xl resize-none h-32 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}
                     />
 
                   {/* Date and Submit */}
@@ -354,12 +354,12 @@ const MainApp = () => {
                           ${(!message && !mediaPreview) || isUploading
                             ? `${darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-400'} cursor-not-allowed`
                             : scheduledDateTime
-                              ? `${darkMode 
-                                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
-                                  : 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'}`
-                              : `${darkMode 
-                                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                                  : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'}`
+                              ? `${darkMode
+                                  ? 'bg-pink-600 hover:bg-pink-700 text-white'
+                                  : 'bg-gradient-to-r from-pink-500 to-brand-500 text-white'}`
+                              : `${darkMode
+                                  ? 'bg-brand-600 hover:bg-brand-700 text-white'
+                                  : 'bg-gradient-to-r from-brand-500 to-brand-600 text-white'}`
                           }`}
                       >
                         <Send size={20} />
@@ -375,7 +375,7 @@ const MainApp = () => {
 
 
               {/* Privacy Notice */}
-              <div className={`${darkMode ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-800'} border-none shadow-md rounded-lg p-4`}>
+              <div className={`${darkMode ? 'bg-brand-900/20 text-brand-300' : 'bg-brand-50 text-brand-800'} border-none shadow-md rounded-lg p-4`}>
                 <div className="flex items-center gap-2">
                   <Lock size={16} />
                   Your private space: only visible to you and your partner
@@ -399,7 +399,7 @@ const MainApp = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 h-[env(safe-area-inset-bottom)] bg-gray-50 dark:bg-gray-950 z-[49]" />
+      <div className="fixed bottom-0 left-0 right-0 h-[env(safe-area-inset-bottom)] bg-transparent z-[49]" />
 
       <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
 

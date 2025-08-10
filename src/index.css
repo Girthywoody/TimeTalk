@@ -2,12 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Add these to your existing styles */
 body {
-  @apply bg-gray-50 dark:bg-gray-950;
+  @apply bg-gradient-to-br from-brand-50 via-white to-brand-100 dark:from-dark-900 dark:via-dark-800 dark:to-dark-900 text-gray-900 dark:text-gray-100;
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
 }
 
 #root {
   min-height: 100vh;
-  @apply bg-gray-50 dark:bg-gray-950;
+  @apply bg-transparent;
 }

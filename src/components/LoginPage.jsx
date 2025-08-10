@@ -98,7 +98,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col items-center justify-center p-4">
+    <div className="relative min-h-screen bg-gradient-to-br from-brand-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col items-center justify-center p-4">
       <button
         onClick={toggleDarkMode}
         aria-label="Toggle dark mode"
@@ -112,7 +112,7 @@ const LoginPage = () => {
           alt="Time Talk"
           className="w-32 h-32 mx-auto mb-4"
         />
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-600 to-pink-600 bg-clip-text text-transparent">
           Welcome Back
         </h1>
         <p className="text-gray-600 dark:text-gray-300 mt-2">
@@ -144,7 +144,7 @@ const LoginPage = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
+                      className="w-full pl-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
                       placeholder="Enter your email"
                       required
                     />
@@ -163,7 +163,7 @@ const LoginPage = () => {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
+                      className="w-full pl-10 pr-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
                       placeholder="Enter your password"
                       required
                     />
@@ -190,7 +190,7 @@ const LoginPage = () => {
                         type={showConfirmPassword ? "text" : "password"}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
+                        className="w-full pl-10 pr-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
                         placeholder="Confirm your password"
                         required
                       />
@@ -212,7 +212,7 @@ const LoginPage = () => {
                   <button
                     type="button"
                     onClick={() => setIsResetPassword(true)}
-                    className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                    className="text-sm text-brand-600 hover:text-brand-800 transition-colors"
                   >
                     Forgot your password?
                   </button>
@@ -222,13 +222,13 @@ const LoginPage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-xl
-                  flex items-center justify-center gap-2 shadow-lg hover:shadow-xl 
+                className="w-full bg-gradient-to-r from-brand-500 to-pink-500 text-white p-4 rounded-xl
+                  flex items-center justify-center gap-2 shadow-lg hover:shadow-xl
                   transition-all duration-200 hover:transform hover:scale-[1.02]
                   disabled:opacity-70 disabled:cursor-not-allowed
                   group relative overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="relative flex items-center gap-2">
                   {loading ? (
                     <Loader2 className="animate-spin" size={20} />
@@ -255,7 +255,7 @@ const LoginPage = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
+                    className="w-full pl-10 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
                     placeholder="Enter your email"
                     required
                   />
@@ -265,8 +265,8 @@ const LoginPage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-xl
-                  flex items-center justify-center gap-2 shadow-lg hover:shadow-xl 
+                className="w-full bg-gradient-to-r from-brand-500 to-pink-500 text-white p-4 rounded-xl
+                  flex items-center justify-center gap-2 shadow-lg hover:shadow-xl
                   transition-all duration-200 hover:transform hover:scale-[1.02]"
               >
                 {loading ? (

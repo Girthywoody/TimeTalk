@@ -7,12 +7,12 @@ const PostButton = ({ isScheduleMode, onScheduleModeChange, onPost, isDisabled, 
       <button
         onClick={() => onScheduleModeChange(!isScheduleMode)}
         className={`p-3 rounded-xl flex items-center gap-2 transition-colors
-          ${darkMode 
-            ? isScheduleMode 
-              ? 'bg-gray-700 text-blue-400' 
-              : 'bg-gray-800 text-gray-400 hover:text-gray-300' 
-            : isScheduleMode 
-              ? 'bg-blue-50 text-blue-500' 
+          ${darkMode
+            ? isScheduleMode
+              ? 'bg-gray-700 text-brand-400'
+              : 'bg-gray-800 text-gray-400 hover:text-gray-300'
+            : isScheduleMode
+              ? 'bg-brand-50 text-brand-500'
               : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
           }`}
       >
@@ -30,12 +30,12 @@ const PostButton = ({ isScheduleMode, onScheduleModeChange, onPost, isDisabled, 
           ${isDisabled
             ? `${darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-400'} cursor-not-allowed`
             : isScheduleMode
-              ? `${darkMode 
-                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
-                  : 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'}`
-              : `${darkMode 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'}`
+              ? `${darkMode
+                  ? 'bg-pink-600 hover:bg-pink-700 text-white'
+                  : 'bg-gradient-to-r from-pink-500 to-brand-500 text-white'}`
+              : `${darkMode
+                  ? 'bg-brand-600 hover:bg-brand-700 text-white'
+                  : 'bg-gradient-to-r from-brand-500 to-brand-600 text-white'}`
           }`}
       >
         <Send size={20} />

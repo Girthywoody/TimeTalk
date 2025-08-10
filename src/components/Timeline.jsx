@@ -74,7 +74,7 @@ const EditPostModal = ({ post, isOpen, onClose, onSave }) => {
         <textarea
           value={editedContent}
           onChange={(e) => setEditedContent(e.target.value)}
-          className="w-full p-3 border rounded-lg mb-4 h-32 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full p-3 border rounded-lg mb-4 h-32 resize-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           placeholder="Edit your message..."
         />
         <div className="mb-4">
@@ -92,7 +92,7 @@ const EditPostModal = ({ post, isOpen, onClose, onSave }) => {
           </button>
           <button
             onClick={() => onSave(post.id, editedContent, editedDateTime)}
-            className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white"
+            className="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white"
           >
             Save Changes
           </button>
