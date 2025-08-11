@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSpotify } from '../../hooks/useSpotify';
 import { useAuth } from '../../hooks/useAuth';
 import { Music, Disc3 } from 'lucide-react';
@@ -72,8 +72,17 @@ const SpotifyPlayer = ({ userId, username }) => {
 };
 
 const SpotifySection = () => {
-  const { user } = useAuth();
-  const { partnerProfile } = useAuth();
+  const { user, getPartnerProfile } = useAuth();
+  const [partnerProfile, setPartnerProfile] = useState(null);
+
+  useEffect(() => {
+    const fetchPartner = async () => {
+      const partner = await getPartnerProfile();
+      setPartnerProfile(partner);
+    };
+
+    fetchPartner();
+  }, [getPartnerProfile]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -95,9 +104,9 @@ const SpotifySection = () => {
               {partnerProfile.displayName}'s Music
             </h3>
           </div>
-          <SpotifyPlayer 
-            userId={partnerProfile.uid} 
-            username={partnerProfile.displayName} 
+          <SpotifyPlayer
+            userId={partnerProfile.uid}
+            username={partnerProfile.displayName}
           />
         </div>
       )}
@@ -105,4 +114,4 @@ const SpotifySection = () => {
   );
 };
 
-export default SpotifySection; 
+export default SpotifySection;
