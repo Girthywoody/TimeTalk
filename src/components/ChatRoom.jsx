@@ -67,6 +67,7 @@ const ALLOWED_FILE_TYPES = [
 ];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const NAV_BAR_HEIGHT = 72;
+const BOTTOM_BUFFER = 8;
 
 const formatDateDivider = (date) =>
   date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
@@ -1659,16 +1660,11 @@ useEffect(() => {
             ref={scrollContainerRef}
             className="absolute inset-0 overflow-y-auto px-4 z-0"
             style={{
-              paddingBottom: `${inputHeight + (hideNav ? 0 : NAV_BAR_HEIGHT)}px`,
+              paddingBottom: `calc(${inputHeight + (hideNav ? 0 : NAV_BAR_HEIGHT)}px + env(safe-area-inset-bottom) + ${BOTTOM_BUFFER}px)`,
               paddingTop: '16px',
               overscrollBehavior: 'contain',
               WebkitOverflowScrolling: 'touch',
               scrollBehavior: 'smooth'
-            }}
-            onLoad={() => {
-              if (scrollContainerRef.current) {
-                scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-              }
             }}
           >
             {loading ? (
@@ -1814,6 +1810,7 @@ useEffect(() => {
                                       imagePreview === message.fileURL ? 'w-full' : 'max-h-48 object-cover'
                                     }`}
                                     loading="lazy"
+                                    onLoad={() => inView && scrollToNewestMessage()}
                                     onClick={() => setImagePreview(message.fileURL)}
                                   />
                                 </div>
@@ -1882,6 +1879,19 @@ useEffect(() => {
           </div>
         </div>
 
+        {!inView && (
+          <button
+            onClick={scrollToNewestMessage}
+            className="fixed right-4 z-20 p-2 rounded-full bg-blue-500 text-white shadow-md"
+            style={{
+              bottom: `calc(${inputHeight + (hideNav ? 0 : NAV_BAR_HEIGHT)}px + env(safe-area-inset-bottom) + ${BOTTOM_BUFFER}px)`
+            }}
+            aria-label="Jump to bottom"
+          >
+            ↓
+          </button>
+        )}
+
         {/* Message Input */}
         <div
           ref={inputContainerRef}
@@ -1890,10 +1900,10 @@ useEffect(() => {
           } border-t z-50 transition-all duration-300`}
           style={{
             bottom: isKeyboardVisible
-              ? `${keyboardHeight}px`
+              ? `calc(${keyboardHeight}px + env(safe-area-inset-bottom) + ${BOTTOM_BUFFER}px)`
               : hideNav
-                ? 'env(safe-area-inset-bottom)'
-                : 'calc(72px + env(safe-area-inset-bottom))'
+                ? `calc(env(safe-area-inset-bottom) + ${BOTTOM_BUFFER}px)`
+                : `calc(72px + env(safe-area-inset-bottom))`
           }}
         >
           <div
@@ -2047,7 +2057,9 @@ useEffect(() => {
           {imagePreview && (
             <div
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
-              style={{ paddingBottom: `${inputHeight + (hideNav ? 0 : NAV_BAR_HEIGHT)}px` }}
+              style={{
+                paddingBottom: `calc(${inputHeight + (hideNav ? 0 : NAV_BAR_HEIGHT)}px + env(safe-area-inset-bottom) + ${BOTTOM_BUFFER}px)`
+              }}
               onClick={() => setImagePreview(null)}
             >
               <div className="absolute top-4 right-4 flex gap-2 z-10">
