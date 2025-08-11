@@ -4,16 +4,15 @@ import PropTypes from 'prop-types';
 import { useDarkMode } from '../context/DarkModeContext';
 
 /**
- * Bottom navigation bar inspired by provided JSON specification.
+ * Bottom navigation bar
  * - pill shaped container with blur and shadow
- * - icon only tabs with active/inactive states
+ * - icon-only tabs with optional active label + gradient indicator
  * - safe area inset support
  */
 export default function Navigation({ currentPage, setCurrentPage }) {
   const { darkMode } = useDarkMode();
   const shouldReduceMotion = useReducedMotion();
 
-  // tabs configuration matching routes used in MainApp
   const tabs = [
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'chat', icon: MessageCircle, label: 'Chat', badge: 0 },
@@ -21,9 +20,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
     { id: 'profile', icon: User, label: 'Profile' }
   ];
 
-  const handleSelect = (id) => {
-    setCurrentPage(id);
-  };
+  const handleSelect = (id) => setCurrentPage(id);
 
   const transition = {
     duration: shouldReduceMotion ? 0 : 0.2,
@@ -36,7 +33,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 80, opacity: 0 }}
       transition={transition}
-      className="fixed inset-x-0 bottom-0 z-40 pb-[env(safe-area-inset-bottom)] pointer-events-none"
+      className="fixed inset-x-0 bottom-0 z-50 pb-[env(safe-area-inset-bottom)] pointer-events-none"
     >
       <div
         className="pointer-events-auto mx-auto mb-2 flex max-w-md items-center justify-between rounded-3xl shadow-lg ring-1 ring-black/5 backdrop-blur-xl"
@@ -70,6 +67,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
                   fill: active ? 'currentColor' : 'none'
                 }}
               />
+
               <AnimatePresence initial={false}>
                 {active && (
                   <motion.span
@@ -84,20 +82,21 @@ export default function Navigation({ currentPage, setCurrentPage }) {
                   </motion.span>
                 )}
               </AnimatePresence>
+
               {active && (
                 <motion.span
                   layoutId="nav-indicator"
                   className="absolute bottom-1 h-1 w-8 rounded-full"
                   style={{
-                    background: 'linear-gradient(90deg,var(--accent),var(--accent-2))'
+                    background:
+                      'linear-gradient(90deg,var(--accent),var(--accent-2))'
                   }}
                   transition={transition}
                 />
               )}
+
               {badge > 0 && (
-                <span
-                  className="absolute top-2 right-4 min-w-[0.5rem] rounded-full bg-[var(--accent)] px-1 text-[10px] font-medium text-white"
-                >
+                <span className="absolute top-2 right-4 min-w-[0.5rem] rounded-full bg-[var(--accent)] px-1 text-[10px] font-medium text-white">
                   {badge > 99 ? '99+' : badge}
                 </span>
               )}
