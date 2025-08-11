@@ -22,7 +22,7 @@ const PageLayout = ({ children }) => {
   return (
     <div className="bg-gray-50 dark:bg-gray-950 min-h-[calc(var(--vh,1vh)*100)]">
       {/* Top safe area */}
-      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] bg-gray-50 dark:bg-gray-950 z-[999]" />
+      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] bg-gray-50 dark:bg-gray-950 z-[999] pointer-events-none" />
       
       {/* Content */}
       <div className="relative">
@@ -30,7 +30,7 @@ const PageLayout = ({ children }) => {
       </div>
 
       {/* Bottom safe area */}
-      <div className="fixed bottom-0 left-0 right-0 h-[env(safe-area-inset-bottom)] bg-gray-50 dark:bg-gray-950 z-[49]" />
+      <div className="fixed bottom-0 left-0 right-0 h-[env(safe-area-inset-bottom)] bg-gray-50 dark:bg-gray-950 z-[49] pointer-events-none" />
     </div>
   );
 };

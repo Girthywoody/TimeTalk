@@ -1,5 +1,5 @@
 import { Home, MessageCircle, Calendar, User } from 'lucide-react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import PropTypes from 'prop-types';
 import { useDarkMode } from '../context/DarkModeContext';
 
@@ -50,7 +50,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
               key={id}
               onClick={() => handleSelect(id)}
               whileTap={{ scale: 0.98, opacity: 0.8 }}
-              className="relative flex h-16 flex-1 flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
+              className="relative flex h-12 flex-1 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
               aria-label={label}
               aria-current={active ? 'page' : undefined}
             >
@@ -67,21 +67,6 @@ export default function Navigation({ currentPage, setCurrentPage }) {
                   fill: active ? 'currentColor' : 'none'
                 }}
               />
-
-              <AnimatePresence initial={false}>
-                {active && (
-                  <motion.span
-                    key="label"
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    transition={transition}
-                    className="mt-1 text-[10px] font-medium"
-                  >
-                    {label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
 
               {active && (
                 <motion.span
