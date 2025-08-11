@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
@@ -94,17 +94,14 @@ export const useAuth = () => {
   };
 
   // Add this function to get partner's profile
-  const getPartnerProfile = async () => {
+  const getPartnerProfile = useCallback(async () => {
     if (!user) return null;
-    
+
     try {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const userData = userDoc.data();
-      
       // Get the other user that isn't the current user
       const otherUserDocs = await getDocs(collection(db, 'users'));
       const partnerDoc = otherUserDocs.docs.find(doc => doc.id !== user.uid);
-      
+
       if (partnerDoc && partnerDoc.exists()) {
         return {
           ...partnerDoc.data(),
@@ -116,7 +113,7 @@ export const useAuth = () => {
       console.error('Error getting partner profile:', error);
       return null;
     }
-  };
+  }, [user]);
 
   return {
     user,
