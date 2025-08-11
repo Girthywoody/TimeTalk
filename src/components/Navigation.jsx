@@ -1,19 +1,18 @@
 import { Home, MessageCircle, Calendar, User } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import PropTypes from 'prop-types';
 import { useDarkMode } from '../context/DarkModeContext';
 
 /**
- * Bottom navigation bar inspired by provided JSON specification.
+ * Bottom navigation bar
  * - pill shaped container with blur and shadow
- * - icon only tabs with active/inactive states
+ * - icon-only tabs with optional active label + gradient indicator
  * - safe area inset support
  */
 export default function Navigation({ currentPage, setCurrentPage }) {
   const { darkMode } = useDarkMode();
   const shouldReduceMotion = useReducedMotion();
 
-  // tabs configuration matching routes used in MainApp
   const tabs = [
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'chat', icon: MessageCircle, label: 'Chat', badge: 0 },
@@ -21,9 +20,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
     { id: 'profile', icon: User, label: 'Profile' }
   ];
 
-  const handleSelect = (id) => {
-    setCurrentPage(id);
-  };
+  const handleSelect = (id) => setCurrentPage(id);
 
   const transition = {
     duration: shouldReduceMotion ? 0 : 0.2,
@@ -53,7 +50,7 @@ export default function Navigation({ currentPage, setCurrentPage }) {
               key={id}
               onClick={() => handleSelect(id)}
               whileTap={{ scale: 0.98, opacity: 0.8 }}
-              className="relative flex h-14 flex-1 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
+              className="relative flex h-16 flex-1 flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
               aria-label={label}
               aria-current={active ? 'page' : undefined}
             >
@@ -70,20 +67,36 @@ export default function Navigation({ currentPage, setCurrentPage }) {
                   fill: active ? 'currentColor' : 'none'
                 }}
               />
+
+              <AnimatePresence initial={false}>
+                {active && (
+                  <motion.span
+                    key="label"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={transition}
+                    className="mt-1 text-[10px] font-medium"
+                  >
+                    {label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+
               {active && (
                 <motion.span
                   layoutId="nav-indicator"
-                  className="pointer-events-none absolute bottom-1 h-1 w-8 rounded-full"
+                  className="absolute bottom-1 h-1 w-8 rounded-full"
                   style={{
-                    background: 'linear-gradient(90deg,var(--accent),var(--accent-2))'
+                    background:
+                      'linear-gradient(90deg,var(--accent),var(--accent-2))'
                   }}
                   transition={transition}
                 />
               )}
+
               {badge > 0 && (
-                <span
-                  className="absolute top-2 right-4 min-w-[0.5rem] rounded-full bg-[var(--accent)] px-1 text-[10px] font-medium text-white"
-                >
+                <span className="absolute top-2 right-4 min-w-[0.5rem] rounded-full bg-[var(--accent)] px-1 text-[10px] font-medium text-white">
                   {badge > 99 ? '99+' : badge}
                 </span>
               )}
