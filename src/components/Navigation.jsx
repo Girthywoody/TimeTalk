@@ -48,7 +48,11 @@ export default function Navigation({ currentPage, setCurrentPage }) {
           return (
             <motion.button
               key={id}
-              onClick={() => handleSelect(id)}
+              onClick={(e) => {
+                // Prevent the click from affecting underlying elements
+                e.stopPropagation();
+                handleSelect(id);
+              }}
               whileTap={{ scale: 0.98, opacity: 0.8 }}
               className="relative flex h-12 flex-1 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
               aria-label={label}
