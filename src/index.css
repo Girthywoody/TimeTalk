@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --accent: #8b5cf6;
+  --accent-2: #d946ef;
+}
+
+.dark {
+  --accent: #8b5cf6;
+  --accent-2: #7c3aed;
+}
+
 body {
   @apply bg-gradient-to-br from-brand-50 via-white to-brand-100 dark:from-dark-900 dark:via-dark-800 dark:to-dark-900 text-gray-900 dark:text-gray-100 antialiased;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
