@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
-import { Settings, MessageCircle, Heart, Calendar, Gift, Camera, Loader2 } from 'lucide-react';
+import { Settings, MessageCircle, Heart, Calendar, Camera, Loader2 } from 'lucide-react';
 import SettingsPage from '../profile/SettingsPage';
 import QuickActions from '../profile/QuickActions'; // Add this import
 import { useNavigate } from 'react-router-dom';
@@ -56,7 +56,7 @@ const ProfilePage = () => {
     if (user) {
       loadPartnerProfile();
     }
-  }, [user]);
+  }, [user, getPartnerProfile]);
 
   const handleProfileUpdate = (updatedData) => {
     setProfileData(updatedData);

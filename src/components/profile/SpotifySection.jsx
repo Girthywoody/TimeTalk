@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useSpotify } from '../../hooks/useSpotify';
 import { useAuth } from '../../hooks/useAuth';
 import { Music, Disc3 } from 'lucide-react';
@@ -101,7 +102,7 @@ const SpotifySection = () => {
           <div className="p-4 border-b border-gray-200 dark:border-gray-800">
             <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
               <Music className="w-4 h-4" />
-              {partnerProfile.displayName}'s Music
+                {partnerProfile.displayName}&apos;s Music
             </h3>
           </div>
           <SpotifyPlayer
@@ -112,6 +113,11 @@ const SpotifySection = () => {
       )}
     </div>
   );
+};
+
+SpotifyPlayer.propTypes = {
+  userId: PropTypes.string,
+  username: PropTypes.string.isRequired
 };
 
 export default SpotifySection;
